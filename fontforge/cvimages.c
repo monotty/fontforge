@@ -103,7 +103,7 @@ return;
 	    /*!!!!!! pattern? */
 	    sc->layers[pos].stroke_pen.brush.col = e->u.splines.stroke.col==0xffffffff ? COLOR_INHERITED : e->u.splines.stroke.col;
 	    sc->layers[pos].stroke_pen.brush.gradient = e->u.splines.stroke.grad;
-	    sc->layers[pos].stroke_pen.width = e->u.splines.stroke_width;
+		sc->layers[pos].stroke_pen.width = e->u.splines.stroke_width;
 	    sc->layers[pos].stroke_pen.linejoin = e->u.splines.join;
 	    sc->layers[pos].stroke_pen.linecap = e->u.splines.cap;
 	    memcpy(sc->layers[pos].stroke_pen.trans, e->u.splines.transform,

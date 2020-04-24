@@ -226,22 +226,24 @@ return( sc );
 return( sc );
 }
 
-SplineChar *SFMakeChar(SplineFont *sf,EncMap *map, int enc) {
-    int gid;
+SplineChar* SFMakeChar(SplineFont* sf, EncMap* map, int enc)
+{
+	int gid;
 
-    if ( enc==-1 )
-return( NULL );
-    if ( enc>=map->enccount )
-	gid = -1;
-    else
-	gid = map->map[enc];
-    if ( sf->mm!=NULL && (gid==-1 || sf->glyphs[gid]==NULL) ) {
-	int j;
-	_SFMakeChar(sf->mm->normal,map,enc);
-	for ( j=0; j<sf->mm->instance_count; ++j )
-	    _SFMakeChar(sf->mm->instances[j],map,enc);
-    }
-return( _SFMakeChar(sf,map,enc));
+	if (enc == -1)
+		return(NULL);
+	if (enc >= map->enccount)
+		gid = -1;
+	else
+		gid = map->map[enc];
+	if (sf->mm != NULL && (gid == -1 || sf->glyphs[gid] == NULL))
+	{
+		int j;
+		_SFMakeChar(sf->mm->normal, map, enc);
+		for (j = 0; j < sf->mm->instance_count; ++j)
+			_SFMakeChar(sf->mm->instances[j], map, enc);
+	}
+	return(_SFMakeChar(sf, map, enc));
 }
 
 struct unicoderange specialnames[] = {

@@ -147,6 +147,7 @@ typedef struct ff_layer {
     short cntr_cnt, cntr_max;
     struct ff_contour **contours;
     int is_quadratic;		/* bit flags, but access to int is faster */
+    float stroke_pen_width;
 } PyFF_Layer;
 extern PyTypeObject PyFF_LayerType;
 

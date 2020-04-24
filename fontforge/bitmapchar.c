@@ -324,29 +324,33 @@ static void def_Charset_Col(SplineFont *sf,EncMap *map, char *buffer) {
     strcat(buffer , EncodingName(map->enc) );
 }
 
-void SFReplaceEncodingBDFProps(SplineFont *sf,EncMap *map) {
-    BDFFont *bdf;
-    char buffer[250];
-    char reg[100], enc[40], *pt;
-    const char *bpt;
+void SFReplaceEncodingBDFProps(SplineFont* sf, EncMap* map)
+{
+	BDFFont* bdf;
+	char buffer[250];
+	char reg[100], enc[40], * pt;
+	const char* bpt;
 
-    def_Charset_Col(sf,map, buffer);
-    def_Charset_Enc(map,reg,enc);
+	def_Charset_Col(sf, map, buffer);
+	def_Charset_Enc(map, reg, enc);
 
-    for ( bdf=sf->bitmaps; bdf!=NULL; bdf=bdf->next ) {
-	BDFPropReplace(bdf,"CHARSET_REGISTRY", reg);
-	BDFPropReplace(bdf,"CHARSET_ENCODING", enc);
-	BDFPropReplace(bdf,"CHARSET_COLLECTIONS",buffer);
-	if ( (bpt = BdfPropHasString(bdf,"FONT", NULL))!=NULL ) {
-	    strncpy(buffer,bpt,sizeof(buffer)); buffer[sizeof(buffer)-1] = '\0';
-	    pt = strrchr(buffer,'-');
-	    if ( pt!=NULL ) for ( --pt; pt>buffer && *pt!='-'; --pt );
-	    if ( pt>buffer ) {
-		sprintf( pt+1, "%s-%s", reg, enc);
-		BDFPropReplace(bdf,"FONT",buffer);
-	    }
+	for (bdf = sf->bitmaps; bdf != NULL; bdf = bdf->next)
+	{
+		BDFPropReplace(bdf, "CHARSET_REGISTRY", reg);
+		BDFPropReplace(bdf, "CHARSET_ENCODING", enc);
+		BDFPropReplace(bdf, "CHARSET_COLLECTIONS", buffer);
+		if ((bpt = BdfPropHasString(bdf, "FONT", NULL)) != NULL)
+		{
+			strncpy(buffer, bpt, sizeof(buffer)); buffer[sizeof(buffer) - 1] = '\0';
+			pt = strrchr(buffer, '-');
+			if (pt != NULL) for (--pt; pt > buffer && *pt != '-'; --pt);
+			if (pt > buffer)
+			{
+				sprintf(pt + 1, "%s-%s", reg, enc);
+				BDFPropReplace(bdf, "FONT", buffer);
+			}
+		}
 	}
-    }
 }
 
 void SFReplaceFontnameBDFProps(SplineFont *sf) {

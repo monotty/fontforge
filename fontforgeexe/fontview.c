@@ -72,6 +72,17 @@
 #include <windows.h>
 #endif
 
+ // sdn: I'm too lazy to deal with standards
+#define NULL 0
+typedef unsigned int uint32;
+typedef int int32;
+typedef short int16;
+typedef signed char int8;
+typedef unsigned short uint16;
+typedef unsigned char uint8;
+#define true	1
+#define false	0
+
 int OpenCharsInNewWindow = 0;
 char *RecentFiles[RECENT_MAX] = { NULL };
 int save_to_dir = 0;			/* use sfdir rather than sfd */
@@ -746,24 +757,27 @@ return( false );
 return( filename[strlen(filename)-1]=='~' );
 }
 
-int _FVMenuSave(FontView *fv) {
+int _FVMenuSave(FontView* fv)
+{
     int ret = 0;
-    SplineFont *sf = fv->b.cidmaster?fv->b.cidmaster:
-		    fv->b.sf->mm!=NULL?fv->b.sf->mm->normal:
-			    fv->b.sf;
+    SplineFont* sf = fv->b.cidmaster ? fv->b.cidmaster :
+        fv->b.sf->mm != NULL ? fv->b.sf->mm->normal :
+        fv->b.sf;
 
-    if ( sf->filename==NULL || IsBackupName(sf->filename))
-	ret = _FVMenuSaveAs(fv);
-    else {
-	FVFlattenAllBitmapSelections(fv);
-	if ( !SFDWriteBak(sf->filename,sf,fv->b.map,fv->b.normal) )
-	    ff_post_error(_("Save Failed"),_("Save Failed"));
-	else {
-	    SplineFontSetUnChanged(sf);
-	    ret = true;
-	}
+    if (sf->filename == NULL || IsBackupName(sf->filename))
+        ret = _FVMenuSaveAs(fv);
+    else
+    {
+        FVFlattenAllBitmapSelections(fv);
+        if (!SFDWriteBak(sf->filename, sf, fv->b.map, fv->b.normal))
+            ff_post_error(_("Save Failed"), _("Save Failed"));
+        else
+        {
+            SplineFontSetUnChanged(sf);
+            ret = true;
+        }
     }
-return( ret );
+    return(ret);
 }
 
 static void FVMenuSave(GWindow gw, struct gmenuitem *UNUSED(mi), GEvent *UNUSED(e)) {
@@ -1476,8 +1490,11 @@ static void FVMenuCondense(GWindow gw, struct gmenuitem *UNUSED(mi), GEvent *UNU
 #define MID_MMValid	2902
 #define MID_ChangeMMBlend	2903
 #define MID_BlendToNew	2904
+
 #define MID_ModifyComposition	20902
 #define MID_BuildSyllables	20903
+
+#define MID_CharSwap	20904
 
 
 #define MID_Warnings	3000
@@ -3424,6 +3441,56 @@ return;
 		  mi->mid==MID_SetRBearing?wt_rbearing:
 		  mi->mid==MID_SetBearings?wt_bearings:
 		  wt_vwidth);
+}
+
+static void FVMenuSwap(GWindow gw, struct gmenuitem *mi, GEvent *UNUSED(e)) 
+{
+    FontView *fv = (FontView *) GDrawGetUserData(gw);
+    SplineFont * sf = fv->b.sf;
+    EncMap* map = fv->b.map;
+    
+    int count = 0;
+    int* stack;
+
+    stack = malloc(map->enccount);
+
+    for (int i = 0; i < map->enccount; ++i)
+    {
+        if (fv->b.selected[i])
+        {
+            stack[count++] = i;
+        }
+    }
+
+    count >>= 1;
+
+    for (int i = 0; i < count; i++)
+    {
+        int32 glyph1_enc = stack[i];
+        int32 glyph2_enc = stack[i + count];
+
+        int32 glyph1_id = map->map[glyph1_enc];
+        int32 glyph2_id = map->map[glyph2_enc];
+
+        map->map[glyph1_enc] = glyph2_id;
+        map->map[glyph2_enc] = glyph1_id;
+
+        if (glyph1_id != -1)
+        {
+            int32 back1_id = map->backmap[glyph1_id];
+            map->backmap[glyph1_id] = glyph2_enc;
+        }
+        if (glyph2_id != -1)
+        {
+            int32 back2_id = map->backmap[glyph2_id];
+            map->backmap[glyph2_id] = glyph1_enc;
+        }
+    }
+    
+    free(stack);
+
+    sf->changed = true;
+    FVRefreshAll(sf);
 }
 
 static void FVMenuAutoWidth(GWindow gw, struct gmenuitem *UNUSED(mi), GEvent *UNUSED(e)) {
@@ -5543,6 +5610,9 @@ GMenuItem2 helplist[] = {
 };
 
 GMenuItem fvpopupmenu[] = {
+        { { (unichar_t*)N_("Swap"), (GImage*)"filerevert.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'V' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuSwap, MID_CharSwap },
+            GMENUITEM_LINE,
+
     { { (unichar_t *) N_("New O_utline Window"), 0, COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'u' }, '\0', ksm_control, NULL, NULL, FVMenuOpenOutline, MID_OpenOutline },
     GMENUITEM_LINE,
     { { (unichar_t *) N_("Cu_t"), (GImage *) "editcut.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 't' }, '\0', ksm_control, NULL, NULL, FVMenuCut, MID_Cut },

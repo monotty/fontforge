@@ -1066,7 +1066,8 @@ void MVReKern(MetricsView *mv) {
     GDrawRequestExpose(mv->v,NULL,false);
 }
 
-void MVRegenChar(MetricsView *mv, SplineChar *sc) {
+void MVRegenChar(MetricsView *mv, SplineChar *sc) 
+{
     int i;
 
     if( !sc->suspendMetricsViewEventPropagation )

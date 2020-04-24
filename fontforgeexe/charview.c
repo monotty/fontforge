@@ -3158,61 +3158,72 @@ static void SC_OutOfDateBackground(SplineChar *sc) {
 
 /* CVRegenFill() regenerates data used to show or not show paths as filled */
 /* This is not static so that it can be called from the layers palette */
-void CVRegenFill(CharView *cv) {
-    CharViewTab* tab = CVGetActiveTab(cv);
-    BDFCharFree(cv->filled);
-    cv->filled = NULL;
-    if ( cv->showfilled && !shouldShowFilledUsingCairo(cv) ) {
-	extern int use_freetype_to_rasterize_fv;
-	int layer = CVLayer((CharViewBase *) cv);
-	int size = tab->scale*(cv->b.fv->sf->ascent+cv->b.fv->sf->descent);
-	int clut_len= 2;
+void CVRegenFill(CharView* cv)
+{
+	CharViewTab* tab = CVGetActiveTab(cv);
+	BDFCharFree(cv->filled);
+	cv->filled = NULL;
+	if (cv->showfilled && !shouldShowFilledUsingCairo(cv))
+	{
+		extern int use_freetype_to_rasterize_fv;
+		int layer = CVLayer((CharViewBase*)cv);
+		int size = tab->scale * (cv->b.fv->sf->ascent + cv->b.fv->sf->descent);
+		int clut_len = 2;
 
-        if ( layer==ly_grid ) layer=ly_fore; /* otherwise crashes when using guides layer! */
+		if (layer == ly_grid) layer = ly_fore; /* otherwise crashes when using guides layer! */
 
 	/* Generally I don't think there's much point in doing an anti-aliased*/
 	/*  fill. But on the "M" (and "W") glyph of extravigant caps, ft won't*/
 	/*  do a mono fill */
-	if ( use_freetype_to_rasterize_fv && hasFreeType()) {
-	    int depth = 1;
-	    if( use_freetype_with_aa_fill_cv ) {
-		depth = 4;
-		clut_len = 16;
-	    }
-	    cv->filled = SplineCharFreeTypeRasterizeNoHints(cv->b.sc,layer,
-		size,72, depth);
-	    if ( cv->filled==NULL && size<2000 ) {
-		/* There are some glyphs which freetype won't rasterize in */
-		/* mono mode, but will in grey scale. Don't ask me why */
-		cv->filled = SplineCharFreeTypeRasterizeNoHints(cv->b.sc,
-		    layer, size, 72, 4);
-		clut_len = 16;
-	    }
+		if (use_freetype_to_rasterize_fv && hasFreeType())
+		{
+			int depth = 1;
+			if (use_freetype_with_aa_fill_cv)
+			{
+				depth = 4;
+				clut_len = 16;
+			}
+			cv->filled = SplineCharFreeTypeRasterizeNoHints(cv->b.sc, layer,
+				size, 72, depth);
+			if (cv->filled == NULL && size < 2000)
+			{
+				/* There are some glyphs which freetype won't rasterize in */
+				/* mono mode, but will in grey scale. Don't ask me why */
+				cv->filled = SplineCharFreeTypeRasterizeNoHints(cv->b.sc,
+					layer, size, 72, 4);
+				clut_len = 16;
+			}
+		}
+
+		if (cv->filled == NULL)
+		{
+			cv->filled = SplineCharRasterize(cv->b.sc, layer, size + .1);
+		}
+
+		if (cv->filled == NULL)
+			return;
+		cv->gi.u.image->image_type = clut_len == 2 ? it_mono : it_index;
+		cv->gi.u.image->data = cv->filled->bitmap;
+		cv->gi.u.image->bytes_per_line = cv->filled->bytes_per_line;
+		cv->gi.u.image->width = cv->filled->xmax - cv->filled->xmin + 1;
+		cv->gi.u.image->height = cv->filled->ymax - cv->filled->ymin + 1;
+		if (clut_len != cv->gi.u.image->clut->clut_len)
+		{
+			GClut* clut = cv->gi.u.image->clut;
+			int i;
+			Color bg = view_bgcol;
+			for (i = 0; i < clut_len; ++i)
+			{
+				int r, g, b;
+				r = ((bg >> 16) & 0xff) * (clut_len - 1 - i) + ((fillcol >> 16) & 0xff) * i;
+				g = ((bg >> 8) & 0xff) * (clut_len - 1 - i) + ((fillcol >> 8) & 0xff) * i;
+				b = ((bg) & 0xff) * (clut_len - 1 - i) + ((fillcol) & 0xff) * i;
+				clut->clut[i] = COLOR_CREATE(r / (clut_len - 1), g / (clut_len - 1), b / (clut_len - 1));
+			}
+			clut->clut_len = clut_len;
+		}
+		GDrawRequestExpose(cv->v, NULL, false);
 	}
-	if ( cv->filled==NULL )
-	    cv->filled = SplineCharRasterize(cv->b.sc,layer,size+.1);
-	if ( cv->filled==NULL )
-return;
-	cv->gi.u.image->image_type = clut_len==2 ? it_mono : it_index;
-	cv->gi.u.image->data = cv->filled->bitmap;
-	cv->gi.u.image->bytes_per_line = cv->filled->bytes_per_line;
-	cv->gi.u.image->width = cv->filled->xmax-cv->filled->xmin+1;
-	cv->gi.u.image->height = cv->filled->ymax-cv->filled->ymin+1;
-	if ( clut_len!=cv->gi.u.image->clut->clut_len ) {
-	    GClut *clut = cv->gi.u.image->clut;
-	    int i;
-	    Color bg = view_bgcol;
-	    for ( i=0; i<clut_len; ++i ) {
-		int r,g,b;
-		r = ((bg>>16)&0xff)*(clut_len-1-i) + ((fillcol>>16)&0xff)*i;
-		g = ((bg>>8 )&0xff)*(clut_len-1-i) + ((fillcol>>8 )&0xff)*i;
-		b = ((bg    )&0xff)*(clut_len-1-i) + ((fillcol    )&0xff)*i;
-		clut->clut[i] = COLOR_CREATE(r/(clut_len-1),g/(clut_len-1),b/(clut_len-1));
-	    }
-	    clut->clut_len = clut_len;
-	}
-	GDrawRequestExpose(cv->v,NULL,false);
-    }
 }
 
 
@@ -3231,14 +3242,19 @@ void FVRedrawAllCharViews(FontView *fv)
     FVRedrawAllCharViewsSF( fv->b.sf );
 }
 
-static void SCRegenFills(SplineChar *sc) {
+static void SCRegenFills(SplineChar *sc)
+{
     struct splinecharlist *dlist;
     CharView *cv;
 
-    for ( cv = (CharView *) (sc->views); cv!=NULL; cv=(CharView *) (cv->b.next) )
-	CVRegenFill(cv);
-    for ( dlist=sc->dependents; dlist!=NULL; dlist=dlist->next )
-	SCRegenFills(dlist->sc);
+	for (cv = (CharView*)(sc->views); cv != NULL; cv = (CharView*)(cv->b.next))
+	{
+		CVRegenFill(cv);
+	}
+	for (dlist = sc->dependents; dlist != NULL; dlist = dlist->next)
+	{
+		SCRegenFills(dlist->sc);
+	}
 }
 
 static void SCRegenDependents(SplineChar *sc, int layer) {
@@ -5157,58 +5173,67 @@ void SCClearSelPt(SplineChar *sc) {
     }
 }
 
-static void _SC_CharChangedUpdate(SplineChar *sc,int layer,int changed) {
-    SplineFont *sf = sc->parent;
-    extern int updateflex;
-    /* layer might be ly_none or ly_all */
+static void _SC_CharChangedUpdate(SplineChar* sc, int layer, int changed)
+{
+	SplineFont* sf = sc->parent;
+	extern int updateflex;
+	/* layer might be ly_none or ly_all */
 
-    if ( layer>=sc->layer_cnt ) {
-	IError( "Bad layer in _SC_CharChangedUpdate");
-	layer = ly_fore;
-    }
-    if ( layer>=0 && !sc->layers[layer].background )
-	TTFPointMatches(sc,layer,true);
-    if ( changed != -1 ) {
-	sc->changed_since_autosave = true;
-	SFSetModTime(sf);
-	if ( (sc->changed==0) != (changed==0) ) {
-	    sc->changed = (changed!=0);
-	    if ( changed && layer>=ly_fore && (sc->layers[layer].splines!=NULL || sc->layers[layer].refs!=NULL))
-		sc->parent->onlybitmaps = false;
-	    FVToggleCharChanged(sc);
-	    SCRefreshTitles(sc);
+	if (layer >= sc->layer_cnt)
+	{
+		IError("Bad layer in _SC_CharChangedUpdate");
+		layer = ly_fore;
 	}
-	if ( !sf->changed ) {
-	    sf->changed = true;
-	    if ( sf->cidmaster )
-		sf->cidmaster->changed = true;
-	    FVSetTitles(sf);
+	if (layer >= 0 && !sc->layers[layer].background)
+		TTFPointMatches(sc, layer, true);
+	if (changed != -1)
+	{
+		sc->changed_since_autosave = true;
+		SFSetModTime(sf);
+		if ((sc->changed == 0) != (changed == 0))
+		{
+			sc->changed = (changed != 0);
+			if (changed && layer >= ly_fore && (sc->layers[layer].splines != NULL || sc->layers[layer].refs != NULL))
+				sc->parent->onlybitmaps = false;
+			FVToggleCharChanged(sc);
+			SCRefreshTitles(sc);
+		}
+		if (!sf->changed)
+		{
+			sf->changed = true;
+			if (sf->cidmaster)
+				sf->cidmaster->changed = true;
+			FVSetTitles(sf);
+		}
+		if (changed && layer >= 0 && !sc->layers[layer].background && sc->layers[layer].order2)
+		{
+			instrcheck(sc, layer);
+			SCReGridFit(sc, layer);
+		}
+		if (!sc->parent->onlybitmaps && !sc->parent->multilayer &&
+			changed == 1 && !sc->parent->strokedfont &&
+			layer >= 0 &&
+			!sc->layers[layer].background && !sc->layers[layer].order2)
+			_SCHintsChanged(sc);
+		sc->changed_since_search = true;
+		sf->changed = true;
+		sf->changed_since_autosave = true;
+		sf->changed_since_xuidchanged = true;
+		if (layer >= 0)
+			SCTickValidationState(sc, layer);
 	}
-	if ( changed && layer>=0 && !sc->layers[layer].background && sc->layers[layer].order2 ) {
-	    instrcheck(sc,layer);
-	    SCReGridFit(sc,layer);
-	}
-	if ( !sc->parent->onlybitmaps && !sc->parent->multilayer &&
-		changed==1 && !sc->parent->strokedfont &&
-		layer>=0 &&
-		!sc->layers[layer].background && !sc->layers[layer].order2 )
-	    _SCHintsChanged(sc);
-	sc->changed_since_search = true;
-	sf->changed = true;
-	sf->changed_since_autosave = true;
-	sf->changed_since_xuidchanged = true;
-	if ( layer>=0 )
-	    SCTickValidationState(sc,layer);
-    }
-    if ( sf->cidmaster!=NULL )
-	sf->cidmaster->changed = sf->cidmaster->changed_since_autosave =
+	if (sf->cidmaster != NULL)
+		sf->cidmaster->changed = sf->cidmaster->changed_since_autosave =
 		sf->cidmaster->changed_since_xuidchanged = true;
-    SCRegenDependents(sc,ly_all);	/* All chars linked to this one need to get the new splines */
-    if ( updateflex && (CharView *) (sc->views)!=NULL && layer>=ly_fore )
-	SplineCharIsFlexible(sc,layer);
-    SCUpdateAll(sc);
-    SCLayersChange(sc);
-    SCRegenFills(sc);
+	SCRegenDependents(sc, ly_all);	/* All chars linked to this one need to get the new splines */
+	if (updateflex && (CharView*)(sc->views) != NULL && layer >= ly_fore)
+	{
+		SplineCharIsFlexible(sc, layer);
+	}
+
+	SCUpdateAll(sc);
+	SCLayersChange(sc);
+	SCRegenFills(sc);
 }
 
 static void SC_CharChangedUpdate(SplineChar *sc,int layer) {
@@ -13329,7 +13354,8 @@ void GDDCharViewInits(GradientDlg *gdd, int cid) {
     _CharViewCreate(&gdd->cv_grad, &gdd->sc_grad, &gdd->dummy_fv, 0, 1 );
 }
 
-void StrokeCharViewInits(StrokeDlg *sd, int cid) {
+void StrokeCharViewInits(StrokeDlg *sd, int cid) 
+{
     GGadgetData gd;
     GWindowAttrs wattrs;
     GRect pos, gsize;
@@ -13486,7 +13512,7 @@ GResInfo charview_ri = {
     NULL,
     NULL,
     NULL
-};
+}; 
 
 
 void SPSelectNextPoint( SplinePoint *sp, int state )

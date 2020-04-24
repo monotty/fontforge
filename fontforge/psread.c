@@ -2936,8 +2936,12 @@ return( head );
 	    SITranslatePSArgs(&si, sc->layers[layer].stroke_pen.linejoin,
 	                      sc->layers[layer].stroke_pen.linecap);
 	    si.width = sc->layers[layer].stroke_pen.width;
-	    if ( sc->layers[layer].stroke_pen.width==WIDTH_INHERITED )
-		si.width = 1.0;
+		if (sc->layers[layer].stroke_pen.width == WIDTH_INHERITED)
+		{
+			//todo inherit width
+			si.width = 1.0;
+		}
+
 	    // These are OK as lc_butt and lj_miter are unchanged by SITra()
 	    if ( si.cap == lc_inherited ) si.cap = lc_butt;
 	    if ( si.join == lj_inherited ) si.join = lj_miter;
@@ -3142,8 +3146,10 @@ SplinePointList *SplinesFromEntityChar(EntityChar *ec, ImportParams *ip,
 		    si.joinlimit = ip->default_joinlimit;
 		} else
 		    si.joinlimit = ent->u.splines.miterlimit;
-		if ( ent->u.splines.stroke_width==WIDTH_INHERITED )
-		    si.width = 1.0;
+		if (ent->u.splines.stroke_width == WIDTH_INHERITED)
+			//todo inherit width
+			si.width = 1.0;
+
 		// These are OK as lc_butt and lj_miter unchanged by SITra()
 		if ( si.cap == lc_inherited ) si.cap = lc_butt;
 		if ( si.join == lj_inherited ) si.join = lj_miter;

@@ -102,6 +102,17 @@
 # include <readline/readline.h>
 #endif
 
+ // sdn: I'm too lazy to deal with standards
+#define NULL 0
+typedef unsigned int uint32;
+typedef int int32;
+typedef short int16;
+typedef signed char int8;
+typedef unsigned short uint16;
+typedef unsigned char uint8;
+#define true	1
+#define false	0
+
 int no_windowing_ui = false;
 int running_script = false;
 int use_utf8_in_script = true;
@@ -4233,6 +4244,71 @@ static void bSetCharColor(Context *c) {
     }
     c->curfv->sf->changed = true;
 }
+
+static void bSetStrokePenWidth(Context* c)
+{
+	SplineFont* sf = c->curfv->sf;
+	EncMap* map = c->curfv->map;
+	SplineChar* sc;
+	int i;
+
+	if (c->a.vals[1].type != v_int)
+	{
+		ScriptError(c, "Bad argument type");
+	}
+
+	for (i = 0; i < map->enccount; ++i)
+	{
+		if (c->curfv->selected[i])
+		{
+			sc = SFMakeChar(sf, map, i);
+			if (sc->layer_cnt > 1)
+			{
+				sc->layers[1].stroke_pen.width = c->a.vals[1].u.ival;
+				SCUpdateAll(sc);
+			}
+		}
+	}
+
+	sf->changed = true;
+}
+
+static void bSwapChars(Context* c)
+{
+	SplineFont* sf = c->curfv->sf;
+	EncMap* map = c->curfv->map;
+	int i, c1, c2, count = 0;
+
+	for (i = 0; i < map->enccount; ++i)
+	{
+		if (c->curfv->selected[i])
+		{
+			if (count == 0)
+			{
+				c1 = i;
+				count++;
+			}
+			else
+			{
+				c2 = i;
+				count++;
+				break;
+			}
+		}
+	}
+
+	if (count == 2)
+	{
+		int32 t = map->map[c1];
+		map->map[c1] = map->map[c2];
+		map->map[c2] = t;
+
+		sf->changed = true;
+	}
+
+	FVRefreshAll(sf);
+}
+
 
 static void bSetCharComment(Context *c) {
     SplineChar *sc;
@@ -8975,6 +9051,10 @@ static struct builtins {
     { "SetUnicodeValue", bSetUnicodeValue, 0,0,0 },
     { "SetGlyphClass", bSetGlyphClass, 0,2,v_str },
     { "SetGlyphColor", bSetCharColor, 0,2,0 },
+	
+	{ "StrokeWidth", bSetStrokePenWidth, 1,2,0 },
+	{ "SwapChars", bSwapChars, 1,0,0 },
+
     { "SetGlyphComment", bSetCharComment, 0,2,v_str },
     { "SetCharColor", bSetCharColor, 0,2,0 },
     { "SetCharComment", bSetCharComment, 0,2,v_str },

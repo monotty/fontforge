@@ -61,6 +61,18 @@
 # include <ieeefp.h>		/* Solaris defines isnan in ieeefp rather than math.h */
 #endif
 
+
+ // sdn: I'm too lazy to deal with standards
+#define NULL 0
+typedef unsigned int uint32;
+typedef int int32;
+typedef short int16;
+typedef signed char int8;
+typedef unsigned short uint16;
+typedef unsigned char uint8;
+#define true	1
+#define false	0
+
 /*#define DEBUG 1*/
 
 typedef struct quartic {
@@ -494,128 +506,175 @@ return( last );
 return( last );
 }
 
-LinearApprox *SplineApproximate(Spline *spline, real scale) {
-    LinearApprox *test;
-    LineList *cur, *last=NULL;
-    extended poi[2], lastt;
-    int i,n;
+LinearApprox* SplineApproximate(Spline* spline, real scale) {
+	LinearApprox* test;
+	LineList* cur, * last = NULL;
+	extended poi[2], lastt;
+	int i, n;
 
-    for ( test = spline->approx; test!=NULL && test->scale!=scale; test = test->next );
-    if ( test!=NULL )
-return( test );
-
-    test = chunkalloc(sizeof(LinearApprox));
-    test->scale = scale;
-    test->next = spline->approx;
-    spline->approx = test;
-
-    cur = chunkalloc(sizeof(LineList) );
-    cur->here.x = rint(spline->from->me.x*scale);
-    cur->here.y = rint(spline->from->me.y*scale);
-    test->lines = last = cur;
-
-    if ( spline->knownlinear ) {
-	cur = chunkalloc(sizeof(LineList) );
-	cur->here.x = rint(spline->to->me.x*scale);
-	cur->here.y = rint(spline->to->me.y*scale);
-	last->next = cur;
-    } else if ( spline->isquadratic ) {
-	last = SplineSegApprox(last,spline,0,1,scale);
-    } else {
-	n = Spline2DFindPointsOfInflection(spline,poi);
-	lastt=0;
-	for ( i=0; i<n; ++i ) {
-	    last = SplineSegApprox(last,spline,lastt,poi[i],scale);
-	    lastt = poi[i];
+	for (test = spline->approx; test != NULL && test->scale != scale; test = test->next)
+	{
+		;
 	}
-	last = SplineSegApprox(last,spline,lastt,1,scale);
-    }
-    SimplifyLineList(test->lines);
-    if ( test->lines->next==NULL ) {
-	test->oneline = 1;
-	test->onepoint = 1;
-    } else if ( test->lines->next->next == NULL ) {
-	test->oneline = 1;
-    }
-return( test );
+
+	if (test != NULL)
+	{
+		return(test);
+	}
+
+	test = chunkalloc(sizeof(LinearApprox));
+	test->scale = scale;
+	test->next = spline->approx;
+	spline->approx = test;
+
+	cur = chunkalloc(sizeof(LineList));
+	cur->here.x = rint(spline->from->me.x * scale);
+	cur->here.y = rint(spline->from->me.y * scale);
+	test->lines = last = cur;
+
+	if (spline->knownlinear)
+	{
+		cur = chunkalloc(sizeof(LineList));
+		cur->here.x = rint(spline->to->me.x * scale);
+		cur->here.y = rint(spline->to->me.y * scale);
+		last->next = cur;
+	}
+	else if (spline->isquadratic)
+	{
+		last = SplineSegApprox(last, spline, 0, 1, scale);
+	}
+	else
+	{
+		n = Spline2DFindPointsOfInflection(spline, poi);
+		lastt = 0;
+		for (i = 0; i < n; ++i) 
+		{
+			last = SplineSegApprox(last, spline, lastt, poi[i], scale);
+			lastt = poi[i];
+		}
+		last = SplineSegApprox(last, spline, lastt, 1, scale);
+	}
+	SimplifyLineList(test->lines);
+	if (test->lines->next == NULL) 
+	{
+		test->oneline = 1;
+		test->onepoint = 1;
+	}
+	else if (test->lines->next->next == NULL) 
+	{
+		test->oneline = 1;
+	}
+	return(test);
 }
 
-static void SplineFindBounds(const Spline *sp, DBounds *bounds) {
+static void SplineFindBounds(const Spline *sp, DBounds *bounds) 
+{
     real t, b2_fourac, v;
     real min, max;
     const Spline1D *sp1;
     int i;
 
     /* first try the end points */
-    for ( i=0; i<2; ++i ) {
-	sp1 = &sp->splines[i];
-	if ( i==0 ) {
-	    if ( sp->to->me.x<bounds->minx ) bounds->minx = sp->to->me.x;
-	    if ( sp->to->me.x>bounds->maxx ) bounds->maxx = sp->to->me.x;
-	    min = bounds->minx; max = bounds->maxx;
-	} else {
-	    if ( sp->to->me.y<bounds->miny ) bounds->miny = sp->to->me.y;
-	    if ( sp->to->me.y>bounds->maxy ) bounds->maxy = sp->to->me.y;
-	    min = bounds->miny; max = bounds->maxy;
-	}
+	for (i = 0; i < 2; ++i)
+	{
+		sp1 = &sp->splines[i];
+		if (i == 0)
+		{
+			if (sp->to->me.x < bounds->minx) bounds->minx = sp->to->me.x;
+			if (sp->to->me.x > bounds->maxx) bounds->maxx = sp->to->me.x;
 
-	/* then try the extrema of the spline (assuming they are between t=(0,1) */
-	/* (I don't bother fixing up for tiny rounding errors here. they don't matter */
-	/* But we could call CheckExtremaForSingleBitErrors */
-	if ( sp1->a!=0 ) {
-	    b2_fourac = 4*sp1->b*sp1->b - 12*sp1->a*sp1->c;
-	    if ( b2_fourac>=0 ) {
-		b2_fourac = sqrt(b2_fourac);
-		t = (-2*sp1->b + b2_fourac) / (6*sp1->a);
-		if ( t>0 && t<1 ) {
-		    v = ((sp1->a*t+sp1->b)*t+sp1->c)*t + sp1->d;
-		    if ( v<min ) min = v;
-		    if ( v>max ) max = v;
+			min = bounds->minx; 
+			max = bounds->maxx;
 		}
-		t = (-2*sp1->b - b2_fourac) / (6*sp1->a);
-		if ( t>0 && t<1 ) {
-		    v = ((sp1->a*t+sp1->b)*t+sp1->c)*t + sp1->d;
-		    if ( v<min ) min = v;
-		    if ( v>max ) max = v;
+		else 
+		{
+			if (sp->to->me.y < bounds->miny) bounds->miny = sp->to->me.y;
+			if (sp->to->me.y > bounds->maxy) bounds->maxy = sp->to->me.y;
+
+			min = bounds->miny; 
+			max = bounds->maxy;
 		}
-	    }
-	} else if ( sp1->b!=0 ) {
-	    t = -sp1->c/(2.0*sp1->b);
-	    if ( t>0 && t<1 ) {
-		v = (sp1->b*t+sp1->c)*t + sp1->d;
-		if ( v<min ) min = v;
-		if ( v>max ) max = v;
-	    }
+
+		/* then try the extrema of the spline (assuming they are between t=(0,1) */
+		/* (I don't bother fixing up for tiny rounding errors here. they don't matter */
+		/* But we could call CheckExtremaForSingleBitErrors */
+		if (sp1->a != 0) 
+		{
+			b2_fourac = 4 * sp1->b * sp1->b - 12 * sp1->a * sp1->c;
+			if (b2_fourac >= 0) 
+			{
+				b2_fourac = sqrt(b2_fourac);
+				t = (-2 * sp1->b + b2_fourac) / (6 * sp1->a);
+				if (t > 0 && t < 1) 
+				{
+					v = ((sp1->a * t + sp1->b) * t + sp1->c) * t + sp1->d;
+					if (v < min) min = v;
+					if (v > max) max = v;
+				}
+				t = (-2 * sp1->b - b2_fourac) / (6 * sp1->a);
+				if (t > 0 && t < 1) 
+				{
+					v = ((sp1->a * t + sp1->b) * t + sp1->c) * t + sp1->d;
+					if (v < min) min = v;
+					if (v > max) max = v;
+				}
+			}
+		}
+		else if (sp1->b != 0) 
+		{
+			t = -sp1->c / (2.0 * sp1->b);
+			if (t > 0 && t < 1) 
+			{
+				v = (sp1->b * t + sp1->c) * t + sp1->d;
+				if (v < min) min = v;
+				if (v > max) max = v;
+			}
+		}
+		if (i == 0) 
+		{
+			bounds->minx = min; bounds->maxx = max;
+		}
+		else 
+		{
+			bounds->miny = min; bounds->maxy = max;
+		}
 	}
-	if ( i==0 ) {
-	    bounds->minx = min; bounds->maxx = max;
-	} else {
-	    bounds->miny = min; bounds->maxy = max;
-	}
-    }
 }
 
-static void _SplineSetFindBounds(const SplinePointList *spl, DBounds *bounds) {
+static void _SplineSetFindBounds(const SplinePointList *spl, DBounds *bounds) 
+{
     Spline *spline, *first;
     /* Ignore contours consisting of a single point (used for hinting, anchors */
     /*  for mark to base, etc. */
 
-    for ( ; spl!=NULL; spl = spl->next ) if ( spl->first->next!=NULL && spl->first->next->to != spl->first ) {
-	first = NULL;
-	if ( bounds->minx==0 && bounds->maxx==0 && bounds->miny==0 && bounds->maxy == 0 ) {
-	    bounds->minx = bounds->maxx = spl->first->me.x;
-	    bounds->miny = bounds->maxy = spl->first->me.y;
-	} else {
-	    if ( spl->first->me.x<bounds->minx ) bounds->minx = spl->first->me.x;
-	    if ( spl->first->me.x>bounds->maxx ) bounds->maxx = spl->first->me.x;
-	    if ( spl->first->me.y<bounds->miny ) bounds->miny = spl->first->me.y;
-	    if ( spl->first->me.y>bounds->maxy ) bounds->maxy = spl->first->me.y;
+	for (; spl != NULL; spl = spl->next)
+	{
+		if (spl->first->next != NULL && 
+			spl->first->next->to != spl->first) 
+		{
+			first = NULL;
+			if (bounds->minx == 0 && 
+				bounds->maxx == 0 && 
+				bounds->miny == 0 && 
+				bounds->maxy == 0) 
+			{
+				bounds->minx = bounds->maxx = spl->first->me.x;
+				bounds->miny = bounds->maxy = spl->first->me.y;
+			}
+			else 
+			{
+				if (spl->first->me.x < bounds->minx) bounds->minx = spl->first->me.x;
+				if (spl->first->me.x > bounds->maxx) bounds->maxx = spl->first->me.x;
+				if (spl->first->me.y < bounds->miny) bounds->miny = spl->first->me.y;
+				if (spl->first->me.y > bounds->maxy) bounds->maxy = spl->first->me.y;
+			}
+			for (spline = spl->first->next; spline != NULL && spline != first; spline = spline->to->next) 
+			{
+				SplineFindBounds(spline, bounds);
+				if (first == NULL) first = spline;
+			}
+		}
 	}
-	for ( spline = spl->first->next; spline!=NULL && spline!=first; spline=spline->to->next ) {
-	    SplineFindBounds(spline,bounds);
-	    if ( first==NULL ) first = spline;
-	}
-    }
 }
 
 static void _SplineSetFindClippedBounds(const SplinePointList *spl, DBounds *bounds,DBounds *clipb) {
@@ -623,38 +682,53 @@ static void _SplineSetFindClippedBounds(const SplinePointList *spl, DBounds *bou
     /* Ignore contours consisting of a single point (used for hinting, anchors */
     /*  for mark to base, etc. */
 
-    for ( ; spl!=NULL; spl = spl->next ) if ( spl->first->next!=NULL && spl->first->next->to != spl->first ) {
-	first = NULL;
-	if ( !spl->is_clip_path ) {
-	    if ( bounds->minx==0 && bounds->maxx==0 && bounds->miny==0 && bounds->maxy == 0 ) {
-		bounds->minx = bounds->maxx = spl->first->me.x;
-		bounds->miny = bounds->maxy = spl->first->me.y;
-	    } else {
-		if ( spl->first->me.x<bounds->minx ) bounds->minx = spl->first->me.x;
-		if ( spl->first->me.x>bounds->maxx ) bounds->maxx = spl->first->me.x;
-		if ( spl->first->me.y<bounds->miny ) bounds->miny = spl->first->me.y;
-		if ( spl->first->me.y>bounds->maxy ) bounds->maxy = spl->first->me.y;
-	    }
-	    for ( spline = spl->first->next; spline!=NULL && spline!=first; spline=spline->to->next ) {
-		SplineFindBounds(spline,bounds);
-		if ( first==NULL ) first = spline;
-	    }
-	} else {
-	    if ( clipb->minx==0 && clipb->maxx==0 && clipb->miny==0 && clipb->maxy == 0 ) {
-		clipb->minx = clipb->maxx = spl->first->me.x;
-		clipb->miny = clipb->maxy = spl->first->me.y;
-	    } else {
-		if ( spl->first->me.x<clipb->minx ) clipb->minx = spl->first->me.x;
-		if ( spl->first->me.x>clipb->maxx ) clipb->maxx = spl->first->me.x;
-		if ( spl->first->me.y<clipb->miny ) clipb->miny = spl->first->me.y;
-		if ( spl->first->me.y>clipb->maxy ) clipb->maxy = spl->first->me.y;
-	    }
-	    for ( spline = spl->first->next; spline!=NULL && spline!=first; spline=spline->to->next ) {
-		SplineFindBounds(spline,clipb);
-		if ( first==NULL ) first = spline;
-	    }
+	for (; spl != NULL; spl = spl->next)
+	{
+		if (spl->first->next != NULL && spl->first->next->to != spl->first)
+		{
+			first = NULL;
+			if (!spl->is_clip_path)
+			{
+				if (bounds->minx == 0 && bounds->maxx == 0 && bounds->miny == 0 && bounds->maxy == 0) 
+				{
+					bounds->minx = bounds->maxx = spl->first->me.x;
+					bounds->miny = bounds->maxy = spl->first->me.y;
+				}
+				else 
+				{
+					if (spl->first->me.x < bounds->minx) bounds->minx = spl->first->me.x;
+					if (spl->first->me.x > bounds->maxx) bounds->maxx = spl->first->me.x;
+					if (spl->first->me.y < bounds->miny) bounds->miny = spl->first->me.y;
+					if (spl->first->me.y > bounds->maxy) bounds->maxy = spl->first->me.y;
+				}
+				for (spline = spl->first->next; spline != NULL && spline != first; spline = spline->to->next) 
+				{
+					SplineFindBounds(spline, bounds);
+					if (first == NULL) first = spline;
+				}
+			}
+			else 
+			{
+				if (clipb->minx == 0 && clipb->maxx == 0 && clipb->miny == 0 && clipb->maxy == 0) 
+				{
+					clipb->minx = clipb->maxx = spl->first->me.x;
+					clipb->miny = clipb->maxy = spl->first->me.y;
+				}
+				else 
+				{
+					if (spl->first->me.x < clipb->minx) clipb->minx = spl->first->me.x;
+					if (spl->first->me.x > clipb->maxx) clipb->maxx = spl->first->me.x;
+					if (spl->first->me.y < clipb->miny) clipb->miny = spl->first->me.y;
+					if (spl->first->me.y > clipb->maxy) clipb->maxy = spl->first->me.y;
+				}
+				for (spline = spl->first->next; spline != NULL && spline != first; spline = spline->to->next) 
+				{
+					SplineFindBounds(spline, clipb);
+					if (first == NULL) first = spline;
+				}
+			}
+		}
 	}
-    }
 }
 
 void SplineSetFindBounds(const SplinePointList *spl, DBounds *bounds) {
@@ -662,12 +736,13 @@ void SplineSetFindBounds(const SplinePointList *spl, DBounds *bounds) {
     memset(bounds,'\0',sizeof(*bounds));
     memset(&clipb,'\0',sizeof(clipb));
     _SplineSetFindClippedBounds(spl, bounds,&clipb);
-    if ( clipb.minx!=0 || clipb.miny!=0 || clipb.maxx!=0 || clipb.maxy!=0 ) {
-	if ( bounds->minx<clipb.minx ) bounds->minx = clipb.minx;
-	if ( bounds->miny<clipb.miny ) bounds->miny = clipb.miny;
-	if ( bounds->maxx>clipb.maxx ) bounds->maxx = clipb.maxx;
-	if ( bounds->maxy>clipb.maxy ) bounds->maxy = clipb.maxy;
-    }
+	if (clipb.minx != 0 || clipb.miny != 0 || clipb.maxx != 0 || clipb.maxy != 0)
+	{
+		if (bounds->minx < clipb.minx) bounds->minx = clipb.minx;
+		if (bounds->miny < clipb.miny) bounds->miny = clipb.miny;
+		if (bounds->maxx > clipb.maxx) bounds->maxx = clipb.maxx;
+		if (bounds->maxy > clipb.maxy) bounds->maxy = clipb.maxy;
+	}
 }
 
 static void _ImageFindBounds(ImageList *img,DBounds *bounds) {
@@ -681,327 +756,459 @@ static void _ImageFindBounds(ImageList *img,DBounds *bounds) {
     }
 }
 
-static void _SplineCharLayerFindBounds(SplineChar *sc,int layer, DBounds *bounds) {
-    RefChar *rf;
-    ImageList *img;
-    real e;
-    DBounds b, clipb;
-
-    for ( rf=sc->layers[layer].refs; rf!=NULL; rf = rf->next ) {
-	if ( bounds->minx==0 && bounds->maxx==0 && bounds->miny==0 && bounds->maxy == 0 )
-	    *bounds = rf->bb;
-	else if ( rf->bb.minx!=0 || rf->bb.maxx != 0 || rf->bb.maxy != 0 || rf->bb.miny!=0 ) {
-	    if ( rf->bb.minx < bounds->minx ) bounds->minx = rf->bb.minx;
-	    if ( rf->bb.miny < bounds->miny ) bounds->miny = rf->bb.miny;
-	    if ( rf->bb.maxx > bounds->maxx ) bounds->maxx = rf->bb.maxx;
-	    if ( rf->bb.maxy > bounds->maxy ) bounds->maxy = rf->bb.maxy;
+static real get_max(real a, real b)
+{
+	if (a > b)
+	{
+		return a;
 	}
-    }
-    memset(&b,0,sizeof(b));
-    memset(&clipb,0,sizeof(clipb));
-    _SplineSetFindClippedBounds(sc->layers[layer].splines,&b,&clipb);
-    for ( img=sc->layers[layer].images; img!=NULL; img=img->next )
-	_ImageFindBounds(img,bounds);
-    if ( sc->layers[layer].dostroke ) {
-	if ( sc->layers[layer].stroke_pen.width!=WIDTH_INHERITED )
-	    e = sc->layers[layer].stroke_pen.width*sc->layers[layer].stroke_pen.trans[0];
 	else
-	    e = sc->layers[layer].stroke_pen.trans[0];
-	b.minx -= e; b.maxx += e;
-	b.miny -= e; b.maxy += e;
-    }
-    if ( clipb.minx!=0 || clipb.miny!=0 || clipb.maxx!=0 || clipb.maxy!=0 ) {
-	if ( b.minx<clipb.minx ) b.minx = clipb.minx;
-	if ( b.miny<clipb.miny ) b.miny = clipb.miny;
-	if ( b.maxx>clipb.maxx ) b.maxx = clipb.maxx;
-	if ( b.maxy>clipb.maxy ) b.maxy = clipb.maxy;
-    }
-    if ( bounds->minx==0 && bounds->maxx==0 && bounds->miny==0 && bounds->maxy == 0 )
-	*bounds = b;
-    else if ( b.minx!=0 || b.maxx != 0 || b.maxy != 0 || b.miny!=0 ) {
-	if ( b.minx < bounds->minx ) bounds->minx = b.minx;
-	if ( b.miny < bounds->miny ) bounds->miny = b.miny;
-	if ( b.maxx > bounds->maxx ) bounds->maxx = b.maxx;
-	if ( b.maxy > bounds->maxy ) bounds->maxy = b.maxy;
-    }
-
-    if ( sc->parent!=NULL && sc->parent->strokedfont &&
-	    (bounds->minx!=bounds->maxx || bounds->miny!=bounds->maxy)) {
-	real sw = sc->parent->strokewidth;
-	bounds->minx -= sw; bounds->miny -= sw;
-	bounds->maxx += sw; bounds->maxy += sw;
-    }
-}
-
-void SplineCharLayerFindBounds(SplineChar *sc,int layer,DBounds *bounds) {
-
-    if ( sc->parent!=NULL && sc->parent->multilayer ) {
-	SplineCharFindBounds(sc,bounds);
-return;
-    }
-
-    /* a char with no splines (ie. a space) must have an lbearing of 0 */
-    bounds->minx = bounds->maxx = 0;
-    bounds->miny = bounds->maxy = 0;
-
-    _SplineCharLayerFindBounds(sc,layer,bounds);
-}
-
-void SplineCharFindBounds(SplineChar *sc,DBounds *bounds) {
-    int i;
-    int first,last;
-
-    /* a char with no splines (ie. a space) must have an lbearing of 0 */
-    bounds->minx = bounds->maxx = 0;
-    bounds->miny = bounds->maxy = 0;
-
-    first = last = ly_fore;
-    if ( sc->parent!=NULL )
-	last = sc->layer_cnt-1;
-    for ( i=first; i<=last; ++i )
-	_SplineCharLayerFindBounds(sc,i,bounds);
-}
-
-void SplineFontLayerFindBounds(SplineFont *sf,int layer,DBounds *bounds) {
-    int i, k, first, last;
-
-    if ( sf->multilayer ) {
-	SplineFontFindBounds(sf,bounds);
-return;
-    }
-
-    bounds->minx = bounds->maxx = 0;
-    bounds->miny = bounds->maxy = 0;
-
-    for ( i = 0; i<sf->glyphcnt; ++i ) {
-	SplineChar *sc = sf->glyphs[i];
-	if ( sc!=NULL ) {
-	    first = last = ly_fore;
-	    if ( sc->parent != NULL && sc->parent->multilayer )
-		last = sc->layer_cnt-1;
-	    for ( k=first; k<=last; ++k )
-		_SplineCharLayerFindBounds(sc,k,bounds);
+	{
+		return b;
 	}
-    }
 }
 
-void SplineFontFindBounds(SplineFont *sf,DBounds *bounds) {
-    int i, k, first, last;
+static void _SplineCharLayerFindBounds(SplineChar* sc, int layer, DBounds* bounds)
+{
+	RefChar* rf;
+	ImageList* img;
+	real ref_e, default_width, current_width;
+	DBounds b, clipb;
 
-    bounds->minx = bounds->maxx = 0;
-    bounds->miny = bounds->maxy = 0;
-
-    for ( i = 0; i<sf->glyphcnt; ++i ) {
-	SplineChar *sc = sf->glyphs[i];
-	if ( sc!=NULL ) {
-	    first = last = ly_fore;
-	    if ( sf->multilayer )
-		last = sc->layer_cnt-1;
-	    for ( k=first; k<=last; ++k )
-		_SplineCharLayerFindBounds(sc,k,bounds);
+	if (sc->parent != NULL)
+	{
+		default_width = sc->parent->strokewidth;
 	}
-    }
+	else
+	{
+		default_width = 1.0;
+	}
+
+	current_width = sc->layers[layer].stroke_pen.width;
+	ref_e = WIDTH_INHERITED;
+
+	for (rf = sc->layers[layer].refs; rf != NULL; rf = rf->next)
+	{
+		//take max stroke width
+		for (int j = 0; j < rf->layer_cnt; ++j)
+		{
+			if (rf->layers[j].dostroke)
+			{
+				real width = rf->layers[j].stroke_pen.width
+					* ABS(rf->layers[j].stroke_pen.trans[0]);
+				ref_e = get_max(ref_e, width);
+			}
+		}
+
+		if (bounds->minx == 0 && bounds->maxx == 0 && bounds->miny == 0 && bounds->maxy == 0)
+		{
+			*bounds = rf->bb;
+		}
+		else if (rf->bb.minx != 0 || rf->bb.maxx != 0 || rf->bb.maxy != 0 || rf->bb.miny != 0)
+		{
+			if (rf->bb.minx < bounds->minx) bounds->minx = rf->bb.minx;
+			if (rf->bb.miny < bounds->miny) bounds->miny = rf->bb.miny;
+			if (rf->bb.maxx > bounds->maxx) bounds->maxx = rf->bb.maxx;
+			if (rf->bb.maxy > bounds->maxy) bounds->maxy = rf->bb.maxy;
+		}
+
+	}
+	memset(&b, 0, sizeof(b));
+	memset(&clipb, 0, sizeof(clipb));
+	_SplineSetFindClippedBounds(sc->layers[layer].splines, &b, &clipb);
+
+	for (img = sc->layers[layer].images; img != NULL; img = img->next)
+	{
+		_ImageFindBounds(img, bounds);
+	}
+
+	//if (sc->layers[layer].dostroke)
+	//{
+	//	if (current_width != WIDTH_INHERITED)
+	//	{
+	//		//e = current_width * sc->layers[layer].stroke_pen.trans[0];
+	//		e = get_max(ref_e, current_width);
+	//	}
+	//	else
+	//	{
+	//		//e = sc->layers[layer].stroke_pen.trans[0];
+	//		e = get_max(ref_e, default_width);
+	//	}
+	//	e *= sc->layers[layer].stroke_pen.trans[0];
+	//
+	//	b.minx -= e; b.maxx += e;
+	//	b.miny -= e; b.maxy += e;
+	//}
+
+	if (clipb.minx != 0 || clipb.miny != 0 || clipb.maxx != 0 || clipb.maxy != 0)
+	{
+		if (b.minx < clipb.minx) b.minx = clipb.minx;
+		if (b.miny < clipb.miny) b.miny = clipb.miny;
+		if (b.maxx > clipb.maxx) b.maxx = clipb.maxx;
+		if (b.maxy > clipb.maxy) b.maxy = clipb.maxy;
+	}
+
+	if (bounds->minx == 0 && bounds->maxx == 0 && bounds->miny == 0 && bounds->maxy == 0)
+	{
+		*bounds = b;
+	}
+	else if (b.minx != 0 || b.maxx != 0 || b.maxy != 0 || b.miny != 0)
+	{
+		if (b.minx < bounds->minx) bounds->minx = b.minx;
+		if (b.miny < bounds->miny) bounds->miny = b.miny;
+		if (b.maxx > bounds->maxx) bounds->maxx = b.maxx;
+		if (b.maxy > bounds->maxy) bounds->maxy = b.maxy;
+	}
+
+	if (sc->parent != NULL && sc->parent->strokedfont &&
+		(bounds->minx != bounds->maxx || bounds->miny != bounds->maxy))
+	{
+		real sw = sc->parent->strokewidth;
+		bounds->minx -= sw; bounds->miny -= sw;
+		bounds->maxx += sw; bounds->maxy += sw;
+	}
+
+	if (sc->layers[layer].dostroke)
+	{
+		real e;
+		if (current_width != WIDTH_INHERITED)
+		{
+			//e = current_width * sc->layers[layer].stroke_pen.trans[0];
+			e = get_max(ref_e, current_width);
+		}
+		else
+		{
+			//e = sc->layers[layer].stroke_pen.trans[0];
+			e = get_max(ref_e, default_width);
+		}
+		e *= ABS(sc->layers[layer].stroke_pen.trans[0]);
+
+		bounds->minx -= e; bounds->maxx += e;
+		bounds->miny -= e; bounds->maxy += e;
+	}
 }
 
-void CIDLayerFindBounds(SplineFont *cidmaster,int layer,DBounds *bounds) {
-    SplineFont *sf;
-    int i;
-    DBounds b;
-    real factor;
+void SplineCharLayerFindBounds(SplineChar* sc, int layer, DBounds* bounds)
+{
 
-    if ( cidmaster->cidmaster )
-	cidmaster = cidmaster->cidmaster;
-    if ( cidmaster->subfonts==NULL ) {
-	SplineFontLayerFindBounds(cidmaster,layer,bounds);
-return;
-    }
+	if (sc->parent != NULL && sc->parent->multilayer)
+	{
+		SplineCharFindBounds(sc, bounds);
+		return;
+	}
 
-    sf = cidmaster->subfonts[0];
-    SplineFontLayerFindBounds(sf,layer,bounds);
-    factor = 1000.0/(sf->ascent+sf->descent);
-    bounds->maxx *= factor; bounds->minx *= factor; bounds->miny *= factor; bounds->maxy *= factor;
-    for ( i=1; i<cidmaster->subfontcnt; ++i ) {
-	sf = cidmaster->subfonts[i];
-	SplineFontLayerFindBounds(sf,layer,&b);
-	factor = 1000.0/(sf->ascent+sf->descent);
-	b.maxx *= factor; b.minx *= factor; b.miny *= factor; b.maxy *= factor;
-	if ( b.maxx>bounds->maxx ) bounds->maxx = b.maxx;
-	if ( b.maxy>bounds->maxy ) bounds->maxy = b.maxy;
-	if ( b.miny<bounds->miny ) bounds->miny = b.miny;
-	if ( b.minx<bounds->minx ) bounds->minx = b.minx;
-    }
+	/* a char with no splines (ie. a space) must have an lbearing of 0 */
+	bounds->minx = bounds->maxx = 0;
+	bounds->miny = bounds->maxy = 0;
+
+	_SplineCharLayerFindBounds(sc, layer, bounds);
 }
 
-static void _SplineSetFindTop(SplineSet *ss,BasePoint *top) {
-    SplinePoint *sp;
+void SplineCharFindBounds(SplineChar* sc, DBounds* bounds)
+{
+	int i;
+	int first, last;
 
-    for ( ; ss!=NULL; ss=ss->next ) {
-	for ( sp=ss->first; ; ) {
-	    if ( sp->me.y > top->y ) *top = sp->me;
-	    if ( sp->next==NULL )
-	break;
-	    sp = sp->next->to;
-	    if ( sp==ss->first )
-	break;
+	/* a char with no splines (ie. a space) must have an lbearing of 0 */
+	bounds->minx = bounds->maxx = 0;
+	bounds->miny = bounds->maxy = 0;
+
+	first = last = ly_fore;
+	if (sc->parent != NULL)
+	{
+		last = sc->layer_cnt - 1;
 	}
-    }
+	for (i = first; i <= last; ++i)
+	{
+		_SplineCharLayerFindBounds(sc, i, bounds);
+	}
 }
 
-void SplineSetQuickBounds(SplineSet *ss,DBounds *b) {
-    SplinePoint *sp;
+void SplineFontLayerFindBounds(SplineFont* sf, int layer, DBounds* bounds)
+{
+	int i, k, first, last;
 
-    b->minx = b->miny = 1e10;
-    b->maxx = b->maxy = -1e10;
-    for ( ; ss!=NULL; ss=ss->next ) {
-	for ( sp=ss->first; ; ) {
-	    if ( sp->me.y < b->miny ) b->miny = sp->me.y;
-	    if ( sp->me.x < b->minx ) b->minx = sp->me.x;
-	    if ( sp->me.y > b->maxy ) b->maxy = sp->me.y;
-	    if ( sp->me.x > b->maxx ) b->maxx = sp->me.x;
-	    // Frank added the control points to the calculation since,
-	    // according to Adam Twardoch,
-	    // the OpenType values that rely upon this function
-	    // expect control points to be included.
-	    if ( !sp->noprevcp ) {
-	      if ( sp->prevcp.y < b->miny ) b->miny = sp->prevcp.y;
-	      if ( sp->prevcp.x < b->minx ) b->minx = sp->prevcp.x;
-	      if ( sp->prevcp.y > b->maxy ) b->maxy = sp->prevcp.y;
-	      if ( sp->prevcp.x > b->maxx ) b->maxx = sp->prevcp.x;
-	    }
-	    if ( !sp->nonextcp ) {
-	      if ( sp->nextcp.y < b->miny ) b->miny = sp->nextcp.y;
-	      if ( sp->nextcp.x < b->minx ) b->minx = sp->nextcp.x;
-	      if ( sp->nextcp.y > b->maxy ) b->maxy = sp->nextcp.y;
-	      if ( sp->nextcp.x > b->maxx ) b->maxx = sp->nextcp.x;
-	    }
-	    if ( sp->next==NULL )
-	break;
-	    sp = sp->next->to;
-	    if ( sp==ss->first )
-	break;
+	if (sf->multilayer)
+	{
+		SplineFontFindBounds(sf, bounds);
+		return;
 	}
-    }
-    if ( b->minx>65536 ) b->minx = 0;
-    if ( b->miny>65536 ) b->miny = 0;
-    if ( b->maxx<-65536 ) b->maxx = 0;
-    if ( b->maxy<-65536 ) b->maxy = 0;
+
+	bounds->minx = bounds->maxx = 0;
+	bounds->miny = bounds->maxy = 0;
+
+	for (i = 0; i < sf->glyphcnt; ++i)
+	{
+		SplineChar* sc = sf->glyphs[i];
+		if (sc != NULL)
+		{
+			first = last = ly_fore;
+			if (sc->parent != NULL && sc->parent->multilayer)
+				last = sc->layer_cnt - 1;
+			for (k = first; k <= last; ++k)
+				_SplineCharLayerFindBounds(sc, k, bounds);
+		}
+	}
 }
 
-void SplineCharQuickBounds(SplineChar *sc, DBounds *b) {
-    RefChar *ref;
-    int i,first, last;
-    DBounds temp;
-    real e;
-    ImageList *img;
+void SplineFontFindBounds(SplineFont* sf, DBounds* bounds)
+{
+	int i, k, first, last;
 
-    b->minx = b->miny = 1e10;
-    b->maxx = b->maxy = -1e10;
-    first = last = ly_fore;
-    if ( sc->parent!=NULL && sc->parent->multilayer )
-	last = sc->layer_cnt-1;
-    for ( i=first; i<=last; ++i ) {
-	SplineSetQuickBounds(sc->layers[i].splines,&temp);
-	for ( img=sc->layers[i].images; img!=NULL; img=img->next )
-	    _ImageFindBounds(img,b);
-	if ( sc->layers[i].dostroke && sc->layers[i].splines!=NULL ) {
-	    if ( sc->layers[i].stroke_pen.width!=WIDTH_INHERITED )
-		e = sc->layers[i].stroke_pen.width*sc->layers[i].stroke_pen.trans[0];
-	    else
-		e = sc->layers[i].stroke_pen.trans[0];
-	    temp.minx -= e; temp.maxx += e;
-	    temp.miny -= e; temp.maxy += e;
+	bounds->minx = bounds->maxx = 0;
+	bounds->miny = bounds->maxy = 0;
+
+	for (i = 0; i < sf->glyphcnt; ++i)
+	{
+		SplineChar* sc = sf->glyphs[i];
+		if (sc != NULL)
+		{
+			first = last = ly_fore;
+			if (sf->multilayer)
+				last = sc->layer_cnt - 1;
+			for (k = first; k <= last; ++k)
+				_SplineCharLayerFindBounds(sc, k, bounds);
+		}
 	}
-	if ( temp.minx!=0 || temp.maxx != 0 || temp.maxy != 0 || temp.miny!=0 ) {
-	    if ( temp.minx < b->minx ) b->minx = temp.minx;
-	    if ( temp.miny < b->miny ) b->miny = temp.miny;
-	    if ( temp.maxx > b->maxx ) b->maxx = temp.maxx;
-	    if ( temp.maxy > b->maxy ) b->maxy = temp.maxy;
-	}
-	for ( ref = sc->layers[i].refs; ref!=NULL; ref = ref->next ) {
-	    /*SplineSetQuickBounds(ref->layers[0].splines,&temp);*/
-	    if ( b->minx==0 && b->maxx==0 && b->miny==0 && b->maxy == 0 )
-		*b = ref->bb;
-	    else if ( ref->bb.minx!=0 || ref->bb.maxx != 0 || ref->bb.maxy != 0 || ref->bb.miny!=0 ) {
-		if ( ref->bb.minx < b->minx ) b->minx = ref->bb.minx;
-		if ( ref->bb.miny < b->miny ) b->miny = ref->bb.miny;
-		if ( ref->bb.maxx > b->maxx ) b->maxx = ref->bb.maxx;
-		if ( ref->bb.maxy > b->maxy ) b->maxy = ref->bb.maxy;
-	    }
-	}
-    }
-    if ( sc->parent!=NULL && sc->parent->strokedfont &&
-	    (b->minx!=b->maxx || b->miny!=b->maxy)) {
-	real sw = sc->parent->strokewidth;
-	b->minx -= sw; b->miny -= sw;
-	b->maxx += sw; b->maxy += sw;
-    }
-    if ( b->minx>1e9 )
-	memset(b,0,sizeof(*b));
 }
 
-void SplineCharLayerQuickBounds(SplineChar *sc,int layer,DBounds *bounds) {
-    RefChar *ref;
-    DBounds temp;
+void CIDLayerFindBounds(SplineFont* cidmaster, int layer, DBounds* bounds)
+{
+	SplineFont* sf;
+	int i;
+	DBounds b;
+	real factor;
 
-    if ( sc->parent!=NULL && sc->parent->multilayer ) {
-	SplineCharQuickBounds(sc,bounds);
-return;
-    }
-
-    bounds->minx = bounds->miny = 1e10;
-    bounds->maxx = bounds->maxy = -1e10;
-
-    SplineSetQuickBounds(sc->layers[layer].splines,bounds);
-
-    for ( ref = sc->layers[layer].refs; ref!=NULL; ref = ref->next ) {
-	SplineSetQuickBounds(ref->layers[0].splines,&temp);
-	if ( bounds->minx==0 && bounds->maxx==0 && bounds->miny==0 && bounds->maxy == 0 )
-	    *bounds = temp;
-	else if ( temp.minx!=0 || temp.maxx != 0 || temp.maxy != 0 || temp.miny!=0 ) {
-	    if ( temp.minx < bounds->minx ) bounds->minx = temp.minx;
-	    if ( temp.miny < bounds->miny ) bounds->miny = temp.miny;
-	    if ( temp.maxx > bounds->maxx ) bounds->maxx = temp.maxx;
-	    if ( temp.maxy > bounds->maxy ) bounds->maxy = temp.maxy;
+	if (cidmaster->cidmaster)
+		cidmaster = cidmaster->cidmaster;
+	if (cidmaster->subfonts == NULL)
+	{
+		SplineFontLayerFindBounds(cidmaster, layer, bounds);
+		return;
 	}
-    }
-    /* a char with no splines (ie. a space) must have an lbearing of 0 */
-    if ( bounds->minx>1e9 )
-	memset(bounds,0,sizeof(*bounds));
+
+	sf = cidmaster->subfonts[0];
+	SplineFontLayerFindBounds(sf, layer, bounds);
+	factor = 1000.0 / (sf->ascent + sf->descent);
+	bounds->maxx *= factor; bounds->minx *= factor; bounds->miny *= factor; bounds->maxy *= factor;
+	for (i = 1; i < cidmaster->subfontcnt; ++i)
+	{
+		sf = cidmaster->subfonts[i];
+		SplineFontLayerFindBounds(sf, layer, &b);
+		factor = 1000.0 / (sf->ascent + sf->descent);
+		b.maxx *= factor; b.minx *= factor; b.miny *= factor; b.maxy *= factor;
+		if (b.maxx > bounds->maxx) bounds->maxx = b.maxx;
+		if (b.maxy > bounds->maxy) bounds->maxy = b.maxy;
+		if (b.miny < bounds->miny) bounds->miny = b.miny;
+		if (b.minx < bounds->minx) bounds->minx = b.minx;
+	}
 }
 
-void SplineSetQuickConservativeBounds(SplineSet *ss,DBounds *b) {
-    SplinePoint *sp;
+static void _SplineSetFindTop(SplineSet* ss, BasePoint* top)
+{
+	SplinePoint* sp;
 
-    b->minx = b->miny = 1e10;
-    b->maxx = b->maxy = -1e10;
-    for ( ; ss!=NULL; ss=ss->next ) {
-	for ( sp=ss->first; ; ) {
-	    if ( sp->me.y < b->miny ) b->miny = sp->me.y;
-	    if ( sp->me.x < b->minx ) b->minx = sp->me.x;
-	    if ( sp->me.y > b->maxy ) b->maxy = sp->me.y;
-	    if ( sp->me.x > b->maxx ) b->maxx = sp->me.x;
-	    if ( sp->nextcp.y < b->miny ) b->miny = sp->nextcp.y;
-	    if ( sp->nextcp.x < b->minx ) b->minx = sp->nextcp.x;
-	    if ( sp->nextcp.y > b->maxy ) b->maxy = sp->nextcp.y;
-	    if ( sp->nextcp.x > b->maxx ) b->maxx = sp->nextcp.x;
-	    if ( sp->prevcp.y < b->miny ) b->miny = sp->prevcp.y;
-	    if ( sp->prevcp.x < b->minx ) b->minx = sp->prevcp.x;
-	    if ( sp->prevcp.y > b->maxy ) b->maxy = sp->prevcp.y;
-	    if ( sp->prevcp.x > b->maxx ) b->maxx = sp->prevcp.x;
-	    if ( sp->next==NULL )
-	break;
-	    sp = sp->next->to;
-	    if ( sp==ss->first )
-	break;
+	for (; ss != NULL; ss = ss->next)
+	{
+		for (sp = ss->first; ; )
+		{
+			if (sp->me.y > top->y) *top = sp->me;
+			if (sp->next == NULL)
+				break;
+			sp = sp->next->to;
+			if (sp == ss->first)
+				break;
+		}
 	}
-    }
-    if ( b->minx>65536 ) b->minx = 0;
-    if ( b->miny>65536 ) b->miny = 0;
-    if ( b->maxx<-65536 ) b->maxx = 0;
-    if ( b->maxy<-65536 ) b->maxy = 0;
 }
 
-void SplineCharQuickConservativeBounds(SplineChar *sc, DBounds *b) {
+void SplineSetQuickBounds(SplineSet* ss, DBounds* b)
+{
+	SplinePoint* sp;
+
+	b->minx = b->miny = 1e10;
+	b->maxx = b->maxy = -1e10;
+	for (; ss != NULL; ss = ss->next)
+	{
+		for (sp = ss->first; ; )
+		{
+			if (sp->me.y < b->miny) b->miny = sp->me.y;
+			if (sp->me.x < b->minx) b->minx = sp->me.x;
+			if (sp->me.y > b->maxy) b->maxy = sp->me.y;
+			if (sp->me.x > b->maxx) b->maxx = sp->me.x;
+			// Frank added the control points to the calculation since,
+			// according to Adam Twardoch,
+			// the OpenType values that rely upon this function
+			// expect control points to be included.
+			if (!sp->noprevcp)
+			{
+				if (sp->prevcp.y < b->miny) b->miny = sp->prevcp.y;
+				if (sp->prevcp.x < b->minx) b->minx = sp->prevcp.x;
+				if (sp->prevcp.y > b->maxy) b->maxy = sp->prevcp.y;
+				if (sp->prevcp.x > b->maxx) b->maxx = sp->prevcp.x;
+			}
+			if (!sp->nonextcp)
+			{
+				if (sp->nextcp.y < b->miny) b->miny = sp->nextcp.y;
+				if (sp->nextcp.x < b->minx) b->minx = sp->nextcp.x;
+				if (sp->nextcp.y > b->maxy) b->maxy = sp->nextcp.y;
+				if (sp->nextcp.x > b->maxx) b->maxx = sp->nextcp.x;
+			}
+			if (sp->next == NULL)
+				break;
+			sp = sp->next->to;
+			if (sp == ss->first)
+				break;
+		}
+	}
+	if (b->minx > 65536) b->minx = 0;
+	if (b->miny > 65536) b->miny = 0;
+	if (b->maxx < -65536) b->maxx = 0;
+	if (b->maxy < -65536) b->maxy = 0;
+}
+
+void SplineCharQuickBounds(SplineChar* sc, DBounds* b)
+{
+	RefChar* ref;
+	int i, first, last;
+	DBounds temp;
+	real e;
+	ImageList* img;
+
+	b->minx = b->miny = 1e10;
+	b->maxx = b->maxy = -1e10;
+	first = last = ly_fore;
+	if (sc->parent != NULL && sc->parent->multilayer)
+		last = sc->layer_cnt - 1;
+	for (i = first; i <= last; ++i)
+	{
+		SplineSetQuickBounds(sc->layers[i].splines, &temp);
+		for (img = sc->layers[i].images; img != NULL; img = img->next)
+			_ImageFindBounds(img, b);
+		if (sc->layers[i].dostroke && sc->layers[i].splines != NULL)
+		{
+			if (sc->layers[i].stroke_pen.width != WIDTH_INHERITED)
+				e = sc->layers[i].stroke_pen.width * sc->layers[i].stroke_pen.trans[0];
+			else
+				e = sc->layers[i].stroke_pen.trans[0];
+			temp.minx -= e; temp.maxx += e;
+			temp.miny -= e; temp.maxy += e;
+		}
+		if (temp.minx != 0 || temp.maxx != 0 || temp.maxy != 0 || temp.miny != 0)
+		{
+			if (temp.minx < b->minx) b->minx = temp.minx;
+			if (temp.miny < b->miny) b->miny = temp.miny;
+			if (temp.maxx > b->maxx) b->maxx = temp.maxx;
+			if (temp.maxy > b->maxy) b->maxy = temp.maxy;
+		}
+		for (ref = sc->layers[i].refs; ref != NULL; ref = ref->next)
+		{
+			/*SplineSetQuickBounds(ref->layers[0].splines,&temp);*/
+			if (b->minx == 0 && b->maxx == 0 && b->miny == 0 && b->maxy == 0)
+				*b = ref->bb;
+			else if (ref->bb.minx != 0 || ref->bb.maxx != 0 || ref->bb.maxy != 0 || ref->bb.miny != 0)
+			{
+				if (ref->bb.minx < b->minx) b->minx = ref->bb.minx;
+				if (ref->bb.miny < b->miny) b->miny = ref->bb.miny;
+				if (ref->bb.maxx > b->maxx) b->maxx = ref->bb.maxx;
+				if (ref->bb.maxy > b->maxy) b->maxy = ref->bb.maxy;
+			}
+		}
+	}
+	if (sc->parent != NULL && sc->parent->strokedfont &&
+		(b->minx != b->maxx || b->miny != b->maxy))
+	{
+		real sw = sc->parent->strokewidth;
+		b->minx -= sw; b->miny -= sw;
+		b->maxx += sw; b->maxy += sw;
+	}
+	if (b->minx > 1e9)
+		memset(b, 0, sizeof(*b));
+}
+
+void SplineCharLayerQuickBounds(SplineChar* sc, int layer, DBounds* bounds)
+{
+	RefChar* ref;
+	DBounds temp;
+
+	if (sc->parent != NULL && sc->parent->multilayer)
+	{
+		SplineCharQuickBounds(sc, bounds);
+		return;
+	}
+
+	bounds->minx = bounds->miny = 1e10;
+	bounds->maxx = bounds->maxy = -1e10;
+
+	SplineSetQuickBounds(sc->layers[layer].splines, bounds);
+
+	for (ref = sc->layers[layer].refs; ref != NULL; ref = ref->next)
+	{
+		SplineSetQuickBounds(ref->layers[0].splines, &temp);
+		if (bounds->minx == 0 && bounds->maxx == 0 && bounds->miny == 0 && bounds->maxy == 0)
+			*bounds = temp;
+		else if (temp.minx != 0 || temp.maxx != 0 || temp.maxy != 0 || temp.miny != 0)
+		{
+			if (temp.minx < bounds->minx) bounds->minx = temp.minx;
+			if (temp.miny < bounds->miny) bounds->miny = temp.miny;
+			if (temp.maxx > bounds->maxx) bounds->maxx = temp.maxx;
+			if (temp.maxy > bounds->maxy) bounds->maxy = temp.maxy;
+		}
+	}
+	/* a char with no splines (ie. a space) must have an lbearing of 0 */
+	if (bounds->minx > 1e9)
+		memset(bounds, 0, sizeof(*bounds));
+}
+
+void SplineSetQuickConservativeBounds(SplineSet* ss, DBounds* b)
+{
+	SplinePoint* sp;
+
+	b->minx = b->miny = 1e10;
+	b->maxx = b->maxy = -1e10;
+	for (; ss != NULL; ss = ss->next)
+	{
+		for (sp = ss->first; ; )
+		{
+			if (sp->me.y < b->miny) b->miny = sp->me.y;
+			if (sp->me.x < b->minx) b->minx = sp->me.x;
+			if (sp->me.y > b->maxy) b->maxy = sp->me.y;
+			if (sp->me.x > b->maxx) b->maxx = sp->me.x;
+			if (sp->nextcp.y < b->miny) b->miny = sp->nextcp.y;
+			if (sp->nextcp.x < b->minx) b->minx = sp->nextcp.x;
+			if (sp->nextcp.y > b->maxy) b->maxy = sp->nextcp.y;
+			if (sp->nextcp.x > b->maxx) b->maxx = sp->nextcp.x;
+			if (sp->prevcp.y < b->miny) b->miny = sp->prevcp.y;
+			if (sp->prevcp.x < b->minx) b->minx = sp->prevcp.x;
+			if (sp->prevcp.y > b->maxy) b->maxy = sp->prevcp.y;
+			if (sp->prevcp.x > b->maxx) b->maxx = sp->prevcp.x;
+			if (sp->next == NULL)
+				break;
+			sp = sp->next->to;
+			if (sp == ss->first)
+				break;
+		}
+	}
+	if (b->minx > 65536) b->minx = 0;
+	if (b->miny > 65536) b->miny = 0;
+	if (b->maxx < -65536) b->maxx = 0;
+	if (b->maxy < -65536) b->maxy = 0;
+}
+
+//real _get_actual_width(real& width)
+//{
+//	if (width != WIDTH_INHERITED)
+//	{
+//		return width;
+//	}
+//	else
+//	{
+//		return 100;
+//	}
+//}
+
+void SplineCharQuickConservativeBounds(SplineChar *sc, DBounds *b) 
+{
     RefChar *ref;
     int i, first,last;
     DBounds temp;
@@ -1009,155 +1216,214 @@ void SplineCharQuickConservativeBounds(SplineChar *sc, DBounds *b) {
     ImageList *img;
 
     memset(b,0,sizeof(*b));
+
     first = last = ly_fore;
-    if ( sc->parent!=NULL && sc->parent->multilayer )
-	last = sc->layer_cnt-1;
-    for ( i=first; i<=last; ++i ) {
-	SplineSetQuickConservativeBounds(sc->layers[i].splines,&temp);
-	for ( img=sc->layers[i].images; img!=NULL; img=img->next )
-	    _ImageFindBounds(img,b);
-	if ( sc->layers[i].dostroke && sc->layers[i].splines!=NULL ) {
-	    if ( sc->layers[i].stroke_pen.width!=WIDTH_INHERITED )
-		e = sc->layers[i].stroke_pen.width*sc->layers[i].stroke_pen.trans[0];
-	    else
-		e = sc->layers[i].stroke_pen.trans[0];
-	    temp.minx -= e; temp.maxx += e;
-	    temp.miny -= e; temp.maxy += e;
+
+	if (sc->parent != NULL && sc->parent->multilayer)
+	{
+		last = sc->layer_cnt - 1;
 	}
-	if ( temp.minx!=0 || temp.maxx != 0 || temp.maxy != 0 || temp.miny!=0 ) {
-	    if ( temp.minx < b->minx ) b->minx = temp.minx;
-	    if ( temp.miny < b->miny ) b->miny = temp.miny;
-	    if ( temp.maxx > b->maxx ) b->maxx = temp.maxx;
-	    if ( temp.maxy > b->maxy ) b->maxy = temp.maxy;
+
+	for (i = first; i <= last; ++i)
+	{
+		SplineSetQuickConservativeBounds(sc->layers[i].splines, &temp);
+
+		for (img = sc->layers[i].images; img != NULL; img = img->next)
+		{
+			_ImageFindBounds(img, b);
+		}
+
+		if (sc->layers[i].dostroke && sc->layers[i].splines != NULL)
+		{
+			if (sc->layers[i].stroke_pen.width != WIDTH_INHERITED)
+			{
+				e = sc->layers[i].stroke_pen.width * sc->layers[i].stroke_pen.trans[0];
+			}
+			else
+			{
+				//e = 100 * sc->layers[i].stroke_pen.trans[0]; //sc->layers[i].stroke_pen.trans[0];
+				e = sc->layers[i].stroke_pen.trans[0];
+				//e = 20000;
+			}
+
+
+			//e = _get_actual_width(sc->layers[i].stroke_pen.width) 
+			//	* sc->layers[i].stroke_pen.trans[0];
+
+			temp.minx -= e; temp.maxx += e;
+			temp.miny -= e; temp.maxy += e;
+		}
+
+		if (temp.minx != 0 || temp.maxx != 0 || temp.maxy != 0 || temp.miny != 0) {
+			if (temp.minx < b->minx) b->minx = temp.minx;
+			if (temp.miny < b->miny) b->miny = temp.miny;
+			if (temp.maxx > b->maxx) b->maxx = temp.maxx;
+			if (temp.maxy > b->maxy) b->maxy = temp.maxy;
+		}
+
+		for (ref = sc->layers[i].refs; ref != NULL; ref = ref->next) {
+			/*SplineSetQuickConservativeBounds(ref->layers[0].splines,&temp);*/
+			if (b->minx == 0 && b->maxx == 0 && b->miny == 0 && b->maxy == 0)
+			{
+				*b = ref->bb;
+			}
+			else
+			{
+				if (ref->bb.minx != 0 || ref->bb.maxx != 0 || ref->bb.maxy != 0 || ref->bb.miny != 0)
+				{
+					if (ref->bb.minx < b->minx) b->minx = ref->bb.minx;
+					if (ref->bb.miny < b->miny) b->miny = ref->bb.miny;
+					if (ref->bb.maxx > b->maxx) b->maxx = ref->bb.maxx;
+					if (ref->bb.maxy > b->maxy) b->maxy = ref->bb.maxy;
+				}
+			}
+		}
 	}
-	for ( ref = sc->layers[i].refs; ref!=NULL; ref = ref->next ) {
-	    /*SplineSetQuickConservativeBounds(ref->layers[0].splines,&temp);*/
-	    if ( b->minx==0 && b->maxx==0 && b->miny==0 && b->maxy == 0 )
-		*b = ref->bb;
-	    else if ( ref->bb.minx!=0 || ref->bb.maxx != 0 || ref->bb.maxy != 0 || ref->bb.miny!=0 ) {
-		if ( ref->bb.minx < b->minx ) b->minx = ref->bb.minx;
-		if ( ref->bb.miny < b->miny ) b->miny = ref->bb.miny;
-		if ( ref->bb.maxx > b->maxx ) b->maxx = ref->bb.maxx;
-		if ( ref->bb.maxy > b->maxy ) b->maxy = ref->bb.maxy;
-	    }
+
+	if (sc->parent->strokedfont && (b->minx != b->maxx || b->miny != b->maxy))
+	{
+		real sw = sc->parent->strokewidth;
+		b->minx -= sw; b->miny -= sw;
+		b->maxx += sw; b->maxy += sw;
 	}
-    }
-    if ( sc->parent->strokedfont && (b->minx!=b->maxx || b->miny!=b->maxy)) {
-	real sw = sc->parent->strokewidth;
-	b->minx -= sw; b->miny -= sw;
-	b->maxx += sw; b->maxy += sw;
-    }
+
+	//todo apply stroke's default width
+	b->minx = b->miny = -2000;
+	b->maxx = b->maxy = 2000;
+
 }
 
-void SplineFontQuickConservativeBounds(SplineFont *sf,DBounds *b) {
-    DBounds bb;
-    int i;
+void SplineFontQuickConservativeBounds(SplineFont* sf, DBounds* b)
+{
+	DBounds bb;
+	int i;
 
-    b->minx = b->miny = 1e10;
-    b->maxx = b->maxy = -1e10;
-    for ( i=0; i<sf->glyphcnt; ++i ) if ( sf->glyphs[i]!=NULL ) {
-	SplineCharQuickConservativeBounds(sf->glyphs[i],&bb);
-	if ( bb.minx < b->minx ) b->minx = bb.minx;
-	if ( bb.miny < b->miny ) b->miny = bb.miny;
-	if ( bb.maxx > b->maxx ) b->maxx = bb.maxx;
-	if ( bb.maxy > b->maxy ) b->maxy = bb.maxy;
-    }
-    if ( b->minx>65536 ) b->minx = 0;
-    if ( b->miny>65536 ) b->miny = 0;
-    if ( b->maxx<-65536 ) b->maxx = 0;
-    if ( b->maxy<-65536 ) b->maxy = 0;
+	b->minx = b->miny = 1e10;
+	b->maxx = b->maxy = -1e10;
+	for (i = 0; i < sf->glyphcnt; ++i) if (sf->glyphs[i] != NULL)
+	{
+		SplineCharQuickConservativeBounds(sf->glyphs[i], &bb);
+		if (bb.minx < b->minx) b->minx = bb.minx;
+		if (bb.miny < b->miny) b->miny = bb.miny;
+		if (bb.maxx > b->maxx) b->maxx = bb.maxx;
+		if (bb.maxy > b->maxy) b->maxy = bb.maxy;
+	}
+	if (b->minx > 65536) b->minx = 0;
+	if (b->miny > 65536) b->miny = 0;
+	if (b->maxx < -65536) b->maxx = 0;
+	if (b->maxy < -65536) b->maxy = 0;
+
+
+
 }
 
-static int SplinePointCategory(SplinePoint *sp) {
-    enum pointtype pt;
+static int SplinePointCategory(SplinePoint* sp)
+{
+	enum pointtype pt;
 
-    pt = pt_corner;
-    if ( sp->next==NULL && sp->prev==NULL )
-	;
-    else if ( (sp->next!=NULL && sp->next->to->me.x==sp->me.x && sp->next->to->me.y==sp->me.y) ||
-	    (sp->prev!=NULL && sp->prev->from->me.x==sp->me.x && sp->prev->from->me.y==sp->me.y ))
-	;
-    else if ( sp->next==NULL ) {
-	pt = sp->noprevcp ? pt_corner : pt_curve;
-    } else if ( sp->prev==NULL ) {
-	pt = sp->nonextcp ? pt_corner : pt_curve;
-    } else if ( sp->nonextcp && sp->noprevcp ) {
-	;
-    } else {
-	BasePoint ndir, ncdir, ncunit, pdir, pcdir, pcunit;
-	bigreal nlen, nclen, plen, pclen;
-	bigreal cross, bounds;
-
-	ncdir.x = sp->nextcp.x - sp->me.x; ncdir.y = sp->nextcp.y - sp->me.y;
-	pcdir.x = sp->prevcp.x - sp->me.x; pcdir.y = sp->prevcp.y - sp->me.y;
-	ndir.x = ndir.y = pdir.x = pdir.y = 0;
-	if ( sp->next!=NULL ) {
-	    ndir.x = sp->next->to->me.x - sp->me.x; ndir.y = sp->next->to->me.y - sp->me.y;
+	pt = pt_corner;
+	if (sp->next == NULL && sp->prev == NULL)
+		;
+	else if ((sp->next != NULL && sp->next->to->me.x == sp->me.x && sp->next->to->me.y == sp->me.y) ||
+		(sp->prev != NULL && sp->prev->from->me.x == sp->me.x && sp->prev->from->me.y == sp->me.y))
+		;
+	else if (sp->next == NULL)
+	{
+		pt = sp->noprevcp ? pt_corner : pt_curve;
 	}
-	if ( sp->prev!=NULL ) {
-	    pdir.x = sp->prev->from->me.x - sp->me.x; pdir.y = sp->prev->from->me.y - sp->me.y;
+	else if (sp->prev == NULL)
+	{
+		pt = sp->nonextcp ? pt_corner : pt_curve;
 	}
-	nclen = sqrt(ncdir.x*ncdir.x + ncdir.y*ncdir.y);
-	pclen = sqrt(pcdir.x*pcdir.x + pcdir.y*pcdir.y);
-	nlen = sqrt(ndir.x*ndir.x + ndir.y*ndir.y);
-	plen = sqrt(pdir.x*pdir.x + pdir.y*pdir.y);
-	ncunit = ncdir; pcunit = pcdir;
-	if ( nclen!=0 ) { ncunit.x /= nclen; ncunit.y /= nclen; }
-	if ( pclen!=0 ) { pcunit.x /= pclen; pcunit.y /= pclen; }
-	if ( nlen!=0 ) { ndir.x /= nlen; ndir.y /= nlen; }
-	if ( plen!=0 ) { pdir.x /= plen; pdir.y /= plen; }
+	else if (sp->nonextcp && sp->noprevcp)
+	{
+		;
+	}
+	else
+	{
+		BasePoint ndir, ncdir, ncunit, pdir, pcdir, pcunit;
+		bigreal nlen, nclen, plen, pclen;
+		bigreal cross, bounds;
 
-	/* find out which side has the shorter control vector. Cross that vector */
-	/*  with the normal of the unit vector on the other side. If the */
-	/*  result is less than 1 em-unit then we've got colinear control points */
-	/*  (within the resolution of the integer grid) */
-	/* Not quite... they could point in the same direction */
-        if ( sp->pointtype==pt_curve )
-            bounds = 4.0;
-        else
-            bounds = 1.0;
-	if ( nclen!=0 && pclen!=0 &&
-		((nclen>=pclen && (cross = pcdir.x*ncunit.y - pcdir.y*ncunit.x)<bounds && cross>-bounds ) ||
-		 (pclen>nclen && (cross = ncdir.x*pcunit.y - ncdir.y*pcunit.x)<bounds && cross>-bounds )) &&
-		 ncdir.x*pcdir.x + ncdir.y*pcdir.y < 0 )
-	    pt = pt_curve;
-	/* Cross product of control point with unit vector normal to line in */
-	/*  opposite direction should be less than an em-unit for a tangent */
-	else if (    (   nclen==0 && pclen!=0
-	              && (cross = pcdir.x*ndir.y-pcdir.y*ndir.x)<bounds
-	              && cross>-bounds && (pcdir.x*ndir.x+pcdir.y*ndir.y)<0 )
-	          ||
-	             (   pclen==0 && nclen!=0
-	              && (cross = ncdir.x*pdir.y-ncdir.y*pdir.x)<bounds
-	              && cross>-bounds && (ncdir.x*pdir.x+ncdir.y*pdir.y)<0 ) )
-	    pt = pt_tangent;
+		ncdir.x = sp->nextcp.x - sp->me.x; ncdir.y = sp->nextcp.y - sp->me.y;
+		pcdir.x = sp->prevcp.x - sp->me.x; pcdir.y = sp->prevcp.y - sp->me.y;
+		ndir.x = ndir.y = pdir.x = pdir.y = 0;
+		if (sp->next != NULL)
+		{
+			ndir.x = sp->next->to->me.x - sp->me.x; ndir.y = sp->next->to->me.y - sp->me.y;
+		}
+		if (sp->prev != NULL)
+		{
+			pdir.x = sp->prev->from->me.x - sp->me.x; pdir.y = sp->prev->from->me.y - sp->me.y;
+		}
+		nclen = sqrt(ncdir.x * ncdir.x + ncdir.y * ncdir.y);
+		pclen = sqrt(pcdir.x * pcdir.x + pcdir.y * pcdir.y);
+		nlen = sqrt(ndir.x * ndir.x + ndir.y * ndir.y);
+		plen = sqrt(pdir.x * pdir.x + pdir.y * pdir.y);
+		ncunit = ncdir; pcunit = pcdir;
+		if (nclen != 0) { ncunit.x /= nclen; ncunit.y /= nclen; }
+		if (pclen != 0) { pcunit.x /= pclen; pcunit.y /= pclen; }
+		if (nlen != 0) { ndir.x /= nlen; ndir.y /= nlen; }
+		if (plen != 0) { pdir.x /= plen; pdir.y /= plen; }
 
-	if (pt == pt_curve &&
-		((sp->nextcp.x==sp->me.x && sp->prevcp.x==sp->me.x && sp->nextcp.y!=sp->me.y) ||
-		 (sp->nextcp.y==sp->me.y && sp->prevcp.y==sp->me.y && sp->nextcp.x!=sp->me.x)))
-	    pt = pt_hvcurve;
-    }
-    return pt;
+		/* find out which side has the shorter control vector. Cross that vector */
+		/*  with the normal of the unit vector on the other side. If the */
+		/*  result is less than 1 em-unit then we've got colinear control points */
+		/*  (within the resolution of the integer grid) */
+		/* Not quite... they could point in the same direction */
+		if (sp->pointtype == pt_curve)
+			bounds = 4.0;
+		else
+			bounds = 1.0;
+		if (nclen != 0 && pclen != 0 &&
+			((nclen >= pclen && (cross = pcdir.x * ncunit.y - pcdir.y * ncunit.x) < bounds && cross > -bounds) ||
+				(pclen > nclen && (cross = ncdir.x * pcunit.y - ncdir.y * pcunit.x) < bounds && cross > -bounds)) &&
+			ncdir.x * pcdir.x + ncdir.y * pcdir.y < 0)
+			pt = pt_curve;
+		/* Cross product of control point with unit vector normal to line in */
+		/*  opposite direction should be less than an em-unit for a tangent */
+		else if ((nclen == 0 && pclen != 0
+			&& (cross = pcdir.x * ndir.y - pcdir.y * ndir.x) < bounds
+			&& cross > -bounds && (pcdir.x * ndir.x + pcdir.y * ndir.y) < 0)
+			||
+			(pclen == 0 && nclen != 0
+				&& (cross = ncdir.x * pdir.y - ncdir.y * pdir.x) < bounds
+				&& cross > -bounds && (ncdir.x * pdir.x + ncdir.y * pdir.y) < 0))
+			pt = pt_tangent;
+
+		if (pt == pt_curve &&
+			((sp->nextcp.x == sp->me.x && sp->prevcp.x == sp->me.x && sp->nextcp.y != sp->me.y) ||
+				(sp->nextcp.y == sp->me.y && sp->prevcp.y == sp->me.y && sp->nextcp.x != sp->me.x)))
+			pt = pt_hvcurve;
+	}
+	return pt;
 }
 
-int SplinePointIsACorner(SplinePoint *sp) {
+int SplinePointIsACorner(SplinePoint* sp)
+{
 	return SplinePointCategory(sp) == pt_corner;
 }
 
-static enum pointtype SplinePointDowngrade(int current, int geom) {
+static enum pointtype SplinePointDowngrade(int current, int geom)
+{
 	enum pointtype np = current;
 
-	if ( current==pt_curve && geom!=pt_curve ) {
-		if ( geom==pt_hvcurve )
+	if (current == pt_curve && geom != pt_curve)
+	{
+		if (geom == pt_hvcurve)
 			np = pt_curve;
 		else
 			np = pt_corner;
-	} else if ( current==pt_hvcurve && geom!=pt_hvcurve ) {
-		if ( geom==pt_curve )
+	}
+	else if (current == pt_hvcurve && geom != pt_hvcurve)
+	{
+		if (geom == pt_curve)
 			np = pt_curve;
 		else
 			np = pt_corner;
-	} else if ( current==pt_tangent && geom!=pt_tangent ) {
+	}
+	else if (current == pt_tangent && geom != pt_tangent)
+	{
 		np = pt_corner;
 	}
 
@@ -1166,65 +1432,78 @@ static enum pointtype SplinePointDowngrade(int current, int geom) {
 
 // Assumes flag combinations are already verified. Only returns false
 // when called with check_compat
-int _SplinePointCategorize(SplinePoint *sp, int flags) {
+int _SplinePointCategorize(SplinePoint* sp, int flags)
+{
 	enum pointtype geom, dg, cur;
 
-	if ( flags & pconvert_flag_none )
+	if (flags & pconvert_flag_none)
 		// No points selected for conversion -- keep type as is
 		return true;
-	if ( flags & pconvert_flag_smooth && sp->pointtype == pt_corner )
+	if (flags & pconvert_flag_smooth && sp->pointtype == pt_corner)
 		// Convert only "smooth" points, not corners
 		return true;
 
 	geom = SplinePointCategory(sp);
 	dg = SplinePointDowngrade(sp->pointtype, geom);
 
-	if ( flags & pconvert_flag_incompat && sp->pointtype == dg )
+	if (flags & pconvert_flag_incompat && sp->pointtype == dg)
 		// Only convert points incompatible with current type
 		return true;
 
-	if ( flags & pconvert_flag_by_geom ) {
-		if ( ! ( flags & pconvert_flag_hvcurve ) && geom == pt_hvcurve )
+	if (flags & pconvert_flag_by_geom)
+	{
+		if (!(flags & pconvert_flag_hvcurve) && geom == pt_hvcurve)
 			sp->pointtype = pt_curve;
 		else
 			sp->pointtype = geom;
-	} else if ( flags & pconvert_flag_downgrade ) {
+	}
+	else if (flags & pconvert_flag_downgrade)
+	{
 		sp->pointtype = dg;
-	} else if ( flags & pconvert_flag_force_type ) {
-		if ( sp->pointtype != dg ) {
+	}
+	else if (flags & pconvert_flag_force_type)
+	{
+		if (sp->pointtype != dg)
+		{
 			cur = sp->pointtype;
 			sp->pointtype = dg;
-			SPChangePointType(sp,cur);
+			SPChangePointType(sp, cur);
 		}
-	} else if ( flags & pconvert_flag_check_compat ) {
-		if ( sp->pointtype != dg )
+	}
+	else if (flags & pconvert_flag_check_compat)
+	{
+		if (sp->pointtype != dg)
 			return false;
 	}
 	return true;
 }
 
-void SplinePointCategorize(SplinePoint *sp) {
-	_SplinePointCategorize(sp, pconvert_flag_all|pconvert_flag_by_geom);
+void SplinePointCategorize(SplinePoint* sp)
+{
+	_SplinePointCategorize(sp, pconvert_flag_all | pconvert_flag_by_geom);
 }
 
 // _SplinePointCategorize only returns false when called with check_compat flag,
 // in which case no point values are altered and the "early" return will not leave
 // splines partially adjusted.
-int _SPLCategorizePoints(SplinePointList *spl, int flags) {
-    Spline *spline, *first, *last=NULL;
-    int ok = true;
+int _SPLCategorizePoints(SplinePointList* spl, int flags)
+{
+	Spline* spline, * first, * last = NULL;
+	int ok = true;
 
-    for ( ; spl!=NULL; spl = spl->next ) {
-	first = NULL;
-	for ( spline = spl->first->next; spline!=NULL && spline!=first && ok; spline=spline->to->next ) {
-	    ok = _SplinePointCategorize(spline->from, flags);
-	    last = spline;
-	    if ( first==NULL ) first = spline;
+	for (; spl != NULL; spl = spl->next)
+	{
+		first = NULL;
+		for (spline = spl->first->next; spline != NULL && spline != first && ok; spline = spline->to->next)
+		{
+			ok = _SplinePointCategorize(spline->from, flags);
+			last = spline;
+			if (first == NULL) first = spline;
+		}
+		if (spline == NULL && last != NULL && ok)
+			_SplinePointCategorize(last->to, flags);
 	}
-	if ( spline==NULL && last!=NULL && ok )
-	    _SplinePointCategorize(last->to, flags);
-    }
-    return ok;
+	return ok;
 }
 
 void SPLCategorizePoints(SplinePointList *spl) {
