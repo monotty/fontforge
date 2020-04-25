@@ -1495,6 +1495,8 @@ static void FVMenuCondense(GWindow gw, struct gmenuitem *UNUSED(mi), GEvent *UNU
 #define MID_BuildSyllables	20903
 
 #define MID_CharSwap	20904
+#define MID_CharInvite	20905
+#define MID_CharReject	20906
 
 
 #define MID_Warnings	3000
@@ -3443,6 +3445,94 @@ return;
 		  wt_vwidth);
 }
 
+static void swap_glyphs(EncMap* map, int32 glyph1_enc, int32 glyph2_enc)
+{
+    int32 glyph1_id = map->map[glyph1_enc];
+    int32 glyph2_id = map->map[glyph2_enc];
+
+    map->map[glyph1_enc] = glyph2_id;
+    map->map[glyph2_enc] = glyph1_id;
+
+    if (glyph1_id != -1)
+    {
+        int32 back1_id = map->backmap[glyph1_id];
+        map->backmap[glyph1_id] = glyph2_enc;
+    }
+    if (glyph2_id != -1)
+    {
+        int32 back2_id = map->backmap[glyph2_id];
+        map->backmap[glyph2_id] = glyph1_enc;
+    }
+}
+
+static void FVMenuInvite(GWindow gw, struct gmenuitem* mi, GEvent* UNUSED(e))
+{
+    FontView* fv = (FontView*)GDrawGetUserData(gw);
+    SplineFont* sf = fv->b.sf;
+    EncMap* map = fv->b.map;
+
+    int count = 0;
+    int start = 0;
+    int total = map->enccount;
+
+    for (int i = 0; i < total; ++i)
+    {
+        if (fv->b.selected[i])
+        {
+            if (count == 0)
+            {
+                start = i;
+            }
+            count++;
+        }
+    }
+
+    if (start < total - 1 - 2 * count)
+    {
+        for (int i = total - 1, j = i - count; j >= start; i--, j--)
+        {
+            swap_glyphs(map, i, j);
+        }
+    }
+
+    sf->changed = true;
+    FVRefreshAll(sf);
+}
+
+static void FVMenuReject(GWindow gw, struct gmenuitem* mi, GEvent* UNUSED(e))
+{
+    FontView* fv = (FontView*)GDrawGetUserData(gw);
+    SplineFont* sf = fv->b.sf;
+    EncMap* map = fv->b.map;
+
+    int count = 0;
+    int start = 0;
+    int total = map->enccount;
+
+    for (int i = 0; i < total; ++i)
+    {
+        if (fv->b.selected[i])
+        {
+            if (count == 0)
+            {
+                start = i;
+            }
+            count++;
+        }
+    }
+
+    if (start < total - 1 - 2 * count)
+    {
+        for (int i = start, j = i + count; j < total; i++, j++)
+        {
+            swap_glyphs(map, i, j);
+        }
+    }
+
+    sf->changed = true;
+    FVRefreshAll(sf);
+}
+
 static void FVMenuSwap(GWindow gw, struct gmenuitem *mi, GEvent *UNUSED(e)) 
 {
     FontView *fv = (FontView *) GDrawGetUserData(gw);
@@ -3469,22 +3559,7 @@ static void FVMenuSwap(GWindow gw, struct gmenuitem *mi, GEvent *UNUSED(e))
         int32 glyph1_enc = stack[i];
         int32 glyph2_enc = stack[i + count];
 
-        int32 glyph1_id = map->map[glyph1_enc];
-        int32 glyph2_id = map->map[glyph2_enc];
-
-        map->map[glyph1_enc] = glyph2_id;
-        map->map[glyph2_enc] = glyph1_id;
-
-        if (glyph1_id != -1)
-        {
-            int32 back1_id = map->backmap[glyph1_id];
-            map->backmap[glyph1_id] = glyph2_enc;
-        }
-        if (glyph2_id != -1)
-        {
-            int32 back2_id = map->backmap[glyph2_id];
-            map->backmap[glyph2_id] = glyph1_enc;
-        }
+        swap_glyphs(map, glyph1_enc, glyph2_enc);
     }
     
     free(stack);
@@ -5610,31 +5685,33 @@ GMenuItem2 helplist[] = {
 };
 
 GMenuItem fvpopupmenu[] = {
-        { { (unichar_t*)N_("Swap"), (GImage*)"filerevert.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'V' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuSwap, MID_CharSwap },
-            GMENUITEM_LINE,
-
-    { { (unichar_t *) N_("New O_utline Window"), 0, COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'u' }, '\0', ksm_control, NULL, NULL, FVMenuOpenOutline, MID_OpenOutline },
+    { { (unichar_t*)N_("Swap"), (GImage*)"filerevert.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'V' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuSwap, MID_CharSwap },
+    { { (unichar_t*)N_("Invite"), (GImage*)"filenew.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'V' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuInvite, MID_CharInvite },
+    { { (unichar_t*)N_("Reject"), (GImage*)"editcut.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'V' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuReject, MID_CharReject },
     GMENUITEM_LINE,
-    { { (unichar_t *) N_("Cu_t"), (GImage *) "editcut.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 't' }, '\0', ksm_control, NULL, NULL, FVMenuCut, MID_Cut },
-    { { (unichar_t *) N_("_Copy"), (GImage *) "editcopy.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'C' }, '\0', ksm_control, NULL, NULL, FVMenuCopy, MID_Copy },
-    { { (unichar_t *) N_("C_opy Reference"), (GImage *) "editcopyref.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'o' }, '\0', ksm_control, NULL, NULL, FVMenuCopyRef, MID_CopyRef },
-    { { (unichar_t *) N_("Copy _Width"), (GImage *) "editcopywidth.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'W' }, '\0', ksm_control, NULL, NULL, FVMenuCopyWidth, MID_CopyWidth },
-    { { (unichar_t *) N_("_Paste"), (GImage *) "editpaste.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'P' }, '\0', ksm_control, NULL, NULL, FVMenuPaste, MID_Paste },
-    { { (unichar_t *) N_("C_lear"), (GImage *) "editclear.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'l' }, 0, 0, NULL, NULL, FVMenuClear, MID_Clear },
-    { { (unichar_t *) N_("Copy _Fg To Bg"), (GImage *) "editcopyfg2bg.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'F' }, '\0', ksm_control|ksm_shift, NULL, NULL, FVMenuCopyFgBg, MID_CopyFgToBg },
-    { { (unichar_t *) N_("U_nlink Reference"), (GImage *) "editunlink.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'U' }, '\0', ksm_control, NULL, NULL, FVMenuUnlinkRef, MID_UnlinkRef },
+
+    { { (unichar_t*)N_("New O_utline Window"), 0, COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'u' }, '\0', ksm_control, NULL, NULL, FVMenuOpenOutline, MID_OpenOutline },
+    GMENUITEM_LINE,
+    { { (unichar_t*)N_("Cu_t"), (GImage*)"editcut.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 't' }, '\0', ksm_control, NULL, NULL, FVMenuCut, MID_Cut },
+    { { (unichar_t*)N_("_Copy"), (GImage*)"editcopy.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'C' }, '\0', ksm_control, NULL, NULL, FVMenuCopy, MID_Copy },
+    { { (unichar_t*)N_("C_opy Reference"), (GImage*)"editcopyref.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'o' }, '\0', ksm_control, NULL, NULL, FVMenuCopyRef, MID_CopyRef },
+    { { (unichar_t*)N_("Copy _Width"), (GImage*)"editcopywidth.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'W' }, '\0', ksm_control, NULL, NULL, FVMenuCopyWidth, MID_CopyWidth },
+    { { (unichar_t*)N_("_Paste"), (GImage*)"editpaste.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'P' }, '\0', ksm_control, NULL, NULL, FVMenuPaste, MID_Paste },
+    { { (unichar_t*)N_("C_lear"), (GImage*)"editclear.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'l' }, 0, 0, NULL, NULL, FVMenuClear, MID_Clear },
+    { { (unichar_t*)N_("Copy _Fg To Bg"), (GImage*)"editcopyfg2bg.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'F' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuCopyFgBg, MID_CopyFgToBg },
+    { { (unichar_t*)N_("U_nlink Reference"), (GImage*)"editunlink.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'U' }, '\0', ksm_control, NULL, NULL, FVMenuUnlinkRef, MID_UnlinkRef },
     { { NULL, NULL, COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 1, 0, 0, 0, '\0' }, '\0', 0, NULL, NULL, NULL, 0 }, /* line */
-    { { (unichar_t *) N_("Glyph _Info..."), (GImage *) "elementglyphinfo.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'I' }, '\0', ksm_control, NULL, NULL, FVMenuCharInfo, MID_CharInfo },
-    { { (unichar_t *) N_("_Transform..."), (GImage *) "elementtransform.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'T' }, '\0', ksm_control, NULL, NULL, FVMenuTransform, MID_Transform },
-    { { (unichar_t *) N_("_Expand Stroke..."), (GImage *) "elementexpandstroke.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'E' }, '\0', ksm_control|ksm_shift, NULL, NULL, FVMenuStroke, MID_Stroke },
-    { { (unichar_t *) N_("To _Int"), (GImage *) "elementround.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'I' }, '\0', ksm_control|ksm_shift, NULL, NULL, FVMenuRound2Int, MID_Round },
-    { { (unichar_t *) N_("_Correct Direction"), (GImage *) "elementcorrectdir.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'D' }, '\0', ksm_control|ksm_shift, NULL, NULL, FVMenuCorrectDir, MID_Correct },
+    { { (unichar_t*)N_("Glyph _Info..."), (GImage*)"elementglyphinfo.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'I' }, '\0', ksm_control, NULL, NULL, FVMenuCharInfo, MID_CharInfo },
+    { { (unichar_t*)N_("_Transform..."), (GImage*)"elementtransform.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'T' }, '\0', ksm_control, NULL, NULL, FVMenuTransform, MID_Transform },
+    { { (unichar_t*)N_("_Expand Stroke..."), (GImage*)"elementexpandstroke.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'E' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuStroke, MID_Stroke },
+    { { (unichar_t*)N_("To _Int"), (GImage*)"elementround.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'I' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuRound2Int, MID_Round },
+    { { (unichar_t*)N_("_Correct Direction"), (GImage*)"elementcorrectdir.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'D' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuCorrectDir, MID_Correct },
     { { NULL, NULL, COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 1, 0, 0, 0, '\0' }, '\0', 0, NULL, NULL, NULL, 0 }, /* line */
-    { { (unichar_t *) N_("Auto_Hint"), (GImage *) "hintsautohint.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'H' }, '\0', ksm_control|ksm_shift, NULL, NULL, FVMenuAutoHint, MID_AutoHint },
+    { { (unichar_t*)N_("Auto_Hint"), (GImage*)"hintsautohint.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'H' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuAutoHint, MID_AutoHint },
     { { NULL, NULL, COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 1, 0, 0, 0, '\0' }, '\0', 0, NULL, NULL, NULL, 0 }, /* line */
-    { { (unichar_t *) N_("_Center in Width"), (GImage *) "metricscenter.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'C' }, '\0', ksm_control, NULL, NULL, FVMenuCenter, MID_Center },
-    { { (unichar_t *) N_("Set _Width..."), (GImage *) "metricssetwidth.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'W' }, '\0', ksm_control|ksm_shift, NULL, NULL, FVMenuSetWidth, MID_SetWidth },
-    { { (unichar_t *) N_("Set _Vertical Advance..."), (GImage *) "metricssetvwidth.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'V' }, '\0', ksm_control|ksm_shift, NULL, NULL, FVMenuSetWidth, MID_SetVWidth },
+    { { (unichar_t*)N_("_Center in Width"), (GImage*)"metricscenter.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'C' }, '\0', ksm_control, NULL, NULL, FVMenuCenter, MID_Center },
+    { { (unichar_t*)N_("Set _Width..."), (GImage*)"metricssetwidth.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'W' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuSetWidth, MID_SetWidth },
+    { { (unichar_t*)N_("Set _Vertical Advance..."), (GImage*)"metricssetvwidth.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'V' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuSetWidth, MID_SetVWidth },
     GMENUITEM_EMPTY
 };
 
