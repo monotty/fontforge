@@ -177,58 +177,146 @@ return;
     }
 }
 
-void FVCopyFgtoBg(FontViewBase *fv) {
-    int i, gid;
+void FVCopyFgtoBg(FontViewBase* fv)
+{
+	int i, gid;
 
-    for ( i=0; i<fv->map->enccount; ++i )
-	if ( fv->selected[i] && (gid = fv->map->map[i])!=-1 &&
-		fv->sf->glyphs[gid]!=NULL )
-	    SCCopyLayerToLayer(fv->sf->glyphs[gid],fv->active_layer,ly_back,true);
+	for (i = 0; i < fv->map->enccount; ++i)
+	{
+		if (fv->selected[i]
+			&& (gid = fv->map->map[i]) != -1
+			&& fv->sf->glyphs[gid] != NULL)
+		{
+			SCCopyLayerToLayer(fv->sf->glyphs[gid], fv->active_layer, ly_back, true);
+		}
+	}
 }
 
-void FVUnlinkRef(FontViewBase *fv) {
-    int i,layer, first, last, gid;
-    SplineChar *sc;
-    RefChar *rf, *next;
-    BDFFont *bdf;
-    BDFChar *bdfc;
-    BDFRefChar *head, *cur;
+void FVUnlinkRef(FontViewBase* fv)
+{
+	int i, layer, first, last, gid;
+	SplineChar* sc;
+	RefChar* rf, * next;
+	BDFFont* bdf;
+	BDFChar* bdfc;
+	BDFRefChar* head, * cur;
 
-    for ( i=0; i<fv->map->enccount; ++i ) if ( fv->selected[i] &&
-	    (gid = fv->map->map[i])!=-1 && (sc = fv->sf->glyphs[gid])!=NULL) {
-	if (( fv->active_bitmap==NULL || !onlycopydisplayed ) && 
-		sc->layers[fv->active_layer].refs!=NULL) {
-	    SCPreserveLayer(sc,fv->active_layer,false);
-	    if ( sc->parent->multilayer ) {
-		first = ly_fore;
-		last = sc->layer_cnt-1;
-	    } else
-		first = last = fv->active_layer;
-	    for ( layer=first; layer<=last; ++layer ) {
-		for ( rf=sc->layers[layer].refs; rf!=NULL ; rf=next ) {
-		    next = rf->next;
-		    SCRefToSplines(sc,rf,layer);
-		}
-	    }
-	    SCCharChangedUpdate( sc,fv->active_layer );
-	}
+	for (i = 0; i < fv->map->enccount; ++i)
+	{
+		if (fv->selected[i]
+			&& (gid = fv->map->map[i]) != -1
+			&& (sc = fv->sf->glyphs[gid]) != NULL)
+		{
+			if ((fv->active_bitmap == NULL || !onlycopydisplayed) 
+				&& sc->layers[fv->active_layer].refs != NULL)
+			{
+				SCPreserveLayer(sc, fv->active_layer, false);
+				if (sc->parent->multilayer)
+				{
+					first = ly_fore;
+					last = sc->layer_cnt - 1;
+				}
+				else
+					first = last = fv->active_layer;
+				for (layer = first; layer <= last; ++layer)
+				{
+					for (rf = sc->layers[layer].refs; rf != NULL; rf = next)
+					{
+						next = rf->next;
+						SCRefToSplines(sc, rf, layer);
+					}
+				}
+				SCCharChangedUpdate(sc, fv->active_layer);
+			}
 
-	for ( bdf = fv->sf->bitmaps; bdf!=NULL; bdf=bdf->next ) {
-	    if ( bdf != fv->active_bitmap && onlycopydisplayed )
-	continue;
-	
-	    bdfc = gid==-1 || gid>=bdf->glyphcnt? NULL : bdf->glyphs[gid];
-	    if ( bdfc != NULL && bdfc->refs != NULL ) {
-		BCMergeReferences( bdfc,bdfc,0,0 );
-		for ( head = bdfc->refs; head != NULL; ) {
-		    cur = head; head = cur->next; free( cur );
+			for (bdf = fv->sf->bitmaps; bdf != NULL; bdf = bdf->next)
+			{
+				if (bdf != fv->active_bitmap && onlycopydisplayed)
+				{
+					continue;
+				}
+
+				bdfc = gid == -1 || gid >= bdf->glyphcnt ? NULL : bdf->glyphs[gid];
+
+				if (bdfc != NULL && bdfc->refs != NULL)
+				{
+					BCMergeReferences(bdfc, bdfc, 0, 0);
+
+					for (head = bdfc->refs; head != NULL; )
+					{
+						cur = head; head = cur->next; free(cur);
+					}
+
+					bdfc->refs = NULL;
+					BCCharChangedUpdate(bdfc);
+				}
+			}
 		}
-		bdfc->refs = NULL;
-		BCCharChangedUpdate(bdfc);
-	    }
 	}
-    }
 }
+
+
+// Unreference all links in the background layer and store result splines in this layer
+void FVRefsToSplines(FontViewBase* fv)
+{
+	int i, bg_layer, first, last, gid;
+	SplineChar* sc;
+	RefChar* rf, * next;
+	BDFFont* bdf;
+	BDFChar* bdfc;
+	BDFRefChar* head, * cur;
+
+	bg_layer = ly_back;
+
+	// iterate over all
+	for (i = 0; i < fv->map->enccount; ++i)
+	{
+		// choose selected and not empty
+		if (fv->selected[i]
+			&& (gid = fv->map->map[i]) != -1
+			&& (sc = fv->sf->glyphs[gid]) != NULL)
+		{
+			// choose background with reference
+			if (sc->layer_cnt >= bg_layer)
+			{
+				rf = sc->layers[bg_layer].refs;
+
+				while (rf != NULL)
+				{
+					SCCopySplinesFromRef(rf, sc, bg_layer);
+					rf = rf->next;
+				}
+
+				//SCCharChangedUpdate(sc, bg_layer);
+			}
+
+			for (bdf = fv->sf->bitmaps; bdf != NULL; bdf = bdf->next)
+			{
+				if (bdf != fv->active_bitmap && onlycopydisplayed)
+				{
+					continue;
+				}
+
+				bdfc = gid == -1 || gid >= bdf->glyphcnt ? NULL : bdf->glyphs[gid];
+
+				if (bdfc != NULL && bdfc->refs != NULL)
+				{
+					BCMergeReferences(bdfc, bdfc, 0, 0);
+
+					for (head = bdfc->refs; head != NULL; )
+					{
+						cur = head; head = cur->next; free(cur);
+					}
+
+					bdfc->refs = NULL;
+					BCCharChangedUpdate(bdfc);
+				}
+			}
+		}
+	}
+	//FVRefreshAll(fv->sf);
+}
+
 
 void FVUndo(FontViewBase *fv) {
     int i,j,layer,first,last, gid;

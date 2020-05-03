@@ -518,41 +518,56 @@ return;
     SCCharChangedUpdate(sc,ly_back);
 }
 
-void SCCopyLayerToLayer(SplineChar *sc, int from, int to,int doclear) {
-    SplinePointList *fore, *temp;
-    RefChar *ref, *oldref;
+void SCCopyLayerToLayer(SplineChar* sc, int from, int to, int doclear)
+{
+	SplinePointList* fore, * temp;
+	RefChar* ref, * oldref;
 
-    SCPreserveLayer(sc,to,false);
-    if ( doclear )
-	SCClearLayer(sc,to);
+	SCPreserveLayer(sc, to, false);
+	if (doclear)
+	{
+		SCClearLayer(sc, to);
+	}
 
-    fore = SplinePointListCopy(sc->layers[from].splines);
-    if ( !sc->layers[from].order2 && sc->layers[to].order2 ) {
-	temp = SplineSetsTTFApprox(fore);
-	SplinePointListsFree(fore);
-	fore = temp;
-    } else if ( sc->layers[from].order2 && !sc->layers[to].order2 ) {
-	temp = SplineSetsPSApprox(fore);
-	SplinePointListsFree(fore);
-	fore = temp;
-    }
-    if ( fore!=NULL ) {
-	for ( temp=fore; temp->next!=NULL; temp = temp->next );
-	temp->next = sc->layers[to].splines;
-	sc->layers[to].splines = fore;
-    }
+	fore = SplinePointListCopy(sc->layers[from].splines);
 
-    if ( sc->layers[to].refs==NULL )
-	sc->layers[to].refs = ref = RefCharsCopyState(sc,from);
-    else {
-	for ( oldref = sc->layers[to].refs; oldref->next!=NULL; oldref=oldref->next );
-	oldref->next = ref = RefCharsCopyState(sc,from);
-    }
-    for ( ; ref!=NULL; ref=ref->next ) {
-	SCReinstanciateRefChar(sc,ref,to);
-	SCMakeDependent(sc,ref->sc);
-    }
-    SCCharChangedUpdate(sc,to);
+	if (!sc->layers[from].order2 && sc->layers[to].order2)
+	{
+		temp = SplineSetsTTFApprox(fore);
+		SplinePointListsFree(fore);
+		fore = temp;
+	}
+	else if (sc->layers[from].order2 && !sc->layers[to].order2)
+	{
+		temp = SplineSetsPSApprox(fore);
+		SplinePointListsFree(fore);
+		fore = temp;
+	}
+
+	if (fore != NULL)
+	{
+		for (temp = fore; temp->next != NULL; temp = temp->next);
+		temp->next = sc->layers[to].splines;
+		sc->layers[to].splines = fore;
+	}
+
+	if (sc->layers[to].refs == NULL)
+	{
+		sc->layers[to].refs = ref = RefCharsCopyState(sc, from);
+	}
+	else
+	{
+		for (oldref = sc->layers[to].refs; oldref->next != NULL; oldref = oldref->next);
+		oldref->next = ref = RefCharsCopyState(sc, from);
+	}
+
+	for (; ref != NULL; ref = ref->next)
+	{
+		SCReinstanciateRefChar(sc, ref, to);
+		SCMakeDependent(sc, ref->sc);
+	}
+
+	SCCharChangedUpdate(sc, to);
 }
 
 int BpColinear(BasePoint *first, BasePoint *mid, BasePoint *last) {

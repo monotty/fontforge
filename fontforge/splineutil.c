@@ -173,17 +173,22 @@ void SplineFree(Spline *spline) {
     chunkfree(spline,sizeof(Spline));
 }
 
-SplinePoint *SplinePointCreate(real x, real y) {
-    SplinePoint *sp;
-    if ( (sp=chunkalloc(sizeof(SplinePoint)))!=NULL ) {
-	sp->me.x = x; sp->me.y = y;
-	sp->nextcp = sp->prevcp = sp->me;
-	sp->nonextcp = sp->noprevcp = true;
-	sp->nextcpdef = sp->prevcpdef = false;
-	sp->ttfindex = sp->nextcpindex = 0xfffe;
-	sp->name = NULL;
-    }
-    return( sp );
+SplinePoint* SplinePointCreate(real x, real y)
+{
+	SplinePoint* sp;
+	sp = chunkalloc(sizeof(SplinePoint));
+
+	if (sp != NULL)
+	{
+		sp->me.x = x; 
+		sp->me.y = y;
+		sp->nextcp = sp->prevcp = sp->me;
+		sp->nonextcp = sp->noprevcp = true;
+		sp->nextcpdef = sp->prevcpdef = false;
+		sp->ttfindex = sp->nextcpindex = 0xfffe;
+		sp->name = NULL;
+	}
+	return(sp);
 }
 
 Spline *SplineMake3(SplinePoint *from, SplinePoint *to) {
@@ -322,21 +327,27 @@ void ImageListsFree(ImageList *imgs) {
     }
 }
 
-void RefCharFree(RefChar *ref) {
-    int i;
+void RefCharFree(RefChar* ref)
+{
+	int i;
 
-    if ( ref==NULL )
-return;
-    for ( i=0; i<ref->layer_cnt; ++i ) {
-	SplinePointListsFree(ref->layers[i].splines);
-	ImageListsFree(ref->layers[i].images);
-	GradientFree(ref->layers[i].fill_brush.gradient);
-	GradientFree(ref->layers[i].stroke_pen.brush.gradient);
-	PatternFree(ref->layers[i].fill_brush.pattern);
-	PatternFree(ref->layers[i].stroke_pen.brush.pattern);
-    }
-    free(ref->layers);
-    chunkfree(ref,sizeof(RefChar));
+	if (ref == NULL)
+	{
+		return;
+	}
+
+	for (i = 0; i < ref->layer_cnt; ++i)
+	{
+		SplinePointListsFree(ref->layers[i].splines);
+		ImageListsFree(ref->layers[i].images);
+		GradientFree(ref->layers[i].fill_brush.gradient);
+		GradientFree(ref->layers[i].stroke_pen.brush.gradient);
+		PatternFree(ref->layers[i].fill_brush.pattern);
+		PatternFree(ref->layers[i].stroke_pen.brush.pattern);
+	}
+
+	free(ref->layers);
+	chunkfree(ref, sizeof(RefChar));
 }
 
 RefChar *RefCharCreate(void) {
@@ -1556,63 +1567,91 @@ return( k );
 return( -1 );
 }
 
-SplinePointList *SplinePointListCopy1(const SplinePointList *spl) {
-    SplinePointList *cur;
-    const SplinePoint *pt; SplinePoint *cpt;
-    Spline *spline;
+SplinePointList* SplinePointListCopy1(const SplinePointList* spl)
+{
+	SplinePointList* cur;
+	const SplinePoint* pt; SplinePoint* cpt;
+	Spline* spline;
 
-    cur = chunkalloc(sizeof(SplinePointList));
-    cur->is_clip_path = spl->is_clip_path;
-    cur->spiro_cnt = cur->spiro_max = 0;
-    cur->spiros = 0;
-    if (spl->contour_name != NULL) cur->contour_name = copy(spl->contour_name);
-    for ( pt=spl->first; ;  ) {
-	cpt = SplinePointCreate( 0, 0 );
-	*cpt = *pt;
-	if ( pt->hintmask!=NULL ) {
-	    cpt->hintmask = chunkalloc(sizeof(HintMask));
-	    memcpy(cpt->hintmask,pt->hintmask,sizeof(HintMask));
+	cur = chunkalloc(sizeof(SplinePointList));
+	cur->is_clip_path = spl->is_clip_path;
+	cur->spiro_cnt = cur->spiro_max = 0;
+	cur->spiros = 0;
+	
+	if (spl->contour_name != NULL)
+	{
+		cur->contour_name = copy(spl->contour_name);
 	}
-	if ( pt->name!=NULL ) {
-		cpt->name = copy(pt->name);
+
+	for (pt = spl->first; ; )
+	{
+		cpt = SplinePointCreate(0, 0);
+		*cpt = *pt;
+
+		if (pt->hintmask != NULL)
+		{
+			cpt->hintmask = chunkalloc(sizeof(HintMask));
+			memcpy(cpt->hintmask, pt->hintmask, sizeof(HintMask));
+		}
+
+		if (pt->name != NULL)
+		{
+			cpt->name = copy(pt->name);
+		}
+
+		cpt->next = cpt->prev = NULL;
+
+		if (cur->first == NULL)
+		{
+			cur->first = cur->last = cpt;
+			cur->start_offset = 0;
+		}
+		else
+		{
+			spline = chunkalloc(sizeof(Spline));
+			*spline = *pt->prev;
+			spline->from = cur->last;
+			cur->last->next = spline;
+			cpt->prev = spline;
+			spline->to = cpt;
+			spline->approx = NULL;
+			cur->last = cpt;
+		}
+
+		if (pt->next == NULL)
+		{
+			break;
+		}
+
+		pt = pt->next->to;
+		
+		if (pt == spl->first)
+		{
+			break;
+		}
 	}
-	cpt->next = cpt->prev = NULL;
-	if ( cur->first==NULL ) {
-	    cur->first = cur->last = cpt;
-	    cur->start_offset = 0;
-	} else {
-	    spline = chunkalloc(sizeof(Spline));
-	    *spline = *pt->prev;
-	    spline->from = cur->last;
-	    cur->last->next = spline;
-	    cpt->prev = spline;
-	    spline->to = cpt;
-	    spline->approx = NULL;
-	    cur->last = cpt;
+
+	if (spl->first->prev != NULL)
+	{
+		cpt = cur->first;
+		spline = chunkalloc(sizeof(Spline));
+		*spline = *pt->prev;
+		spline->from = cur->last;
+		cur->last->next = spline;
+		cpt->prev = spline;
+		spline->to = cpt;
+		spline->approx = NULL;
+		cur->last = cpt;
 	}
-	if ( pt->next==NULL )
-    break;
-	pt = pt->next->to;
-	if ( pt==spl->first )
-    break;
-    }
-    if ( spl->first->prev!=NULL ) {
-	cpt = cur->first;
-	spline = chunkalloc(sizeof(Spline));
-	*spline = *pt->prev;
-	spline->from = cur->last;
-	cur->last->next = spline;
-	cpt->prev = spline;
-	spline->to = cpt;
-	spline->approx = NULL;
-	cur->last = cpt;
-    }
-    if ( spl->spiro_cnt!=0 ) {
-	cur->spiro_cnt = cur->spiro_max = spl->spiro_cnt;
-	cur->spiros = malloc(cur->spiro_cnt*sizeof(spiro_cp));
-	memcpy(cur->spiros,spl->spiros,cur->spiro_cnt*sizeof(spiro_cp));
-    }
-return( cur );
+
+	if (spl->spiro_cnt != 0)
+	{
+		cur->spiro_cnt = cur->spiro_max = spl->spiro_cnt;
+		cur->spiros = malloc(cur->spiro_cnt * sizeof(spiro_cp));
+		memcpy(cur->spiros, spl->spiros, cur->spiro_cnt * sizeof(spiro_cp));
+	}
+
+	return(cur);
 }
 
 /* If this routine is called we are guarenteed that:
@@ -1766,18 +1805,26 @@ bool SplinePointListCheckSelected1(const SplinePointList *base, bool spiro, bool
     return anysel;
 }
 
-SplinePointList *SplinePointListCopy(const SplinePointList *base) {
-    SplinePointList *head=NULL, *last=NULL, *cur;
+SplinePointList* SplinePointListCopy(const SplinePointList* base)
+{
+	SplinePointList* head = NULL, * last = NULL, * cur;
 
-    for ( ; base!=NULL; base = base->next ) {
-	cur = SplinePointListCopy1(base);
-	if ( head==NULL )
-	    head = cur;
-	else
-	    last->next = cur;
-	last = cur;
-    }
-return( head );
+	for (; base != NULL; base = base->next)
+	{
+		cur = SplinePointListCopy1(base);
+		
+		if (head == NULL)
+		{
+			head = cur;
+		}
+		else
+		{
+			last->next = cur;
+		}
+
+		last = cur;
+	}
+	return(head);
 }
 
 SplinePointList *SplinePointListCopySelected(SplinePointList *base) {
@@ -3521,37 +3568,64 @@ void SCReinstanciateRef(SplineChar *sc,SplineChar *rsc,int layer) {
     }
 }
 
-void SCRemoveDependent(SplineChar *dependent,RefChar *rf,int layer) {
-    struct splinecharlist *dlist, *pd;
-    RefChar *prev;
-    int i;
+void SCRemoveDependent(SplineChar* dependent, RefChar* rf, int layer)
+{
+	struct splinecharlist* dlist, * pd;
+	RefChar* prev;
+	int i;
 
-    if ( dependent->layers[layer].refs==rf )
-	dependent->layers[layer].refs = rf->next;
-    else {
-	for ( prev = dependent->layers[layer].refs; prev->next!=rf; prev=prev->next );
-	prev->next = rf->next;
-    }
-    /* Check for multiple dependencies (colon has two refs to period) */
-    /* Also check other layers (they may include references to the same glyph as well */
-    /*  if there are none, then remove dependent from ref->sc's dependents list */
-    for ( i=0; i<dependent->layer_cnt; i++ ) {
-	for ( prev = dependent->layers[i].refs; prev!=NULL && (prev==rf || prev->sc!=rf->sc); prev = prev->next );
-    }
-    if ( prev==NULL ) {
-	dlist = rf->sc->dependents;
-	if ( dlist==NULL )
-	    /* Do nothing */;
-	else if ( dlist->sc==dependent ) {
-	    rf->sc->dependents = dlist->next;
-	} else {
-	    for ( pd=dlist, dlist = pd->next; dlist!=NULL && dlist->sc!=dependent; pd=dlist, dlist = pd->next );
-	    if ( dlist!=NULL )
-		pd->next = dlist->next;
+	if (dependent->layers[layer].refs == rf)
+	{
+		dependent->layers[layer].refs = rf->next;
 	}
-	chunkfree(dlist,sizeof(struct splinecharlist));
-    }
-    RefCharFree(rf);
+	else
+	{
+		for (prev = dependent->layers[layer].refs; prev->next != rf; prev = prev->next)
+		{
+			;
+		}
+
+		prev->next = rf->next;
+	}
+
+	/* Check for multiple dependencies (colon has two refs to period) */
+	/* Also check other layers (they may include references to the same glyph as well */
+	/*  if there are none, then remove dependent from ref->sc's dependents list */
+	for (i = 0; i < dependent->layer_cnt; i++)
+	{
+		for (prev = dependent->layers[i].refs; prev != NULL && (prev == rf || prev->sc != rf->sc); prev = prev->next)
+		{
+			;
+		}
+	}
+	if (prev == NULL)
+	{
+		dlist = rf->sc->dependents;
+		if (dlist == NULL)
+		{
+			/* Do nothing */;
+		}
+		else if (dlist->sc == dependent)
+		{
+			rf->sc->dependents = dlist->next;
+		}
+		else
+		{
+			for (pd = dlist, dlist = pd->next; dlist != NULL && dlist->sc != dependent; pd = dlist, dlist = pd->next)
+			{
+				;
+			}
+
+			if (dlist != NULL)
+			{
+				pd->next = dlist->next;
+			}
+		}
+
+		chunkfree(dlist, sizeof(struct splinecharlist));
+	}
+
+	RefCharFree(rf);
 }
 
 void SCRemoveLayerDependents(SplineChar *dependent,int layer) {
@@ -3571,43 +3645,108 @@ void SCRemoveDependents(SplineChar *dependent) {
 	SCRemoveLayerDependents(dependent,layer);
 }
 
-void SCRefToSplines(SplineChar *sc,RefChar *rf,int layer) {
-    SplineSet *spl;
-    int rlayer;
+void SCRefToSplines(SplineChar* sc, RefChar* rf, int layer)
+{
+	SplineSet* spl;
+	int rlayer;
 
-    if ( sc->parent->multilayer ) {
-	Layer *old = sc->layers;
-	sc->layers = realloc(sc->layers,(sc->layer_cnt+rf->layer_cnt)*sizeof(Layer));
-	for ( rlayer = 0; rlayer<rf->layer_cnt; ++rlayer ) {
-	    LayerDefault(&sc->layers[sc->layer_cnt+rlayer]);
-	    sc->layers[sc->layer_cnt+rlayer].splines = rf->layers[rlayer].splines;
-	    rf->layers[rlayer].splines = NULL;
-	    sc->layers[sc->layer_cnt+rlayer].images = rf->layers[rlayer].images;
-	    rf->layers[rlayer].images = NULL;
-	    sc->layers[sc->layer_cnt+rlayer].refs = NULL;
-	    sc->layers[sc->layer_cnt+rlayer].undoes = NULL;
-	    sc->layers[sc->layer_cnt+rlayer].redoes = NULL;
-	    BrushCopy(&sc->layers[sc->layer_cnt+rlayer].fill_brush, &rf->layers[rlayer].fill_brush,rf->transform);
-	    PenCopy(&sc->layers[sc->layer_cnt+rlayer].stroke_pen, &rf->layers[rlayer].stroke_pen,rf->transform);
-	    sc->layers[sc->layer_cnt+rlayer].dofill = rf->layers[rlayer].dofill;
-	    sc->layers[sc->layer_cnt+rlayer].dostroke = rf->layers[rlayer].dostroke;
-	    sc->layers[sc->layer_cnt+rlayer].fillfirst = rf->layers[rlayer].fillfirst;
+	if (sc->parent->multilayer)
+	{
+		Layer* old = sc->layers;
+		sc->layers = realloc(sc->layers, (sc->layer_cnt + rf->layer_cnt) * sizeof(Layer));
+
+		for (rlayer = 0; rlayer < rf->layer_cnt; ++rlayer)
+		{
+			LayerDefault(&sc->layers[sc->layer_cnt + rlayer]);
+			
+			sc->layers[sc->layer_cnt + rlayer].splines = rf->layers[rlayer].splines;
+			rf->layers[rlayer].splines = NULL;
+			sc->layers[sc->layer_cnt + rlayer].images = rf->layers[rlayer].images;
+			rf->layers[rlayer].images = NULL;
+			sc->layers[sc->layer_cnt + rlayer].refs = NULL;
+			sc->layers[sc->layer_cnt + rlayer].undoes = NULL;
+			sc->layers[sc->layer_cnt + rlayer].redoes = NULL;
+		
+			BrushCopy(&sc->layers[sc->layer_cnt + rlayer].fill_brush, &rf->layers[rlayer].fill_brush, rf->transform);
+			PenCopy(&sc->layers[sc->layer_cnt + rlayer].stroke_pen, &rf->layers[rlayer].stroke_pen, rf->transform);
+			
+			sc->layers[sc->layer_cnt + rlayer].dofill = rf->layers[rlayer].dofill;
+			sc->layers[sc->layer_cnt + rlayer].dostroke = rf->layers[rlayer].dostroke;
+			sc->layers[sc->layer_cnt + rlayer].fillfirst = rf->layers[rlayer].fillfirst;
+		}
+
+		sc->layer_cnt += rf->layer_cnt;
+		SCMoreLayers(sc, old);
 	}
-	sc->layer_cnt += rf->layer_cnt;
-	SCMoreLayers(sc,old);
-    } else {
-	if ( (spl = rf->layers[0].splines)!=NULL ) {
-	    while ( spl->next!=NULL )
-		spl = spl->next;
-	    spl->next = sc->layers[layer].splines;
-	    sc->layers[layer].splines = rf->layers[0].splines;
-	    rf->layers[0].splines = NULL;
-	    if ( sc->layers[layer].order2 && !sc->layers[layer].background )
-		SCClearInstrsOrMark(sc,layer,true);
+	else
+	{
+		if ((spl = rf->layers[0].splines) != NULL)
+		{
+			while (spl->next != NULL)
+			{
+				spl = spl->next;
+			}
+
+			spl->next = sc->layers[layer].splines;
+			sc->layers[layer].splines = rf->layers[0].splines;
+			rf->layers[0].splines = NULL;
+
+			if (sc->layers[layer].order2 && !sc->layers[layer].background)
+			{
+				SCClearInstrsOrMark(sc, layer, true);
+			}
+		}
 	}
-    }
-    SCRemoveDependent(sc,rf,layer);
+	SCRemoveDependent(sc, rf, layer);
 }
+
+// copy splines from reference to sc->layer
+void SCCopySplinesFromRef(RefChar* rf, SplineChar* sc, int layer)
+{
+	if (sc->parent->multilayer)
+	{
+		struct reflayer *src;
+		Layer			*dst;
+		SplinePointList *fore;
+		SplinePointList *temp;
+
+		dst = sc->layers + layer;
+		src = rf->layers;
+		
+		for (int i = 0; i < rf->layer_cnt; i++, src++)
+		{
+			fore = SplinePointListCopy(src->splines);
+
+			if (!src->order2 && dst->order2)
+			{
+				temp = SplineSetsTTFApprox(fore);
+				SplinePointListsFree(fore);
+				fore = temp;
+			}
+			else if (src->order2 && !dst->order2)
+			{
+				temp = SplineSetsPSApprox(fore);
+				SplinePointListsFree(fore);
+				fore = temp;
+			}
+
+			if (fore != NULL)
+			{
+				temp = fore;
+				while (temp->next != NULL)
+				{
+					temp = temp->next;
+				}
+
+				temp->next = dst->splines;
+				dst->splines = fore;
+			}
+		}
+
+		SCRemoveDependent(sc, rf, layer);
+	}
+}
+
 
 /* This returns all real solutions, even those out of bounds */
 /* I use -999999 as an error flag, since we're really only interested in */

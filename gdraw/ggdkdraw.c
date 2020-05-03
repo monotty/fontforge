@@ -398,6 +398,19 @@ static void _GGDKDraw_CenterWindowOnScreen(GGDKWindow gw) {
     gw->pos.x = (work_area.width - window_size.width) / 2 + work_area.x;
     gw->pos.y = (work_area.height - window_size.height) / 2 + work_area.y;
 
+    int center = work_area.width / 2 + work_area.x;
+
+    //todo: multiple monitors + xming (two monitors)
+    if (x > center)
+    {
+        gw->pos.x += center / 2;
+    }
+    else
+    {
+        gw->pos.x -= center / 2;
+    }
+
+
     if (gw->pos.x < work_area.x) {
         gw->pos.x = work_area.x;
     }
@@ -405,7 +418,7 @@ static void _GGDKDraw_CenterWindowOnScreen(GGDKWindow gw) {
     if (gw->pos.y < work_area.y) {
         gw->pos.y = work_area.y;
     }
-    gdk_window_move(gw->w, gw->pos.x, gw->pos.y);
+   gdk_window_move(gw->w, gw->pos.x, gw->pos.y);
 }
 
 static GWindow _GGDKDraw_CreateWindow(GGDKDisplay *gdisp, GGDKWindow gw, GRect *pos,
@@ -876,49 +889,61 @@ static gboolean _GGDKDraw_ProcessTimerEvent(gpointer user_data) {
     return ret;
 }
 
-static void _GGDKDraw_DispatchEvent(GdkEvent *event, gpointer data) {
+static void _GGDKDraw_DispatchEvent(GdkEvent* event, gpointer data)
+{
     //static int request_id = 0;
-    struct gevent gevent = {0};
-    GGDKDisplay *gdisp = (GGDKDisplay *)data;
-    GdkWindow *w = ((GdkEventAny *)event)->window;
+    struct gevent gevent = { 0 };
+    GGDKDisplay* gdisp = (GGDKDisplay*)data;
+    GdkWindow* w = ((GdkEventAny*)event)->window;
     GGDKWindow gw;
     guint32 event_time = gdk_event_get_time(event);
-    if (event_time != GDK_CURRENT_TIME) {
+    if (event_time != GDK_CURRENT_TIME)
+    {
         gdisp->last_event_time = event_time;
     }
 
     //Log(LOGDEBUG, "[%d] Received event %d(%s) %p", request_id++, event->type, GdkEventName(event->type), w);
     //fflush(stderr);
 
-    if (w == NULL) {
+    if (w == NULL)
+    {
         return;
-    } else if ((gw = g_object_get_data(G_OBJECT(w), "GGDKWindow")) == NULL) {
+    }
+    else if ((gw = g_object_get_data(G_OBJECT(w), "GGDKWindow")) == NULL)
+    {
         //Log(LOGDEBUG, "MISSING GW!");
         return;
-    } else if (_GGDKDraw_WindowOrParentsDying(gw) || gdk_window_is_destroyed(w)) {
+    }
+    else if (_GGDKDraw_WindowOrParentsDying(gw) || gdk_window_is_destroyed(w))
+    {
         Log(LOGDEBUG, "DYING! %p", w);
         return;
-    } else if (_GGDKDraw_FilterByModal(event, gw)) {
+    }
+    else if (_GGDKDraw_FilterByModal(event, gw))
+    {
         Log(LOGDEBUG, "Discarding event - has modals!");
         return;
     }
 
     gevent.w = (GWindow)gw;
-    gevent.native_window = (void *)gw->w;
+    gevent.native_window = (void*)gw->w;
     gevent.type = et_noevent;
 
-    switch (event->type) {
+    switch (event->type)
+    {
         case GDK_KEY_PRESS:
-        case GDK_KEY_RELEASE: {
-            GdkEventKey *key = (GdkEventKey *)event;
+        case GDK_KEY_RELEASE: 
+        {
+            GdkEventKey* key = (GdkEventKey*)event;
             gevent.type = event->type == GDK_KEY_PRESS ? et_char : et_charup;
-            gevent.u.chr.state = _GGDKDraw_GdkModifierToKsm(((GdkEventKey *)event)->state);
+            gevent.u.chr.state = _GGDKDraw_GdkModifierToKsm(((GdkEventKey*)event)->state);
 
 #ifdef GDK_WINDOWING_QUARTZ
             // On Mac, the Alt/Option key is used for alternate input.
             // We want accelerators, so translate ourselves, forcing the group to 0.
-            if ((gevent.u.chr.state & ksm_meta) && key->group != 0) {
-                GdkKeymap *km = gdk_keymap_get_for_display(gdisp->display);
+            if ((gevent.u.chr.state & ksm_meta) && key->group != 0)
+            {
+                GdkKeymap* km = gdk_keymap_get_for_display(gdisp->display);
                 guint keyval;
 
                 gdk_keymap_translate_keyboard_state(km, key->hardware_keycode,
@@ -933,19 +958,23 @@ static void _GGDKDraw_DispatchEvent(GdkEvent *event, gpointer data) {
 #endif
 
             gevent.u.chr.autorepeat =
-                event->type    == GDK_KEY_PRESS &&
+                event->type == GDK_KEY_PRESS &&
                 gdisp->ks.type == GDK_KEY_PRESS &&
-                key->keyval    == gdisp->ks.keyval &&
-                key->state     == gdisp->ks.state;
+                key->keyval == gdisp->ks.keyval &&
+                key->state == gdisp->ks.state;
             // Mumble mumble Mac
             //if ((event->xkey.state & ksm_option) && gdisp->macosx_cmd) {
             //    gevent.u.chr.state |= ksm_meta;
             //}
 
-            if (gevent.u.chr.autorepeat && GKeysymIsModifier(key->keyval)) {
+            if (gevent.u.chr.autorepeat && GKeysymIsModifier(key->keyval))
+            {
                 gevent.type = et_noevent;
-            } else {
-                if (key->keyval == GDK_KEY_space) {
+            }
+            else
+            {
+                if (key->keyval == GDK_KEY_space)
+                {
                     gw->display->is_space_pressed = event->type == GDK_KEY_PRESS;
                 }
 
@@ -953,29 +982,30 @@ static void _GGDKDraw_DispatchEvent(GdkEvent *event, gpointer data) {
                 gevent.u.chr.chars[0] = gdk_keyval_to_unicode(key->keyval);
             }
 
-            gdisp->ks.type   = key->type;
+            gdisp->ks.type = key->type;
             gdisp->ks.keyval = key->keyval;
-            gdisp->ks.state  = key->state;
+            gdisp->ks.state = key->state;
         }
-        break;
+                            break;
         case GDK_MOTION_NOTIFY: {
-            GdkEventMotion *evt = (GdkEventMotion *)event;
+            GdkEventMotion* evt = (GdkEventMotion*)event;
             gevent.type = et_mousemove;
             gevent.u.mouse.state = _GGDKDraw_GdkModifierToKsm(evt->state);
             gevent.u.mouse.x = evt->x;
             gevent.u.mouse.y = evt->y;
             //Log(LOGDEBUG, "Motion: [%f %f]", evt->x, evt->y);
         }
-        break;
+                              break;
         case GDK_SCROLL: { //Synthesize a button press
-            GdkEventScroll *evt = (GdkEventScroll *)event;
+            GdkEventScroll* evt = (GdkEventScroll*)event;
             gevent.u.mouse.state = _GGDKDraw_GdkModifierToKsm(evt->state);
             gevent.u.mouse.x = evt->x;
             gevent.u.mouse.y = evt->y;
             gevent.u.mouse.clicks = gdisp->bs.cur_click = 1;
             gevent.type = et_mousedown;
 
-            switch (evt->direction) {
+            switch (evt->direction)
+            {
                 case GDK_SCROLL_UP:
                     gevent.u.mouse.button = 4;
                     break;
@@ -992,15 +1022,16 @@ static void _GGDKDraw_DispatchEvent(GdkEvent *event, gpointer data) {
                     gevent.type = et_noevent;
             }
             // We need to simulate two events... I think.
-            if (gevent.type != et_noevent) {
+            if (gevent.type != et_noevent)
+            {
                 GGDKDrawPostEvent(&gevent);
                 gevent.type = et_mouseup;
             }
         }
-        break;
+                       break;
         case GDK_BUTTON_PRESS:
         case GDK_BUTTON_RELEASE: {
-            GdkEventButton *evt = (GdkEventButton *)event;
+            GdkEventButton* evt = (GdkEventButton*)event;
             gevent.u.mouse.state = _GGDKDraw_GdkModifierToKsm(evt->state);
             gevent.u.mouse.x = evt->x;
             gevent.u.mouse.y = evt->y;
@@ -1013,16 +1044,18 @@ static void _GGDKDraw_DispatchEvent(GdkEvent *event, gpointer data) {
             // Quartz backend fails to give a button press event
             // https://bugzilla.gnome.org/show_bug.cgi?id=769961
             if (!evt->send_event && evt->type == GDK_BUTTON_RELEASE &&
-                    gdisp->bs.release_w == gw &&
-                    (evt->x < 0 || evt->x > gw->pos.width ||
-                     evt->y < 0 || evt->y > gw->pos.height)) {
+                gdisp->bs.release_w == gw &&
+                (evt->x < 0 || evt->x > gw->pos.width ||
+                    evt->y < 0 || evt->y > gw->pos.height))
+            {
                 evt->send_event = true;
                 gdk_event_put(event);
                 event->type = GDK_BUTTON_PRESS;
             }
 #endif
 
-            if (event->type == GDK_BUTTON_PRESS) {
+            if (event->type == GDK_BUTTON_PRESS)
+            {
                 int xdiff, ydiff;
                 gevent.type = et_mousedown;
 
@@ -1030,17 +1063,22 @@ static void _GGDKDraw_DispatchEvent(GdkEvent *event, gpointer data) {
                 ydiff = abs(((int)evt->y) - gdisp->bs.release_y);
 
                 if (xdiff + ydiff < gdisp->bs.double_wiggle &&
-                        gw == gdisp->bs.release_w &&
-                        gevent.u.mouse.button == gdisp->bs.release_button &&
-                        (int32_t)(gevent.u.mouse.time - gdisp->bs.last_press_time) < gdisp->bs.double_time &&
-                        gevent.u.mouse.time >= gdisp->bs.last_press_time) {  // Time can wrap
+                    gw == gdisp->bs.release_w &&
+                    gevent.u.mouse.button == gdisp->bs.release_button &&
+                    (int32_t)(gevent.u.mouse.time - gdisp->bs.last_press_time) < gdisp->bs.double_time &&
+                    gevent.u.mouse.time >= gdisp->bs.last_press_time)
+                {  // Time can wrap
 
                     gdisp->bs.cur_click++;
-                } else {
+                }
+                else
+                {
                     gdisp->bs.cur_click = 1;
                 }
                 gdisp->bs.last_press_time = gevent.u.mouse.time;
-            } else {
+            }
+            else
+            {
                 gevent.type = et_mouseup;
                 gdisp->bs.release_w = gw;
                 gdisp->bs.release_x = evt->x;
@@ -1049,15 +1087,15 @@ static void _GGDKDraw_DispatchEvent(GdkEvent *event, gpointer data) {
             }
             gevent.u.mouse.clicks = gdisp->bs.cur_click;
         }
-        break;
+                               break;
         case GDK_EXPOSE: {
-            GdkEventExpose *expose = (GdkEventExpose *)event;
+            GdkEventExpose* expose = (GdkEventExpose*)event;
             // Okay. So on GDK3, we must exclude child window regions to prevent flicker.
             // However, we cannot modify the expose event's region directly, as this is
             // used by GDK to determine what child windows to invalidate. Hence, we must
             // make a copy of the region, sans any child window areas.
             cairo_rectangle_int_t extents;
-            cairo_region_t *reg = _GGDKDraw_ExcludeChildRegions(gw, expose->region, true);
+            cairo_region_t* reg = _GGDKDraw_ExcludeChildRegions(gw, expose->region, true);
             cairo_region_get_extents(reg, &extents);
 
             gevent.type = et_expose;
@@ -1085,7 +1123,8 @@ static void _GGDKDraw_DispatchEvent(GdkEvent *event, gpointer data) {
             // So we have to (a) ensure we draw to an offscreen surface,
             // and (b) clip the region appropriately. But on Windows
             // (and maybe Quartz), it seems to double buffer anyway.
-            if (!gdk_window_has_native(gw->w)) {
+            if (!gdk_window_has_native(gw->w))
+            {
 #if !defined(GDK_WINDOWING_WIN32) && !defined(GDK_WINDOWING_QUARTZ)
                 double sx = 1, sy = 1;
 
@@ -1108,23 +1147,25 @@ static void _GGDKDraw_DispatchEvent(GdkEvent *event, gpointer data) {
             }
             cairo_region_destroy(reg);
         }
-        break;
+                       break;
         case GDK_VISIBILITY_NOTIFY:
             gevent.type = et_visibility;
-            gevent.u.visibility.state = _GGDKDraw_GdkVisibilityStateToVS(((GdkEventVisibility *)event)->state);
+            gevent.u.visibility.state = _GGDKDraw_GdkVisibilityStateToVS(((GdkEventVisibility*)event)->state);
             break;
         case GDK_FOCUS_CHANGE:
             gevent.type = et_focus;
-            gevent.u.focus.gained_focus = ((GdkEventFocus *)event)->in;
+            gevent.u.focus.gained_focus = ((GdkEventFocus*)event)->in;
             gevent.u.focus.mnemonic_focus = false;
 
             Log(LOGDEBUG, "Focus change %s %p(%s %d %d)",
                 gevent.u.focus.gained_focus ? "IN" : "OUT",
                 gw, gw->window_title, gw->is_toplevel, gw->istransient);
 
-            if (gw->mru_link && gevent.u.focus.gained_focus) {
+            if (gw->mru_link && gevent.u.focus.gained_focus)
+            {
                 GGDKWindow cur_toplevel = (GGDKWindow)g_queue_peek_head(gdisp->mru_windows);
-                if (cur_toplevel != gw) {
+                if (cur_toplevel != gw)
+                {
                     Log(LOGDEBUG, "Last active toplevel updated: %p(%s)", gw, gw->window_title);
                     g_queue_unlink(gdisp->mru_windows, gw->mru_link);
                     g_queue_push_head_link(gdisp->mru_windows, gw->mru_link);
@@ -1134,11 +1175,13 @@ static void _GGDKDraw_DispatchEvent(GdkEvent *event, gpointer data) {
             break;
         case GDK_ENTER_NOTIFY:
         case GDK_LEAVE_NOTIFY: { // Should only get this on top level
-            GdkEventCrossing *crossing = (GdkEventCrossing *)event;
-            if (crossing->focus) { //Focus or inferior
+            GdkEventCrossing* crossing = (GdkEventCrossing*)event;
+            if (crossing->focus)
+            { //Focus or inferior
                 break;
             }
-            if (gdisp->focusfollowsmouse && gw != NULL && gw->eh != NULL) {
+            if (gdisp->focusfollowsmouse && gw != NULL && gw->eh != NULL)
+            {
                 gevent.type = et_focus;
                 gevent.u.focus.gained_focus = crossing->type == GDK_ENTER_NOTIFY;
                 gevent.u.focus.mnemonic_focus = false;
@@ -1155,45 +1198,51 @@ static void _GGDKDraw_DispatchEvent(GdkEvent *event, gpointer data) {
             // Always set to false when crossing boundary...
             gw->display->is_space_pressed = false;
         }
-        break;
+                             break;
         case GDK_CONFIGURE: {
-            GdkEventConfigure *configure = (GdkEventConfigure *)event;
+            GdkEventConfigure* configure = (GdkEventConfigure*)event;
             gevent.type = et_resize;
-            gevent.u.resize.size.x      = configure->x;
-            gevent.u.resize.size.y      = configure->y;
-            gevent.u.resize.size.width  = configure->width;
+            gevent.u.resize.size.x = configure->x;
+            gevent.u.resize.size.y = configure->y;
+            gevent.u.resize.size.width = configure->width;
             gevent.u.resize.size.height = configure->height;
-            gevent.u.resize.dx          = configure->x - gw->pos.x;
-            gevent.u.resize.dy          = configure->y - gw->pos.y;
-            gevent.u.resize.dwidth      = configure->width - gw->pos.width;
-            gevent.u.resize.dheight     = configure->height - gw->pos.height;
-            gevent.u.resize.moved       = gevent.u.resize.sized = false;
-            if (gevent.u.resize.dx != 0 || gevent.u.resize.dy != 0) {
+            gevent.u.resize.dx = configure->x - gw->pos.x;
+            gevent.u.resize.dy = configure->y - gw->pos.y;
+            gevent.u.resize.dwidth = configure->width - gw->pos.width;
+            gevent.u.resize.dheight = configure->height - gw->pos.height;
+            gevent.u.resize.moved = gevent.u.resize.sized = false;
+            if (gevent.u.resize.dx != 0 || gevent.u.resize.dy != 0)
+            {
                 gevent.u.resize.moved = true;
                 gw->is_centered = false;
             }
-            if (gevent.u.resize.dwidth != 0 || gevent.u.resize.dheight != 0) {
+            if (gevent.u.resize.dwidth != 0 || gevent.u.resize.dheight != 0)
+            {
                 gevent.u.resize.sized = true;
             }
 
             // I could make this Windows specific... But it doesn't seem necessary on other platforms too.
             // On Windows, repeated configure messages are sent if we move the window around.
             // This causes CPU usage to go up because mouse handlers of this message just redraw the whole window.
-            if (gw->is_toplevel && !gevent.u.resize.sized && gevent.u.resize.moved) {
+            if (gw->is_toplevel && !gevent.u.resize.sized && gevent.u.resize.moved)
+            {
                 gevent.type = et_noevent;
                 Log(LOGDEBUG, "Configure DISCARDED: %p:%s, %d %d %d %d", gw, gw->window_title, gw->pos.x, gw->pos.y, gw->pos.width, gw->pos.height);
-            } else {
+            }
+            else
+            {
                 Log(LOGDEBUG, "CONFIGURED: %p:%s, %d %d %d %d", gw, gw->window_title, gw->pos.x, gw->pos.y, gw->pos.width, gw->pos.height);
             }
             gw->pos = gevent.u.resize.size;
 
             // Update the opaque region (we're always completely opaque)
             // Although I don't actually know if this is completely necessary
-            if (gw->is_toplevel && gevent.u.resize.sized) {
+            if (gw->is_toplevel && gevent.u.resize.sized)
+            {
                 _GGDKDraw_SetOpaqueRegion(gw);
             }
         }
-        break;
+                          break;
         case GDK_MAP:
             gevent.type = et_map;
             gevent.u.map.is_visible = true;
@@ -1214,28 +1263,31 @@ static void _GGDKDraw_DispatchEvent(GdkEvent *event, gpointer data) {
         case GDK_SELECTION_CLEAR: {
             gevent.type = et_selclear;
             gevent.u.selclear.sel = sn_primary;
-            for (int i = 0; i < sn_max; i++) {
-                GdkEventSelection *se = (GdkEventSelection *)event;
-                if (se->selection == gdisp->selinfo[i].sel_atom) {
+            for (int i = 0; i < sn_max; i++)
+            {
+                GdkEventSelection* se = (GdkEventSelection*)event;
+                if (se->selection == gdisp->selinfo[i].sel_atom)
+                {
                     gevent.u.selclear.sel = i;
                     break;
                 }
             }
             _GGDKDraw_ClearSelData(gdisp, gevent.u.selclear.sel);
         }
-        break;
+                                break;
         case GDK_SELECTION_REQUEST: {
-            GdkEventSelection *e = (GdkEventSelection *)event;
+            GdkEventSelection* e = (GdkEventSelection*)event;
             gdk_selection_send_notify(
                 e->requestor, e->selection, e->target,
                 _GGDKDraw_TransmitSelection(gdisp, e) ? e->property : GDK_NONE,
                 e->time);
         }
-        break;
+                                  break;
         case GDK_SELECTION_NOTIFY: // paste
-            if (gw->is_waiting_for_selection) {
+            if (gw->is_waiting_for_selection)
+            {
                 gw->is_waiting_for_selection = false;
-                gw->is_notified_of_selection = ((GdkEventSelection *)event)->property != GDK_NONE;
+                gw->is_notified_of_selection = ((GdkEventSelection*)event)->property != GDK_NONE;
             }
             break;
         case GDK_PROPERTY_NOTIFY:
@@ -1245,7 +1297,8 @@ static void _GGDKDraw_DispatchEvent(GdkEvent *event, gpointer data) {
             break;
     }
 
-    if (gevent.type != et_noevent && gw != NULL && gw->eh != NULL) {
+    if (gevent.type != et_noevent && gw != NULL && gw->eh != NULL)
+    {
         _GGDKDraw_CallEHChecked(gw, &gevent, gw->eh);
     }
     //Log(LOGDEBUG, "[%d] Finished processing %d(%s)", request_id++, event->type, GdkEventName(event->type));

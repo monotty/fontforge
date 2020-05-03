@@ -1174,7 +1174,7 @@ return( false );
     }
 return( true );
 }
-
+ 
 static void FVMenuOpenOutline(GWindow gw, struct gmenuitem *UNUSED(mi), GEvent *UNUSED(e)) {
     FontView *fv = (FontView *) GDrawGetUserData(gw);
     int i;
@@ -1497,6 +1497,7 @@ static void FVMenuCondense(GWindow gw, struct gmenuitem *UNUSED(mi), GEvent *UNU
 #define MID_CharSwap	20904
 #define MID_CharInvite	20905
 #define MID_CharReject	20906
+#define MID_CharBuild	20907
 
 
 #define MID_Warnings	3000
@@ -2796,7 +2797,7 @@ static void FVMenuInterpFonts(GWindow gw, struct gmenuitem *UNUSED(mi), GEvent *
     FontView *fv = (FontView *) GDrawGetUserData(gw);
     FVInterpolateFonts(fv);
 }
-
+ 
 static void FVShowInfo(FontView *fv);
 
 void FVChangeChar(FontView *fv,int i) {
@@ -3567,6 +3568,67 @@ static void FVMenuSwap(GWindow gw, struct gmenuitem *mi, GEvent *UNUSED(e))
     sf->changed = true;
     FVRefreshAll(sf);
 }
+
+static void FVMenuBuildGlyph(GWindow gw, struct gmenuitem* mi, GEvent* UNUSED(e))
+{
+    FontView* fv = (FontView*)GDrawGetUserData(gw);
+
+    // Clear Background
+    FVClearBackground((FontViewBase*)fv);
+
+    // Clear Hints (SEGFAULT if it is no Fg)
+    FVClearHints(&fv->b);
+
+    // Copy Fg to Bg
+    FVCopyFgtoBg((FontViewBase*)fv);
+
+    // Unlink references
+    FVRefsToSplines((FontViewBase*)fv);
+
+    // Expand Stroke
+    FVBuildStroke(fv);
+
+    //StrokeGetConvex(toknum, cpy);
+    //CVStrokeInfo();
+    //MakeStrokeDlg(fv, FVStrokeItScript, CVStrokeInfo(), false);
+
+
+    //FontView* fv = (FontView*)GDrawGetUserData(gw);
+    //SplineFont* sf = fv->b.sf;
+    //EncMap* map = fv->b.map;
+    //
+    //int count = 0;
+    //int* stack;
+    //
+    //stack = malloc(map->enccount);
+    //
+    //for (int i = 0; i < map->enccount; ++i)
+    //{
+    //    if (fv->b.selected[i])
+    //    {
+    //        stack[count++] = i;
+    //    }
+    //}
+    //
+    //count >>= 1;
+    //
+    //for (int i = 0; i < count; i++)
+    //{
+    //    int32 glyph1_enc = stack[i];
+    //    int32 glyph2_enc = stack[i + count];
+    //
+    //    swap_glyphs(map, glyph1_enc, glyph2_enc);
+    //}
+    //
+    //free(stack);
+    //
+
+    FontViewBase* b = fv;
+    b->sf->changed = true;
+    FVRefreshAll(b->sf);
+}
+
+
 
 static void FVMenuAutoWidth(GWindow gw, struct gmenuitem *UNUSED(mi), GEvent *UNUSED(e)) {
     FontView *fv = (FontView *) GDrawGetUserData(gw);
@@ -4776,7 +4838,9 @@ static GMenuItem2 validlist[] = {
 
 static GMenuItem2 ellist[] = {
     { { (unichar_t *) N_("_Font Info..."), (GImage *) "elementfontinfo.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'F' }, H_("Font Info...|No Shortcut"), NULL, NULL, FVMenuFontInfo, MID_FontInfo },
+    
     { { (unichar_t *) N_("_Glyph Info..."), (GImage *) "elementglyphinfo.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'I' }, H_("Glyph Info...|No Shortcut"), NULL, NULL, FVMenuCharInfo, MID_CharInfo },
+    
     { { (unichar_t *) N_("Other Info"), (GImage *) "elementotherinfo.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'I' }, H_("Other Info|No Shortcut"), infolist, infolistcheck, NULL, 0 },
     { { (unichar_t *) N_("_Validation"), (GImage *) "elementvalidate.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'I' }, H_("Validation|No Shortcut"), validlist, validlistcheck, NULL, 0 },
     { { NULL, NULL, COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 1, 0, 0, 0, '\0' }, NULL, NULL, NULL, NULL, 0 }, /* line */
@@ -5689,6 +5753,9 @@ GMenuItem fvpopupmenu[] = {
     { { (unichar_t*)N_("Invite"), (GImage*)"filenew.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'V' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuInvite, MID_CharInvite },
     { { (unichar_t*)N_("Reject"), (GImage*)"editcut.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'V' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuReject, MID_CharReject },
     GMENUITEM_LINE,
+    //{ { (unichar_t*)N_("Build Glyph"), (GImage*)"helpabout.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'V' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuBuildGlyph, MID_CharBuild },
+    { { (unichar_t*)N_("Build Glyph"), (GImage*)"choosermacttf.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'V' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuBuildGlyph, MID_CharBuild },
+    GMENUITEM_LINE,
 
     { { (unichar_t*)N_("New O_utline Window"), 0, COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'u' }, '\0', ksm_control, NULL, NULL, FVMenuOpenOutline, MID_OpenOutline },
     GMENUITEM_LINE,
@@ -5701,7 +5768,9 @@ GMenuItem fvpopupmenu[] = {
     { { (unichar_t*)N_("Copy _Fg To Bg"), (GImage*)"editcopyfg2bg.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'F' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuCopyFgBg, MID_CopyFgToBg },
     { { (unichar_t*)N_("U_nlink Reference"), (GImage*)"editunlink.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'U' }, '\0', ksm_control, NULL, NULL, FVMenuUnlinkRef, MID_UnlinkRef },
     { { NULL, NULL, COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 1, 0, 0, 0, '\0' }, '\0', 0, NULL, NULL, NULL, 0 }, /* line */
+    
     { { (unichar_t*)N_("Glyph _Info..."), (GImage*)"elementglyphinfo.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'I' }, '\0', ksm_control, NULL, NULL, FVMenuCharInfo, MID_CharInfo },
+    
     { { (unichar_t*)N_("_Transform..."), (GImage*)"elementtransform.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'T' }, '\0', ksm_control, NULL, NULL, FVMenuTransform, MID_Transform },
     { { (unichar_t*)N_("_Expand Stroke..."), (GImage*)"elementexpandstroke.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'E' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuStroke, MID_Stroke },
     { { (unichar_t*)N_("To _Int"), (GImage*)"elementround.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'I' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuRound2Int, MID_Round },
@@ -6267,188 +6336,230 @@ return;
     GDrawRequestExpose(fv->gw,&r,false);
 }
 
-void FVChar(FontView *fv, GEvent *event) {
-    int i,pos, cnt, gid;
+void FVChar(FontView* fv, GEvent* event)
+{
+    int i, pos, cnt, gid;
     extern int navigation_mask;
 
 #if MyMemory
-    if ( event->u.chr.keysym == GK_F2 ) {
-	fprintf( stderr, "Malloc debug on\n" );
-	__malloc_debug(5);
-    } else if ( event->u.chr.keysym == GK_F3 ) {
-	fprintf( stderr, "Malloc debug off\n" );
-	__malloc_debug(0);
+    if (event->u.chr.keysym == GK_F2)
+    {
+        fprintf(stderr, "Malloc debug on\n");
+        __malloc_debug(5);
+    }
+    else if (event->u.chr.keysym == GK_F3)
+    {
+        fprintf(stderr, "Malloc debug off\n");
+        __malloc_debug(0);
     }
 #endif
 
-    if ( event->u.chr.keysym=='s' &&
-	    (event->u.chr.state&ksm_control) &&
-	    (event->u.chr.state&ksm_meta) )
-	MenuSaveAll(NULL,NULL,NULL);
-    else if ( event->u.chr.keysym=='q' &&
-	    (event->u.chr.state&ksm_control) &&
-	    (event->u.chr.state&ksm_meta) )
-	MenuExit(NULL,NULL,NULL);
-    else if ( event->u.chr.keysym=='I' &&
-	    (event->u.chr.state&ksm_shift) &&
-	    (event->u.chr.state&ksm_meta) )
-	FVMenuCharInfo(fv->gw,NULL,NULL);
-    else if ( (event->u.chr.keysym=='[' || event->u.chr.keysym==']') &&
-	    (event->u.chr.state&ksm_control) ) {
-	_FVMenuChangeChar(fv,event->u.chr.keysym=='['?MID_Prev:MID_Next);
-    } else if ( (event->u.chr.keysym=='{' || event->u.chr.keysym=='}') &&
-	    (event->u.chr.state&ksm_control) ) {
-	_FVMenuChangeChar(fv,event->u.chr.keysym=='{'?MID_PrevDef:MID_NextDef);
-    } else if ( event->u.chr.keysym=='\\' && (event->u.chr.state&ksm_control) ) {
-	/* European keyboards need a funky modifier to get \ */
-	FVDoTransform(fv);
+    if (event->u.chr.keysym == 's' &&
+        (event->u.chr.state & ksm_control) &&
+        (event->u.chr.state & ksm_meta))
+        MenuSaveAll(NULL, NULL, NULL);
+    else if (event->u.chr.keysym == 'q' &&
+        (event->u.chr.state & ksm_control) &&
+        (event->u.chr.state & ksm_meta))
+        MenuExit(NULL, NULL, NULL);
+    else if (event->u.chr.keysym == 'I' &&
+        (event->u.chr.state & ksm_shift) &&
+        (event->u.chr.state & ksm_meta))
+        FVMenuCharInfo(fv->gw, NULL, NULL);
+    else if ((event->u.chr.keysym == '[' || event->u.chr.keysym == ']') &&
+        (event->u.chr.state & ksm_control))
+    {
+        _FVMenuChangeChar(fv, event->u.chr.keysym == '[' ? MID_Prev : MID_Next);
+    }
+    else if ((event->u.chr.keysym == '{' || event->u.chr.keysym == '}') &&
+        (event->u.chr.state & ksm_control))
+    {
+        _FVMenuChangeChar(fv, event->u.chr.keysym == '{' ? MID_PrevDef : MID_NextDef);
+    }
+    else if (event->u.chr.keysym == '\\' && (event->u.chr.state & ksm_control))
+    {
+        /* European keyboards need a funky modifier to get \ */
+        FVDoTransform(fv);
 #if !defined(_NO_FFSCRIPT) || !defined(_NO_PYTHON)
-    } else if ( isdigit(event->u.chr.keysym) && (event->u.chr.state&ksm_control) &&
-	    (event->u.chr.state&ksm_meta) ) {
-	/* The Script menu isn't always up to date, so we might get one of */
-	/*  the shortcuts here */
-	int index = event->u.chr.keysym-'1';
-	if ( index<0 ) index = 9;
-	if ( script_filenames[index]!=NULL )
-	    ExecuteScriptFile((FontViewBase *) fv,NULL,script_filenames[index]);
+    }
+    else if (isdigit(event->u.chr.keysym) && (event->u.chr.state & ksm_control) &&
+        (event->u.chr.state & ksm_meta))
+    {
+        /* The Script menu isn't always up to date, so we might get one of */
+        /*  the shortcuts here */
+        int index = event->u.chr.keysym - '1';
+        if (index < 0) index = 9;
+        if (script_filenames[index] != NULL)
+            ExecuteScriptFile((FontViewBase*)fv, NULL, script_filenames[index]);
 #endif
-    } else if ( event->u.chr.keysym == GK_Left ||
-	    event->u.chr.keysym == GK_Tab ||
-	    event->u.chr.keysym == GK_BackTab ||
-	    event->u.chr.keysym == GK_Up ||
-	    event->u.chr.keysym == GK_Right ||
-	    event->u.chr.keysym == GK_Down ||
-	    event->u.chr.keysym == GK_KP_Left ||
-	    event->u.chr.keysym == GK_KP_Up ||
-	    event->u.chr.keysym == GK_KP_Right ||
-	    event->u.chr.keysym == GK_KP_Down ||
-	    event->u.chr.keysym == GK_Home ||
-	    event->u.chr.keysym == GK_KP_Home ||
-	    event->u.chr.keysym == GK_End ||
-	    event->u.chr.keysym == GK_KP_End ||
-	    event->u.chr.keysym == GK_Page_Up ||
-	    event->u.chr.keysym == GK_KP_Page_Up ||
-	    event->u.chr.keysym == GK_Prior ||
-	    event->u.chr.keysym == GK_Page_Down ||
-	    event->u.chr.keysym == GK_KP_Page_Down ||
-	    event->u.chr.keysym == GK_Next ) {
-	int end_pos = fv->end_pos;
-	/* We move the currently selected char. If there is none, then pick */
-	/*  something on the screen */
-	if ( end_pos==-1 )
-	    end_pos = (fv->rowoff+fv->rowcnt/2)*fv->colcnt;
-	switch ( event->u.chr.keysym ) {
-	  case GK_Tab:
-	    pos = end_pos;
-	    do {
-		if ( event->u.chr.state&ksm_shift )
-		    --pos;
-		else
-		    ++pos;
-		if ( pos>=fv->b.map->enccount ) pos = 0;
-		else if ( pos<0 ) pos = fv->b.map->enccount-1;
-	    } while ( pos!=end_pos &&
-		    ((gid=fv->b.map->map[pos])==-1 || !SCWorthOutputting(fv->b.sf->glyphs[gid])));
-	    if ( pos==end_pos ) ++pos;
-	    if ( pos>=fv->b.map->enccount ) pos = 0;
-	  break;
+    }
+    else if (event->u.chr.keysym == GK_Left ||
+        event->u.chr.keysym == GK_Tab ||
+        event->u.chr.keysym == GK_BackTab ||
+        event->u.chr.keysym == GK_Up ||
+        event->u.chr.keysym == GK_Right ||
+        event->u.chr.keysym == GK_Down ||
+        event->u.chr.keysym == GK_KP_Left ||
+        event->u.chr.keysym == GK_KP_Up ||
+        event->u.chr.keysym == GK_KP_Right ||
+        event->u.chr.keysym == GK_KP_Down ||
+        event->u.chr.keysym == GK_Home ||
+        event->u.chr.keysym == GK_KP_Home ||
+        event->u.chr.keysym == GK_End ||
+        event->u.chr.keysym == GK_KP_End ||
+        event->u.chr.keysym == GK_Page_Up ||
+        event->u.chr.keysym == GK_KP_Page_Up ||
+        event->u.chr.keysym == GK_Prior ||
+        event->u.chr.keysym == GK_Page_Down ||
+        event->u.chr.keysym == GK_KP_Page_Down ||
+        event->u.chr.keysym == GK_Next)
+    {
+        int end_pos = fv->end_pos;
+        /* We move the currently selected char. If there is none, then pick */
+        /*  something on the screen */
+        if (end_pos == -1)
+            end_pos = (fv->rowoff + fv->rowcnt / 2) * fv->colcnt;
+        switch (event->u.chr.keysym)
+        {
+            case GK_Tab:
+                pos = end_pos;
+                do
+                {
+                    if (event->u.chr.state & ksm_shift)
+                        --pos;
+                    else
+                        ++pos;
+                    if (pos >= fv->b.map->enccount) pos = 0;
+                    else if (pos < 0) pos = fv->b.map->enccount - 1;
+                }
+                while (pos != end_pos &&
+                    ((gid = fv->b.map->map[pos]) == -1 || !SCWorthOutputting(fv->b.sf->glyphs[gid])));
+                if (pos == end_pos) ++pos;
+                if (pos >= fv->b.map->enccount) pos = 0;
+                break;
 #if GK_Tab!=GK_BackTab
-	  case GK_BackTab:
-	    pos = end_pos;
-	    do {
-		--pos;
-		if ( pos<0 ) pos = fv->b.map->enccount-1;
-	    } while ( pos!=end_pos &&
-		    ((gid=fv->b.map->map[pos])==-1 || !SCWorthOutputting(fv->b.sf->glyphs[gid])));
-	    if ( pos==end_pos ) --pos;
-	    if ( pos<0 ) pos = 0;
-	  break;
+            case GK_BackTab:
+                pos = end_pos;
+                do
+                {
+                    --pos;
+                    if (pos < 0) pos = fv->b.map->enccount - 1;
+                }
+                while (pos != end_pos &&
+                    ((gid = fv->b.map->map[pos]) == -1 || !SCWorthOutputting(fv->b.sf->glyphs[gid])));
+                if (pos == end_pos) --pos;
+                if (pos < 0) pos = 0;
+                break;
 #endif
-	  case GK_Left: case GK_KP_Left:
-	    pos = end_pos-1;
-	  break;
-	  case GK_Right: case GK_KP_Right:
-	    pos = end_pos+1;
-	  break;
-	  case GK_Up: case GK_KP_Up:
-	    pos = end_pos-fv->colcnt;
-	  break;
-	  case GK_Down: case GK_KP_Down:
-	    pos = end_pos+fv->colcnt;
-	  break;
-	  case GK_End: case GK_KP_End:
-	    pos = fv->b.map->enccount;
-	  break;
-	  case GK_Home: case GK_KP_Home:
-	    pos = 0;
-	    if ( fv->b.sf->top_enc!=-1 && fv->b.sf->top_enc<fv->b.map->enccount )
-		pos = fv->b.sf->top_enc;
-	    else {
-		pos = SFFindSlot(fv->b.sf,fv->b.map,home_char,NULL);
-		if ( pos==-1 ) pos = 0;
-	    }
-	  break;
-	  case GK_Page_Up: case GK_KP_Page_Up:
+            case GK_Left: case GK_KP_Left:
+                pos = end_pos - 1;
+                break;
+            case GK_Right: case GK_KP_Right:
+                pos = end_pos + 1;
+                break;
+            case GK_Up: case GK_KP_Up:
+                pos = end_pos - fv->colcnt;
+                break;
+            case GK_Down: case GK_KP_Down:
+                pos = end_pos + fv->colcnt;
+                break;
+            case GK_End: case GK_KP_End:
+                pos = fv->b.map->enccount;
+                break;
+            case GK_Home: case GK_KP_Home:
+                pos = 0;
+                if (fv->b.sf->top_enc != -1 && fv->b.sf->top_enc < fv->b.map->enccount)
+                    pos = fv->b.sf->top_enc;
+                else
+                {
+                    pos = SFFindSlot(fv->b.sf, fv->b.map, home_char, NULL);
+                    if (pos == -1) pos = 0;
+                }
+                break;
+            case GK_Page_Up: case GK_KP_Page_Up:
 #if GK_Prior!=GK_Page_Up
-	  case GK_Prior:
+            case GK_Prior:
 #endif
-	    pos = (fv->rowoff-fv->rowcnt+1)*fv->colcnt;
-	  break;
-	  case GK_Page_Down: case GK_KP_Page_Down:
+                pos = (fv->rowoff - fv->rowcnt + 1) * fv->colcnt;
+                break;
+            case GK_Page_Down: case GK_KP_Page_Down:
 #if GK_Next!=GK_Page_Down
-	  case GK_Next:
+            case GK_Next:
 #endif
-	    pos = (fv->rowoff+fv->rowcnt+1)*fv->colcnt;
-	  break;
-	}
-	if ( pos<0 ) pos = 0;
-	if ( pos>=fv->b.map->enccount ) pos = fv->b.map->enccount-1;
-	if ( event->u.chr.state&ksm_shift && event->u.chr.keysym!=GK_Tab && event->u.chr.keysym!=GK_BackTab ) {
-	    FVReselect(fv,pos);
-	} else {
-	    FVDeselectAll(fv);
-	    fv->b.selected[pos] = true;
-	    FVToggleCharSelected(fv,pos);
-	    fv->pressed_pos = pos;
-	    fv->sel_index = 1;
-	}
-	fv->end_pos = pos;
-	FVShowInfo(fv);
-	FVScrollToChar(fv,pos);
-    } else if ( event->u.chr.keysym == GK_Help ) {
-	MenuHelp(NULL,NULL,NULL);	/* Menu does F1 */
-    } else if ( event->u.chr.keysym == GK_Escape ) {
-	FVDeselectAll(fv);
-    } else if ( event->u.chr.chars[0]=='\r' || event->u.chr.chars[0]=='\n' ) {
-	if ( fv->b.container!=NULL && fv->b.container->funcs->is_modal )
-return;
-	for ( i=cnt=0; i<fv->b.map->enccount && cnt<10; ++i ) if ( fv->b.selected[i] ) {
-	    SplineChar *sc = SFMakeChar(fv->b.sf,fv->b.map,i);
-	    if ( fv->show==fv->filled ) {
-		CharViewCreate(sc,fv,i);
-	    } else {
-		BDFFont *bdf = fv->show;
-		BitmapViewCreate(BDFMakeGID(bdf,sc->orig_pos),bdf,fv,i);
-	    }
-	    ++cnt;
-	}
-    } else if ( (event->u.chr.state&((GMenuMask()|navigation_mask)&~(ksm_shift|ksm_capslock)))==navigation_mask &&
-	    event->type == et_char &&
-	    event->u.chr.keysym!=0 &&
-	    (event->u.chr.keysym<GK_Special/* || event->u.chr.keysym>=0x10000*/)) {
-	SplineFont *sf = fv->b.sf;
-	int enc = EncFromUni(event->u.chr.keysym,fv->b.map->enc);
-	if ( enc==-1 ) {
-	    for ( i=0; i<sf->glyphcnt; ++i ) {
-		if ( sf->glyphs[i]!=NULL )
-		    if ( sf->glyphs[i]->unicodeenc==event->u.chr.keysym )
-	    break;
-	    }
-	    if ( i!=-1 )
-		enc = fv->b.map->backmap[i];
-	}
-	if ( enc<fv->b.map->enccount && enc!=-1 )
-	    FVChangeChar(fv,enc);
+                pos = (fv->rowoff + fv->rowcnt + 1) * fv->colcnt;
+                break;
+        }
+        if (pos < 0) pos = 0;
+        if (pos >= fv->b.map->enccount) pos = fv->b.map->enccount - 1;
+        if (event->u.chr.state & ksm_shift 
+            && event->u.chr.keysym != GK_Tab 
+            && event->u.chr.keysym != GK_BackTab)
+        {
+            FVReselect(fv, pos);
+        }
+        else
+        {
+            FVDeselectAll(fv);
+            fv->b.selected[pos] = true;
+            FVToggleCharSelected(fv, pos);
+            fv->pressed_pos = pos;
+            fv->sel_index = 1;
+        }
+        fv->end_pos = pos;
+        FVShowInfo(fv);
+        FVScrollToChar(fv, pos);
+    }
+    else if (event->u.chr.keysym == GK_Help)
+    {
+        MenuHelp(NULL, NULL, NULL);	/* Menu does F1 */
+    }
+    else if (event->u.chr.keysym == GK_Escape)
+    {
+        FVDeselectAll(fv);
+    }
+    else if (event->u.chr.chars[0] == '\r' || event->u.chr.chars[0] == '\n')
+    {
+        // Activate FontInfo by Enter
+        //FVMenuCharInfo(fv->gw, NULL, NULL);
+        //return;
+
+        if (fv->b.container != NULL && fv->b.container->funcs->is_modal)
+            return;
+        for (i = cnt = 0; i < fv->b.map->enccount && cnt < 10; ++i) if (fv->b.selected[i])
+        {
+            SplineChar* sc = SFMakeChar(fv->b.sf, fv->b.map, i);
+            if (fv->show == fv->filled)
+            {
+                CharViewCreate(sc, fv, i);
+            }
+            else
+            {
+                BDFFont* bdf = fv->show;
+                BitmapViewCreate(BDFMakeGID(bdf, sc->orig_pos), bdf, fv, i);
+            }
+            ++cnt;
+        }
+    }
+    else if ((event->u.chr.state & ((GMenuMask() | navigation_mask) & ~(ksm_shift | ksm_capslock))) == navigation_mask &&
+        event->type == et_char &&
+        event->u.chr.keysym != 0 &&
+        (event->u.chr.keysym < GK_Special/* || event->u.chr.keysym>=0x10000*/))
+    {
+        SplineFont* sf = fv->b.sf;
+        int enc = EncFromUni(event->u.chr.keysym, fv->b.map->enc);
+        if (enc == -1)
+        {
+            for (i = 0; i < sf->glyphcnt; ++i)
+            {
+                if (sf->glyphs[i] != NULL)
+                    if (sf->glyphs[i]->unicodeenc == event->u.chr.keysym)
+                        break;
+            }
+            if (i != -1)
+                enc = fv->b.map->backmap[i];
+        }
+        if (enc < fv->b.map->enccount && enc != -1)
+            FVChangeChar(fv, enc);
     }
 }
 
@@ -7039,10 +7150,12 @@ return( GGadgetDispatchEvent(fv->vsb,event));
 	}
       break;
       case et_char:
-	if ( fv->b.container!=NULL )
-	    (fv->b.container->funcs->charEvent)(fv->b.container,event);
-	else
-	    FVChar(fv,event);
+          if (fv->b.container != NULL)
+              (fv->b.container->funcs->charEvent)(fv->b.container, event);
+          else
+          {
+              FVChar(fv, event);
+          }
       break;
       case et_mousedown:
 	GDrawSetGIC(gw,fv->gwgic,0,20);

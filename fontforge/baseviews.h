@@ -282,6 +282,9 @@ extern void FVSameGlyphAs(FontViewBase *fv);
 extern void FVClearBackground(FontViewBase *fv);
 extern void FVClear(FontViewBase *fv);
 extern void FVUnlinkRef(FontViewBase *fv);
+
+extern void FVRefsToSplines(FontViewBase *fv);
+
 extern void FVUndo(FontViewBase *fv);
 extern void FVRedo(FontViewBase *fv);
 extern void FVJoin(FontViewBase *fv);

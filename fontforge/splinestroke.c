@@ -220,27 +220,28 @@ int StrokeSetConvex(SplineSet *ss, int toknum) {
     return true;
 }
 
-SplineSet *StrokeGetConvex(int toknum, int cpy) {
-    SplineSet *ss = NULL;
+SplineSet* StrokeGetConvex(int toknum, int cpy)
+{
+    SplineSet* ss = NULL;
 
-    if ( toknum>=0 && toknum<CONVEX_SLOTS )
-	ss = convex_nibs[toknum];
-    else if ( no_windowing_ui )
-	return NULL;
-    else if ( toknum==CVSTROKE_TOKNUM )
-	ss = CVStrokeInfo()->nib;
-    else if ( toknum==FREEHAND_TOKNUM )
-	ss = CVFreeHandInfo()->nib;
+    if (toknum >= 0 && toknum < CONVEX_SLOTS)
+        ss = convex_nibs[toknum];
+    else if (no_windowing_ui)
+        return NULL;
+    else if (toknum == CVSTROKE_TOKNUM)
+        ss = CVStrokeInfo()->nib;
+    else if (toknum == FREEHAND_TOKNUM)
+        ss = CVFreeHandInfo()->nib;
     else
-	return NULL;
+        return NULL;
 
-    if ( ss==NULL )
-	return NULL;
+    if (ss == NULL)
+        return NULL;
 
-    if ( cpy )
-	return SplinePointListCopy(ss);
+    if (cpy)
+        return SplinePointListCopy(ss);
     else
-	return ss;
+        return ss;
 }
 
 StrokeInfo *CVStrokeInfo() {
@@ -2633,41 +2634,104 @@ SplineSet *SplineSetStroke(SplineSet *ss,StrokeInfo *si, int order2) {
     return( first );
 }
 
-void FVStrokeItScript(void *_fv, StrokeInfo *si,
-                      int UNUSED(pointless_argument)) {
-    FontViewBase *fv = _fv;
+void FVStrokeItScript(void* _fv, StrokeInfo* si, int UNUSED(pointless_argument))
+{
+    FontViewBase* fv = _fv;
     int layer = fv->active_layer;
-    SplineSet *temp;
-    int i, cnt=0, gid;
-    SplineChar *sc;
+    SplineSet* temp;
+    int i, cnt = 0, gid;
+    SplineChar* sc;
 
-    for ( i=0; i<fv->map->enccount; ++i ) if ( (gid=fv->map->map[i])!=-1 && fv->sf->glyphs[gid]!=NULL && fv->selected[i] )
-	++cnt;
-    ff_progress_start_indicator(10,_("Stroking..."),_("Stroking..."),0,cnt,1);
+    for (i = 0; i < fv->map->enccount; ++i) if ((gid = fv->map->map[i]) != -1 && fv->sf->glyphs[gid] != NULL && fv->selected[i])
+        ++cnt;
+    ff_progress_start_indicator(10, _("Stroking..."), _("Stroking..."), 0, cnt, 1);
 
     SFUntickAll(fv->sf);
-    for ( i=0; i<fv->map->enccount; ++i ) {
-	if ( (gid=fv->map->map[i])!=-1 && (sc = fv->sf->glyphs[gid])!=NULL &&
-		!sc->ticked && fv->selected[i] ) {
-	    sc->ticked = true;
-	    if ( sc->parent->multilayer ) {
-		SCPreserveState(sc,false);
-		for ( layer = ly_fore; layer<sc->layer_cnt; ++layer ) {
-		    temp = SplineSetStroke(sc->layers[layer].splines,si,sc->layers[layer].order2);
-		    SplinePointListsFree( sc->layers[layer].splines );
-		    sc->layers[layer].splines = temp;
-		}
-		SCCharChangedUpdate(sc,ly_all);
-	    } else {
-		SCPreserveLayer(sc,layer,false);
-		temp = SplineSetStroke(sc->layers[layer].splines,si,sc->layers[layer].order2);
-		SplinePointListsFree( sc->layers[layer].splines );
-		sc->layers[layer].splines = temp;
-		SCCharChangedUpdate(sc,layer);
-	    }
-	    if ( !ff_progress_next())
-    break;
-	}
+    for (i = 0; i < fv->map->enccount; ++i)
+    {
+        if ((gid = fv->map->map[i]) != -1 && (sc = fv->sf->glyphs[gid]) != NULL &&
+            !sc->ticked && fv->selected[i])
+        {
+            sc->ticked = true;
+            if (sc->parent->multilayer)
+            {
+                SCPreserveState(sc, false);
+                for (layer = ly_fore; layer < sc->layer_cnt; ++layer)
+                {
+                    temp = SplineSetStroke(sc->layers[layer].splines, si, sc->layers[layer].order2);
+                    SplinePointListsFree(sc->layers[layer].splines);
+                    sc->layers[layer].splines = temp;
+                }
+                SCCharChangedUpdate(sc, ly_all);
+            }
+            else
+            {
+                SCPreserveLayer(sc, layer, false);
+                temp = SplineSetStroke(sc->layers[layer].splines, si, sc->layers[layer].order2);
+                SplinePointListsFree(sc->layers[layer].splines);
+                sc->layers[layer].splines = temp;
+                SCCharChangedUpdate(sc, layer);
+            }
+            if (!ff_progress_next())
+                break;
+        }
+    }
+    ff_progress_end_indicator();
+}
+
+void FVBuildItScript(void* _fv, StrokeInfo* si, int UNUSED(pointless_argument))
+{
+    FontViewBase* fv = _fv;
+    int layer = ly_back;// fv->active_layer;
+    SplineSet* temp;
+    int i, cnt = 0, gid;
+    SplineChar* sc;
+
+    for (i = 0; i < fv->map->enccount; ++i)
+    {
+        if ((gid = fv->map->map[i]) != -1
+            && fv->sf->glyphs[gid] != NULL
+            && fv->selected[i])
+        {
+            ++cnt;
+        }
+    }
+
+    ff_progress_start_indicator(10, _("Building..."), _("Building..."), 0, cnt, 1);
+
+    //SFUntickAll(fv->sf);
+
+    for (i = 0; i < fv->map->enccount; ++i)
+    {
+        if ((gid = fv->map->map[i]) != -1 
+            && (sc = fv->sf->glyphs[gid]) != NULL 
+            && fv->selected[i])
+        {
+            if (sc->parent->multilayer)
+            {
+                //SCPreserveState(sc, false);
+                //for (layer = ly_fore; layer < sc->layer_cnt; ++layer)
+                //{
+                    temp = SplineSetStroke(sc->layers[layer].splines, si, sc->layers[layer].order2);
+                    SplinePointListsFree(sc->layers[layer].splines);
+                    sc->layers[layer].splines = temp;
+                //}
+                //SCCharChangedUpdate(sc, ly_all);
+            }
+            //else
+            //{
+            //    SCPreserveLayer(sc, layer, false);
+            //    temp = SplineSetStroke(sc->layers[layer].splines, si, sc->layers[layer].order2);
+            //    SplinePointListsFree(sc->layers[layer].splines);
+            //    sc->layers[layer].splines = temp;
+            //    SCCharChangedUpdate(sc, layer);
+            //}
+
+            if (!ff_progress_next())
+            {
+                break;
+            }
+        }
     }
     ff_progress_end_indicator();
 }

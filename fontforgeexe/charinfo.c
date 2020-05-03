@@ -4382,37 +4382,37 @@ return;
 	memset(&ubox,0,sizeof(ubox));
 	memset(&ulabel,0,sizeof(ulabel));
 
-	ulabel[0].text = (unichar_t *) _("Gl_yph Name:");
+	ulabel[0].text = (unichar_t *) _("Glyph _v Name:");
 	ulabel[0].text_is_1byte = true;
 	ulabel[0].text_in_resource = true;
 	ugcd[0].gd.label = &ulabel[0];
 	ugcd[0].gd.pos.x = 5; ugcd[0].gd.pos.y = 5+4; 
 	ugcd[0].gd.flags = gg_enabled|gg_visible;
-	ugcd[0].gd.mnemonic = 'N';
+	ugcd[0].gd.mnemonic = 'v'; //? 'N';
 	ugcd[0].creator = GLabelCreate;
 	uhvarray[0] = &ugcd[0];
 
 	ugcd[1].gd.pos.x = 85; ugcd[1].gd.pos.y = 5;
 	ugcd[1].gd.flags = gg_enabled|gg_visible;
-	ugcd[1].gd.mnemonic = 'N';
+	ugcd[1].gd.mnemonic = 'v'; //? 'N';
 	ugcd[1].gd.cid = CID_UName;
 	ugcd[1].creator = GListFieldCreate;
 	ugcd[1].data = (void *) (-2);
 	uhvarray[1] = &ugcd[1]; uhvarray[2] = NULL;
 
-	ulabel[2].text = (unichar_t *) _("Unicode _Value:");
+	ulabel[2].text = (unichar_t *) _("Unicode Value:");
 	ulabel[2].text_in_resource = true;
 	ulabel[2].text_is_1byte = true;
 	ugcd[2].gd.label = &ulabel[2];
 	ugcd[2].gd.pos.x = 5; ugcd[2].gd.pos.y = 31+4; 
 	ugcd[2].gd.flags = gg_enabled|gg_visible;
-	ugcd[2].gd.mnemonic = 'V';
+	//ugcd[2].gd.mnemonic = 'V';
 	ugcd[2].creator = GLabelCreate;
 	uhvarray[3] = &ugcd[2];
 
 	ugcd[3].gd.pos.x = 85; ugcd[3].gd.pos.y = 31;
 	ugcd[3].gd.flags = gg_enabled|gg_visible;
-	ugcd[3].gd.mnemonic = 'V';
+	//ugcd[3].gd.mnemonic = 'V';
 	ugcd[3].gd.cid = CID_UValue;
 	ugcd[3].gd.handle_controlevent = CI_UValChanged;
 	ugcd[3].creator = GTextFieldCreate;

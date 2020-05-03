@@ -730,11 +730,15 @@ return( AddUndo(undo,&sc->layers[layer].undoes,&sc->layers[layer].redoes));
 }
 
 /* This routine does not allow for undoes in scripting */
-Undoes *SCPreserveLayer(SplineChar *sc,int layer, int dohints) {
+Undoes* SCPreserveLayer(SplineChar* sc, int layer, int dohints)
+{
 
-    if ( no_windowing_ui || maxundoes==0 )		/* No use for undoes in scripting */
-return(NULL);
-return( _SCPreserveLayer(sc,layer,dohints));
+	if (no_windowing_ui || maxundoes == 0)		/* No use for undoes in scripting */
+	{
+		return(NULL);
+	}
+
+	return(_SCPreserveLayer(sc, layer, dohints));
 }
 
 

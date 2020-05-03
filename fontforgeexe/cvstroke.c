@@ -1335,9 +1335,22 @@ void CVStroke(CharView *cv) {
     MakeStrokeDlg(cv, CVStrokeIt, CVStrokeInfo(), true);
 }
 
-void FVStroke(FontView *fv) {
+void FVStroke(FontView *fv) 
+{
     MakeStrokeDlg(fv, FVStrokeItScript, CVStrokeInfo(), false);
 }
+
+
+
+
+void FVBuildStroke(FontView* fv)
+{
+    MakeStrokeDlg(fv, FVBuildItScript, CVStrokeInfo(), false);
+}
+
+
+
+
 
 void FreeHandStrokeDlg(StrokeInfo *si) {
     MakeStrokeDlg(NULL,NULL,si,false);

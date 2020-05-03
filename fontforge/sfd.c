@@ -2690,6 +2690,8 @@ int SFD_DumpSplineFontMetadata( FILE *sfd, SplineFont *sf )
 		for ( j=0; j<fpst->rules[i].lookup_cnt; ++j ) {
 		    fprintf( sfd, "  SeqLookup: %d ",
 			    fpst->rules[i].lookups[j].seq );
+		    //TODO: segfualt on fpst->rules[i].lookups[j].lookup->lookup_name
+			// bar pointer: lookup_name
 		    SFDDumpUTF7Str(sfd,fpst->rules[i].lookups[j].lookup->lookup_name);
 		    putc('\n',sfd);
 		}

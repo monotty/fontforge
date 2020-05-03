@@ -63,11 +63,15 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-void SFUntickAll(SplineFont *sf) {
-    int i;
-
-    for ( i=0; i<sf->glyphcnt; ++i ) if ( sf->glyphs[i]!=NULL )
-	sf->glyphs[i]->ticked = false;
+void SFUntickAll(SplineFont* sf)
+{
+	for (int i = 0; i < sf->glyphcnt; ++i)
+	{
+		if (sf->glyphs[i] != NULL)
+		{
+			sf->glyphs[i]->ticked = false;
+		}
+	}
 }
 
 void SFOrderBitmapList(SplineFont *sf) {
