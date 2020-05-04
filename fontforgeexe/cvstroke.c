@@ -1349,7 +1349,7 @@ void FV_Build_Glyphs(FontViewBase* fv)
     si->join = lj_nib;
     si->cap = lc_nib;
     si->stroke_type = si_round;
-    si->rmov = srmov_contour;
+    si->rmov = srmov_none;// srmov_contour;
     si->simplify = true;
     si->extrema = true;
     si->jlrelative = true;
@@ -1359,7 +1359,8 @@ void FV_Build_Glyphs(FontViewBase* fv)
     si->accuracy_target = 0.25;
     si->penangle = FF_PI / 4;
 
-    MakeStrokeDlg(fv, FVBuildItScript, si, false);
+    MakeStrokeDlg(0, 0, si, false);
+    FVBuildItScript(fv, si);
 }
 
 void FreeHandStrokeDlg(StrokeInfo *si) {

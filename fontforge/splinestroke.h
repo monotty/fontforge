@@ -40,6 +40,6 @@ extern SplineSet *SplineSetStroke(SplineSet *ss, StrokeInfo *si, int order2);
 extern SplineSet *UnitShape(int n);
 extern void FVStrokeItScript(void *_fv, StrokeInfo *si, int pointless_argument);
 
-extern void FVBuildItScript(void *_fv, StrokeInfo *si, int pointless_argument);
+extern void FVBuildItScript(void *_fv, StrokeInfo *si);
 
 #endif /* FONTFORGE_SPLINESTROKE_H */

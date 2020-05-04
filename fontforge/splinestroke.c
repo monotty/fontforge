@@ -2166,180 +2166,216 @@ static void HandleCap(StrokeContext *c, SplineSet *cur, BasePoint sxy,
 /* ******************************* Main Loop ******************************** */
 /******************************************************************************/
 
-static SplineSet *OffsetSplineSet(SplineSet *ss, StrokeContext *c) {
+static SplineSet* OffsetSplineSet(SplineSet* ss, StrokeContext* c)
+{
     NibOffset no;
-    Spline *s, *first=NULL;
-    SplineSet *left=NULL, *right=NULL, *cur;
-    SplinePoint *sp;
+    Spline* s, * first = NULL;
+    SplineSet* left = NULL, * right = NULL, * cur;
+    SplinePoint* sp;
     BasePoint ut_ini = BPUNINIT, ut_start, ut_mid, ut_endlast;
     BasePoint sxy;
     bigreal last_t, t;
     int is_right, linear, curved, on_cusp;
     int is_ccw_ini = false, is_ccw_start, is_ccw_mid, was_ccw = false;
-    int closed = ss->first->prev!=NULL;
+    int closed = ss->first->prev != NULL;
 
-    if ( (c->contour_was_ccw ? !c->remove_inner : !c->remove_outer) || !closed )
-	left = chunkalloc(sizeof(SplineSet));
-    if ( (c->contour_was_ccw ? !c->remove_outer : !c->remove_inner) || !closed )
-	right = chunkalloc(sizeof(SplineSet));
+    if ((c->contour_was_ccw ? !c->remove_inner : !c->remove_outer) || !closed)
+        left = chunkalloc(sizeof(SplineSet));
+    if ((c->contour_was_ccw ? !c->remove_outer : !c->remove_inner) || !closed)
+        right = chunkalloc(sizeof(SplineSet));
 
-    for ( s=ss->first->next; s!=NULL && s!=first; s=s->to->next ) {
-	if ( first==NULL )
-	    first = s;
+    for (s = ss->first->next; s != NULL && s != first; s = s->to->next)
+    {
+        if (first == NULL)
+            first = s;
 
-	if ( SplineLength(s)==0 ) // Can ignore zero length splines
-	    continue;
+        if (SplineLength(s) == 0) // Can ignore zero length splines
+            continue;
 
-	ut_start = SplineUTanVecAt(s, 0.0);
-	linear = SplineIsLinearish(s);
-	if ( linear ) {
-	    is_ccw_start = 0;
-	} else {
-	    is_ccw_start = SplineTurningCCWAt(s, 0.0);
-	}
-	if ( BPIsUninit(ut_ini) ) {
-	    ut_ini = ut_start;
-	    is_ccw_ini = is_ccw_start;
-	}
+        ut_start = SplineUTanVecAt(s, 0.0);
+        linear = SplineIsLinearish(s);
+        if (linear)
+        {
+            is_ccw_start = 0;
+        }
+        else
+        {
+            is_ccw_start = SplineTurningCCWAt(s, 0.0);
+        }
+        if (BPIsUninit(ut_ini))
+        {
+            ut_ini = ut_start;
+            is_ccw_ini = is_ccw_start;
+        }
 
-	// Left then right
-	for ( is_right=0; is_right<=1; ++is_right ) {
+        // Left then right
+        for (is_right = 0; is_right <= 1; ++is_right)
+        {
 
-	    if ( is_right ) {
-		if ( right==NULL )
-		    continue;
-		cur = right;
-	    } else {
-		if ( left==NULL )
-		    continue;
-		cur = left;
-	    }
+            if (is_right)
+            {
+                if (right == NULL)
+                    continue;
+                cur = right;
+            }
+            else
+            {
+                if (left == NULL)
+                    continue;
+                cur = left;
+            }
 
-	    sxy = SPLINEPVAL(s, 0.0);
-	    CalcNibOffset(c, ut_start, is_right, &no, -1);
+            sxy = SPLINEPVAL(s, 0.0);
+            CalcNibOffset(c, ut_start, is_right, &no, -1);
 
-	    HandleJoin(c, s, cur, sxy, &no, is_ccw_start,
-	               ut_endlast, was_ccw, is_right);
+            HandleJoin(c, s, cur, sxy, &no, is_ccw_start,
+                ut_endlast, was_ccw, is_right);
 
-	    on_cusp = OffsetOnCuspAt(c, s, 0.0, &no, is_right, is_ccw_start);
+            on_cusp = OffsetOnCuspAt(c, s, 0.0, &no, is_right, is_ccw_start);
 
-	    // The path for this spline
-	    if ( linear ) {
-		sxy = SPLINEPVAL(s, 1.0);
-		SplineSetLineTo(cur, BPAdd(sxy, no.off[is_ccw_start]));
-	    } else {
-		t = 0.0;
-		ut_mid = ut_start;
-		is_ccw_mid = is_ccw_start;
-		while ( t < 1.0 ) {
-		    last_t = t;
-		    t = SplineStrokeNextT(c, s, t, is_ccw_mid, &ut_mid, &curved,
-		                          is_right, no.nci[is_ccw_mid]);
-		    assert( t > last_t && t <= 1.0 );
+            // The path for this spline
+            if (linear)
+            {
+                sxy = SPLINEPVAL(s, 1.0);
+                SplineSetLineTo(cur, BPAdd(sxy, no.off[is_ccw_start]));
+            }
+            else
+            {
+                t = 0.0;
+                ut_mid = ut_start;
+                is_ccw_mid = is_ccw_start;
+                while (t < 1.0)
+                {
+                    last_t = t;
+                    t = SplineStrokeNextT(c, s, t, is_ccw_mid, &ut_mid, &curved,
+                        is_right, no.nci[is_ccw_mid]);
+                    assert(t > last_t && t <= 1.0);
 
-		    if ( curved )
-			sp = TraceAndFitSpline(c, s, last_t, t, cur->last,
-			                       no.nci[is_ccw_mid], is_right,
-			                       on_cusp);
-		    else
-			sp = AppendCubicSplinePortion(s, last_t, t, cur->last);
+                    if (curved)
+                        sp = TraceAndFitSpline(c, s, last_t, t, cur->last,
+                            no.nci[is_ccw_mid], is_right,
+                            on_cusp);
+                    else
+                        sp = AppendCubicSplinePortion(s, last_t, t, cur->last);
 
-		    cur->last = sp;
+                    cur->last = sp;
 
-		    sxy = SPLINEPVAL(s, t);
-		    CalcNibOffset(c, ut_mid, is_right, &no, no.nci[is_ccw_mid]);
-		    is_ccw_mid = SplineTurningCCWAt(s, t);
-		    SplineStrokeAppendFixup(cur->last, sxy, &no, -1,
-		                            c->log_maxdim);
+                    sxy = SPLINEPVAL(s, t);
+                    CalcNibOffset(c, ut_mid, is_right, &no, no.nci[is_ccw_mid]);
+                    is_ccw_mid = SplineTurningCCWAt(s, t);
+                    SplineStrokeAppendFixup(cur->last, sxy, &no, -1,
+                        c->log_maxdim);
 
-		    if ( t < 1.0 )
-			HandleFlat(cur, sxy, &no, is_ccw_mid);
-		    on_cusp = OffsetOnCuspAt(c, s, t, &no, is_right, is_ccw_mid);
-		}
-	    }
-	}
-	ut_endlast = SplineUTanVecAt(s, 1.0);
+                    if (t < 1.0)
+                        HandleFlat(cur, sxy, &no, is_ccw_mid);
+                    on_cusp = OffsetOnCuspAt(c, s, t, &no, is_right, is_ccw_mid);
+                }
+            }
+        }
+        ut_endlast = SplineUTanVecAt(s, 1.0);
         was_ccw = SplineTurningCCWAt(s, 1.0);
     }
-    if (    (left!=NULL && left->first==NULL)
-         || (right!=NULL && right->first==NULL) ) {
-	// The path (presumably) had only zero-length splines
-	LogError( _("Warning: No stroke output for contour\n") );
-	assert(    (left==NULL || left->first==NULL)
-	        && (right==NULL || right->first==NULL) );
-	chunkfree(left, sizeof(SplineSet));
-	chunkfree(right, sizeof(SplineSet));
-	return NULL;
+    if ((left != NULL && left->first == NULL)
+        || (right != NULL && right->first == NULL))
+    {
+        // The path (presumably) had only zero-length splines
+        LogError(_("Warning: No stroke output for contour\n"));
+        assert((left == NULL || left->first == NULL)
+            && (right == NULL || right->first == NULL));
+        chunkfree(left, sizeof(SplineSet));
+        chunkfree(right, sizeof(SplineSet));
+        return NULL;
     }
     cur = NULL;
-    if ( !closed ) {
-	HandleCap(c, left, ss->last->me, ut_endlast, right->last->me, true);
-	SplineSetReverse(right);
-	left->next = right;
-	right = NULL;
-	SplineSetJoin(left, true, FIXUP_MARGIN*c->log_maxdim, &closed);
-	if ( !closed )
-	     LogError( _("Warning: Contour end did not close\n") );
-	else {
-	    HandleCap(c, left, ss->first->me, ut_ini, left->first->me, false);
-	    SplineSetJoin(left, true, FIXUP_MARGIN*c->log_maxdim, &closed);
-	    if ( !closed )
-		LogError( _("Warning: Contour start did not close\n") );
-	    else {
-		if ( c->rmov==srmov_contour )
-		    left = SplineSetRemoveOverlap(NULL,left,over_remove);
-		// Open paths don't always produce clockwise output
-		is_ccw_mid = SplinePointListIsClockwise(left);
-		if ( is_ccw_mid==-1 && c->rmov!=srmov_none ) {
-		    assert( c->rmov!=srmov_contour );
-		    left = SplineSetRemoveOverlap(NULL,left,over_remove);
-		    is_ccw_mid = SplinePointListIsClockwise(left);
-		    assert( is_ccw_mid!=-1 );
-		} else if ( is_ccw_mid==-1 ) {
-		    LogError( _("Warning: Can't identify contour direction, "
-		                "assuming clockwise\n") );
-		}
-		if ( is_ccw_mid==0 )
-		    SplineSetReverse(left);
-	    }
-	}
-	cur = left;
-	left = NULL;
-    } else {
-	// This can fail if the source contour is closed in a strange way
-	if ( left!=NULL ) {
-	    CalcNibOffset(c, ut_ini, false, &no, -1);
-	    HandleJoin(c, ss->first->next, left, ss->first->me, &no,
-	               is_ccw_ini, ut_endlast, was_ccw, false);
-            left = SplineSetJoin(left, true, FIXUP_MARGIN*c->log_maxdim,
-	                         &closed);
-	    if ( !closed )
-		LogError( _("Warning: Left contour did not close\n") );
-	    else if ( c->rmov==srmov_contour )
-		left = SplineSetRemoveOverlap(NULL,left,over_remove);
-	    cur = left;
-	    left = NULL;
-	}
-	if ( right!=NULL ) {
-	    CalcNibOffset(c, ut_ini, true, &no, -1);
-	    HandleJoin(c, ss->first->next, right, ss->first->me, &no,
-	               is_ccw_ini, ut_endlast, was_ccw, true);
-            right = SplineSetJoin(right, true, FIXUP_MARGIN*c->log_maxdim,
-	                          &closed);
-	    if ( !closed )
-		LogError( _("Warning: Right contour did not close\n") );
-	    else {
-		SplineSetReverse(right);
-		if ( c->rmov!=srmov_none )
-		    // Need to do this for either srmov_contour or srmov_layer
-		    right = SplineContourOuterCCWRemoveOverlap(right);
-	    }
-	    if ( cur != NULL ) {
-		cur->next = right;
-	    } else
-		cur = right;
-	    right = NULL;
-	}
+    if (!closed)
+    {
+        HandleCap(c, left, ss->last->me, ut_endlast, right->last->me, true);
+
+        SplineSetReverse(right);
+
+        left->next = right;
+        right = NULL;
+        SplineSetJoin(left, true, FIXUP_MARGIN * c->log_maxdim, &closed);
+        if (!closed)
+            LogError(_("Warning: Contour end did not close\n"));
+        else
+        {
+            HandleCap(c, left, ss->first->me, ut_ini, left->first->me, false);
+            SplineSetJoin(left, true, FIXUP_MARGIN * c->log_maxdim, &closed);
+            if (!closed)
+                LogError(_("Warning: Contour start did not close\n"));
+            else
+            {
+                if (c->rmov == srmov_contour)
+                    left = SplineSetRemoveOverlap(NULL, left, over_remove);
+                // Open paths don't always produce clockwise output
+                is_ccw_mid = SplinePointListIsClockwise(left);
+                if (is_ccw_mid == -1 && c->rmov != srmov_none)
+                {
+                    assert(c->rmov != srmov_contour);
+                    left = SplineSetRemoveOverlap(NULL, left, over_remove);
+                    is_ccw_mid = SplinePointListIsClockwise(left);
+                    assert(is_ccw_mid != -1);
+                }
+                else if (is_ccw_mid == -1)
+                {
+                    LogError(_("Warning: Can't identify contour direction, "
+                        "assuming clockwise\n"));
+
+                    // random
+                    SplineSetReverse(left);
+                }
+
+                if (is_ccw_mid == 0)
+                {
+                    SplineSetReverse(left);
+                }
+            }
+        }
+        cur = left;
+        left = NULL;
+    }
+    else
+    {
+        // This can fail if the source contour is closed in a strange way
+        if (left != NULL)
+        {
+            CalcNibOffset(c, ut_ini, false, &no, -1);
+            HandleJoin(c, ss->first->next, left, ss->first->me, &no,
+                is_ccw_ini, ut_endlast, was_ccw, false);
+            left = SplineSetJoin(left, true, FIXUP_MARGIN * c->log_maxdim,
+                &closed);
+            if (!closed)
+                LogError(_("Warning: Left contour did not close\n"));
+            else if (c->rmov == srmov_contour)
+                left = SplineSetRemoveOverlap(NULL, left, over_remove);
+            cur = left;
+            left = NULL;
+        }
+        if (right != NULL)
+        {
+            CalcNibOffset(c, ut_ini, true, &no, -1);
+            HandleJoin(c, ss->first->next, right, ss->first->me, &no,
+                is_ccw_ini, ut_endlast, was_ccw, true);
+            right = SplineSetJoin(right, true, FIXUP_MARGIN * c->log_maxdim,
+                &closed);
+            if (!closed)
+                LogError(_("Warning: Right contour did not close\n"));
+            else
+            {
+                SplineSetReverse(right);
+                if (c->rmov != srmov_none)
+                    // Need to do this for either srmov_contour or srmov_layer
+                    right = SplineContourOuterCCWRemoveOverlap(right);
+            }
+            if (cur != NULL)
+            {
+                cur->next = right;
+            }
+            else
+                cur = right;
+            right = NULL;
+        }
     }
     return cur;
 }
@@ -2463,71 +2499,110 @@ static SplinePointList *SinglePointStroke(SplinePoint *sp,
     return( ret );
 }
 
-static SplineSet *SplineSet_Stroke(SplineSet *ss,struct strokecontext *c,
-                                   int order2) {
-    SplineSet *base = ss;
-    SplineSet *ret;
+static SplineSet* SplineSet_Stroke(SplineSet* ss, struct strokecontext* c, int order2)
+{
+    SplineSet* base = ss;
+    SplineSet* ret;
     int copied = 0;
 
-    c->contour_was_ccw = (   base->first->prev!=NULL
-                          && !SplinePointListIsClockwise(base) );
+    c->contour_was_ccw = base->first->prev != NULL
+                          && !SplinePointListIsClockwise(base);
 
-    if ( base->first->next==NULL )
-	ret = SinglePointStroke(base->first, c);
-    else {
-	if ( base->first->next->order2 ) {
-	    base = SSPSApprox(ss);
-	    copied = 1;
-	}
-	if ( c->contour_was_ccw )
-	    SplineSetReverse(base);
-	ret = OffsetSplineSet(base, c);
+    if (base->first->next == NULL)
+    {
+        ret = SinglePointStroke(base->first, c);
     }
-    if ( order2 )
-	ret = SplineSetsConvertOrder(ret,order2);
-    if ( copied )
-	SplinePointListFree(base);
-    else if ( c->contour_was_ccw )
-	SplineSetReverse(base);
+    else
+    {
+        if (base->first->next->order2)
+        {
+            base = SSPSApprox(ss);
+            copied = 1;
+        }
+
+        if (c->contour_was_ccw)
+        {
+            SplineSetReverse(base);
+        }
+
+        ret = OffsetSplineSet(base, c);
+    }
+
+    if (order2)
+    {
+        ret = SplineSetsConvertOrder(ret, order2);
+    }
+
+    if (copied)
+    {
+        SplinePointListFree(base);
+    }
+    else if (c->contour_was_ccw)
+    {
+        SplineSetReverse(base);
+    }
 
     return(ret);
 }
 
-static SplineSet *SplineSets_Stroke(SplineSet *ss,struct strokecontext *c,
-                                    int order2) {
-    SplineSet *first=NULL, *last=NULL, *cur;
+static SplineSet* SplineSets_Stroke(SplineSet* ss, struct strokecontext* c, int order2)
+{
+    SplineSet* first = NULL;
+    SplineSet* last = NULL;
+    SplineSet* cur;
 
-    while ( ss!=NULL ) {
-	cur = SplineSet_Stroke(ss,c,order2);
-	if ( first==NULL )
-	    first = last = cur;
-	else
-	    last->next = cur;
-	if ( last!=NULL )
-	    while ( last->next!=NULL )
-		last = last->next;
-	ss = ss->next;
+    while (ss != NULL)
+    {
+        cur = SplineSet_Stroke(ss, c, order2);
+
+        if (first == NULL)
+        {
+            first = last = cur;
+        }
+        else
+        {
+            last->next = cur;
+        }
+
+        if (last != NULL)
+        {
+            while (last->next != NULL)
+            {
+                last = last->next;
+            }
+        }
+
+        ss = ss->next;
     }
-return( first );
+    return(first);
 }
 
-SplineSet *SplineSetStroke(SplineSet *ss,StrokeInfo *si, int order2) {
+SplineSet* SplineSetStroke(SplineSet* ss, StrokeInfo* si, int order2)
+{
     int max_pc;
     StrokeContext c;
-    SplineSet *nibs, *nib, *first, *last, *cur;
+    SplineSet* nibs, * nib, * first, * last, * cur;
     bigreal sn = 0.0, co = 1.0, mr, wh_ratio, maxdim;
     DBounds b;
     real trans[6];
-    struct simplifyinfo smpl = { sf_forcelines | sf_mergelines |
-                                 sf_smoothcurves | sf_setstart2extremum,
-                                 0.25, 0.1, .005, 0, 0, 0 };
 
-    if ( si->stroke_type==si_centerline )
-	IError("centerline not handled");
+    struct simplifyinfo smpl;
+    smpl.flags = sf_forcelines | sf_mergelines | sf_smoothcurves | sf_setstart2extremum;
+    smpl.err = 0.25;
+    smpl.tan_bounds = 0.1;
+    smpl.linefixup = 0.005;
+    smpl.linelenmax = 0;		/* Don't simplify any straight lines longer than this */
+    smpl.set_as_default = 0;
+    smpl.check_selected_contours = 0;
 
-    memset(&c,0,sizeof(c));
+    if (si->stroke_type == si_centerline)
+    {
+        IError("centerline not handled");
+    }
+
+    memset(&c, 0, sizeof(c));
     c.join = si->join;
-    c.cap  = si->cap;
+    c.cap = si->cap;
     c.joinlimit = si->joinlimit;
     c.extendcap = si->extendcap;
     c.acctarget = si->accuracy_target;
@@ -2539,100 +2614,149 @@ SplineSet *SplineSetStroke(SplineSet *ss,StrokeInfo *si, int order2) {
     c.ecrelative = si->ecrelative;
     c.jlrelative = si->jlrelative;
     c.rmov = si->rmov;
-    if ( si->height!=0 )
-	mr = si->height/2;
-    else
-	mr = si->width/2;
-    if ( si->al==sal_auto ) {
-	if ( si->stroke_type==si_round || si->stroke_type==si_calligraphic ) {
-	    wh_ratio = si->height/si->width;
-	    c.ratio_al = (   c.joinlimit < 4.0 && c.jlrelative
-	                  && (wh_ratio >= 2.0 || wh_ratio <= 0.5));
-	} else {
-	    c.ratio_al = (c.joinlimit < 4.0 && c.jlrelative);
-	}
-    } else
-	c.ratio_al = ( si->al==sal_ratio );
 
-    if ( !c.extrema )
-	smpl.flags |= sf_ignoreextremum;
-
-    if ( c.acctarget<MIN_ACCURACY ) {
-         LogError( _("Warning: Accuracy target %lf less than minimum %lf, "
-	             "using %lf instead\n"), c.acctarget, MIN_ACCURACY );
-	 c.acctarget = MIN_ACCURACY;
+    if (si->height != 0)
+    {
+        mr = si->height / 2;
     }
+    else
+    {
+        mr = si->width / 2;
+    }
+
+    if (si->al == sal_auto)
+    {
+        if (si->stroke_type == si_round ||
+            si->stroke_type == si_calligraphic)
+        {
+            wh_ratio = si->height / si->width;
+            c.ratio_al = (c.joinlimit < 4.0 && c.jlrelative
+                && (wh_ratio >= 2.0 || wh_ratio <= 0.5));
+        }
+        else
+        {
+            c.ratio_al = (c.joinlimit < 4.0 && c.jlrelative);
+        }
+    }
+    else
+    {
+        c.ratio_al = (si->al == sal_ratio);
+    }
+
+    if (!c.extrema)
+    {
+        smpl.flags |= sf_ignoreextremum;
+    }
+
+    if (c.acctarget < MIN_ACCURACY)
+    {
+        LogError(_("Warning: Accuracy target %lf less than minimum %lf, "
+                   "using %lf instead\n"), c.acctarget, MIN_ACCURACY);
+        c.acctarget = MIN_ACCURACY;
+    }
+
     smpl.err = c.acctarget;
 
-    if ( si->penangle!=0 ) {
-	sn = sin(si->penangle);
-	co = cos(si->penangle);
+    if (si->penangle != 0)
+    {
+        sn = sin(si->penangle);
+        co = cos(si->penangle);
     }
+
     trans[0] = co;
     trans[1] = sn;
     trans[2] = -sn;
     trans[3] = co;
     trans[4] = trans[5] = 0;
 
-    if ( si->stroke_type==si_round || si->stroke_type==si_calligraphic ) {
-	c.nibtype = si->stroke_type==si_round ? nib_ellip : nib_rect;
-	max_pc = 4;
-	nibs = UnitShape(si->stroke_type==si_round ? 0 : -4);
-	trans[0] *= si->width/2;
-	trans[1] *= si->width/2;
-	trans[2] *= mr;
-	trans[3] *= mr;
-	maxdim = fmax(si->width/2, mr);
-    } else {
-	c.nibtype = nib_convex;
-	max_pc = 20; // a guess, will be reallocated if needed
-	nibs = SplinePointListCopy(si->nib);
-	SplineSetFindBounds(nibs,&b);
-	if ( !c.leave_users_center ) {
-	    trans[4] = -(b.minx+b.maxx)/2;
-	    trans[5] = -(b.miny+b.maxy)/2;
-	} else {
-	    c.pseudo_origin.x = (b.minx+b.maxx)/2;
-	    c.pseudo_origin.y = (b.miny+b.maxy)/2;
-	}
-	// Close enough
-	maxdim = sqrt(pow(b.maxx-b.minx, 2) + pow(b.maxy-b.miny, 2))/2.0;
+    if (si->stroke_type == si_round || 
+        si->stroke_type == si_calligraphic)
+    {
+        c.nibtype = si->stroke_type == si_round ? nib_ellip : nib_rect;
+        max_pc = 4;
+        nibs = UnitShape(si->stroke_type == si_round ? 0 : -4);
+        trans[0] *= si->width / 2;
+        trans[1] *= si->width / 2;
+        trans[2] *= mr;
+        trans[3] *= mr;
+        maxdim = fmax(si->width / 2, mr);
+    }
+    else
+    {
+        c.nibtype = nib_convex;
+        max_pc = 20; // a guess, will be reallocated if needed
+        nibs = SplinePointListCopy(si->nib);
+        SplineSetFindBounds(nibs, &b);
+        if (!c.leave_users_center)
+        {
+            trans[4] = -(b.minx + b.maxx) / 2;
+            trans[5] = -(b.miny + b.maxy) / 2;
+        }
+        else
+        {
+            c.pseudo_origin.x = (b.minx + b.maxx) / 2;
+            c.pseudo_origin.y = (b.miny + b.maxy) / 2;
+        }
+        // Close enough
+        maxdim = sqrt(pow(b.maxx - b.minx, 2) + pow(b.maxy - b.miny, 2)) / 2.0;
     }
     // Increases at the rate of the natural log, but with the "1 point" set
     // to radius 10
-    c.log_maxdim = fmax(1.0, log(fmax(maxdim, mr))-LOG_MAXDIM_ADJ);
+    c.log_maxdim = fmax(1.0, log(fmax(maxdim, mr)) - LOG_MAXDIM_ADJ);
 
-    SplinePointListTransformExtended(nibs,trans,tpt_AllPoints,
-	                             tpmask_dontTrimValues);
+    SplinePointListTransformExtended(nibs, trans, tpt_AllPoints, tpmask_dontTrimValues);
 
     first = last = NULL;
-    for ( nib=nibs; nib!=NULL; nib=nib->next ) {
-	assert( NibIsValid(nib)==Shape_Convex );
-	c.nib = nib;
-	BuildNibCorners(&c.nibcorners, nib, &max_pc, &c.n);
-	cur = SplineSets_Stroke(ss,&c,order2);
-        if ( first==NULL )
-	    first = last = cur;
-	else
-	    last->next = cur;
-	if ( last!=NULL )
-	    while ( last->next!=NULL )
-	        last = last->next;
+    for (nib = nibs; nib != NULL; nib = nib->next)
+    {
+        assert(NibIsValid(nib) == Shape_Convex);
+
+        c.nib = nib;
+        BuildNibCorners(&c.nibcorners, nib, &max_pc, &c.n);
+        cur = SplineSets_Stroke(ss, &c, order2);
+
+        if (first == NULL)
+        {
+            first = last = cur;
+        }
+        else
+        {
+            last->next = cur;
+        }
+
+        if (last != NULL)
+        {
+            while (last->next != NULL)
+            {
+                last = last->next;
+            }
+        }
     }
-    if ( c.rmov==srmov_layer )
-	first=SplineSetRemoveOverlap(NULL,first,over_remove);
-    if ( c.extrema )
-	SplineCharAddExtrema(NULL,first,ae_all,1000);
-    if ( c.simplify )
-	first = SplineCharSimplify(NULL,first,&smpl);
+
+    if (c.rmov == srmov_layer)
+    {
+        first = SplineSetRemoveOverlap(NULL, first, over_remove);
+    }
+
+    if (c.extrema)
+    {
+        SplineCharAddExtrema(NULL, first, ae_all, 1000);
+    }
+
+    if (c.simplify)
+    {
+        first = SplineCharSimplify(NULL, first, &smpl);
+    }
     else
-	SPLCategorizePoints(first);
+    {
+        SPLCategorizePoints(first);
+    }
 
     free(c.nibcorners);
     SplinePointListFree(nibs);
     nibs = NULL;
 
-    return( first );
+    return(first);
 }
 
 void FVStrokeItScript(void* _fv, StrokeInfo* si, int UNUSED(pointless_argument))
@@ -2682,6 +2806,7 @@ void FVStrokeItScript(void* _fv, StrokeInfo* si, int UNUSED(pointless_argument))
 
 void UnlinkCopyLayerToLayer(SplineChar* sc, int src, int dst)
 {
+    // Clear target
     SCClearLayer(sc, dst);
 
     // Clear Hints
@@ -2698,7 +2823,6 @@ void UnlinkCopyLayerToLayer(SplineChar* sc, int src, int dst)
     sc->md = NULL;
 
     // Copy src to dst
-    //SCCopyLayerToLayerSilent(sc, fv->active_layer, ly_back, true);
     SCCopyLayerToLayerSilent(sc, src, dst, true);
 
     // Unlink references
@@ -2728,11 +2852,10 @@ SplineChar* TakeNextSelected(FontViewBase* fv, int *i)
         (*i)++;
     }
 
-    return (NULL);
+    return NULL;
 }
 
-
-void FVBuildItScript(void* _fv, StrokeInfo* si, int UNUSED(pointless_argument))
+void FVBuildItScript(void* _fv, StrokeInfo* si)
 {
     FontViewBase* fv = _fv;
 
@@ -2741,8 +2864,7 @@ void FVBuildItScript(void* _fv, StrokeInfo* si, int UNUSED(pointless_argument))
         int source = ly_fore;
         int target = ly_back;
         int i, current, count;
-        SplineSet*  ss;
-        SplineChar* sc;
+        SplineChar* glyph;
         
         i = count = 0;
         while (TakeNextSelected(fv, &i))
@@ -2750,10 +2872,10 @@ void FVBuildItScript(void* _fv, StrokeInfo* si, int UNUSED(pointless_argument))
             count++;
         }
 
-        ff_progress_start_indicator(10, _("Building Glyphs"), _("Glyph"), 0, count, 1);
+        ff_progress_start_indicator(0, _("Building Glyphs"), _("Glyph"), 0, count, 1);
 
         i = current = 0;
-        while ((sc = TakeNextSelected(fv, &i)) 
+        while ((glyph = TakeNextSelected(fv, &i))
                 && ff_progress_next())
         {
             const int buff_size = 32;
@@ -2761,14 +2883,28 @@ void FVBuildItScript(void* _fv, StrokeInfo* si, int UNUSED(pointless_argument))
             snprintf(buff, buff_size, "%d of %d", current++, count);
             ff_progress_change_line2(buff);
 
-            UnlinkCopyLayerToLayer(sc, source, target);
+            UnlinkCopyLayerToLayer(glyph, source, target);
 
-            SplinePointList* splines = sc->layers[target].splines;
-            unsigned int     order_2 = sc->layers[target].order2;
-
-            ss = SplineSetStroke(splines, si, order_2);
+            SplineSet* splines = glyph->layers[target].splines;
+            unsigned int order = glyph->layers[target].order2;
+            glyph->layers[target].splines = SplineSetStroke(splines, si, order);
             SplinePointListsFree(splines);
-            sc->layers[target].splines = ss;
+
+            // random + srmov_none
+            splines = glyph->layers[target].splines;
+            glyph->layers[target].splines = SplineSetRemoveOverlap(NULL, splines, over_remove);
+
+            // additional simplifying
+            struct simplifyinfo smpl;
+            smpl.flags      = sf_normal;
+            smpl.err        = 2.0;
+            smpl.tan_bounds = 0.05;
+            smpl.linefixup  = 0.0;
+            smpl.linelenmax = 20;
+            smpl.set_as_default = 0;
+            smpl.check_selected_contours = 0;
+            splines = glyph->layers[target].splines;
+            glyph->layers[target].splines = SplineCharSimplify(NULL, splines, &smpl);
         }
 
         fv->sf->changed = true;
