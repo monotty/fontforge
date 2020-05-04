@@ -518,12 +518,11 @@ return;
     SCCharChangedUpdate(sc,ly_back);
 }
 
-void SCCopyLayerToLayer(SplineChar* sc, int from, int to, int doclear)
+void SCCopyLayerToLayerSilent(SplineChar* sc, int from, int to, int doclear)
 {
 	SplinePointList* fore, * temp;
 	RefChar* ref, * oldref;
 
-	SCPreserveLayer(sc, to, false);
 	if (doclear)
 	{
 		SCClearLayer(sc, to);
@@ -566,7 +565,12 @@ void SCCopyLayerToLayer(SplineChar* sc, int from, int to, int doclear)
 		SCReinstanciateRefChar(sc, ref, to);
 		SCMakeDependent(sc, ref->sc);
 	}
+}
 
+void SCCopyLayerToLayer(SplineChar* sc, int from, int to, int doclear)
+{
+	SCPreserveLayer(sc, to, false);
+	SCCopyLayerToLayerSilent(sc, from, to, doclear);
 	SCCharChangedUpdate(sc, to);
 }
 

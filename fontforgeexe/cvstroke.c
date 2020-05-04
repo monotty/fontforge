@@ -1340,17 +1340,27 @@ void FVStroke(FontView *fv)
     MakeStrokeDlg(fv, FVStrokeItScript, CVStrokeInfo(), false);
 }
 
-
-
-
-void FVBuildStroke(FontView* fv)
+void FV_Build_Glyphs(FontViewBase* fv)
 {
-    MakeStrokeDlg(fv, FVBuildItScript, CVStrokeInfo(), false);
+    StrokeInfo* si = CVStrokeInfo();
+
+    si->width = 60.0;
+    si->height = 20.0;
+    si->join = lj_nib;
+    si->cap = lc_nib;
+    si->stroke_type = si_round;
+    si->rmov = srmov_contour;
+    si->simplify = true;
+    si->extrema = true;
+    si->jlrelative = true;
+    si->ecrelative = true;
+    si->leave_users_center = true;
+    si->joinlimit = 10.0;
+    si->accuracy_target = 0.25;
+    si->penangle = FF_PI / 4;
+
+    MakeStrokeDlg(fv, FVBuildItScript, si, false);
 }
-
-
-
-
 
 void FreeHandStrokeDlg(StrokeInfo *si) {
     MakeStrokeDlg(NULL,NULL,si,false);

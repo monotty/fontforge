@@ -984,9 +984,6 @@ extern void FVImport(FontView *bv);
 extern void CVFindCenter(CharView *cv, BasePoint *bp, int nosel);
 extern void CVStroke(CharView *cv);
 extern void FVStroke(FontView *fv);
-
-extern void FVBuildStroke(FontView *fv);
-
 extern void FreeHandStrokeDlg(StrokeInfo *si);
 extern void OutlineDlg(FontView *fv, CharView *cv,MetricsView *mv,int isinline);
 extern void ShadowDlg(FontView *fv, CharView *cv,MetricsView *mv,int wireframe);

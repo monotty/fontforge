@@ -28,6 +28,7 @@
 #include <fontforge-config.h>
 
 #include "splinestroke.h"
+#include "autohint.h"
 
 #include "baseviews.h"
 #include "cvundoes.h"
@@ -2679,59 +2680,100 @@ void FVStrokeItScript(void* _fv, StrokeInfo* si, int UNUSED(pointless_argument))
     ff_progress_end_indicator();
 }
 
+void UnlinkCopyLayerToLayer(SplineChar* sc, int src, int dst)
+{
+    SCClearLayer(sc, dst);
+
+    // Clear Hints
+    sc->manualhints = true;
+    SCClearHintMasks(sc, dst, true);
+    SCClearRounds(sc, dst);
+    StemInfosFree(sc->hstem);
+    StemInfosFree(sc->vstem);
+    sc->hstem = sc->vstem = NULL;
+    sc->hconflicts = sc->vconflicts = false;
+    DStemInfosFree(sc->dstem);
+    sc->dstem = NULL;
+    MinimumDistancesFree(sc->md);
+    sc->md = NULL;
+
+    // Copy src to dst
+    //SCCopyLayerToLayerSilent(sc, fv->active_layer, ly_back, true);
+    SCCopyLayerToLayerSilent(sc, src, dst, true);
+
+    // Unlink references
+    RefChar* rf = sc->layers[dst].refs;
+    while (rf != NULL)
+    {
+        SCCopySplinesFromRef(rf, sc, dst);
+        rf = rf->next;
+    }
+}
+
+SplineChar* TakeNextSelected(FontViewBase* fv, int *i)
+{
+    int id;
+    SplineChar* sc;
+
+    while (*i < fv->map->enccount)
+    {
+        if (fv->selected[*i]
+            && (id = fv->map->map[*i]) != -1
+            && (sc = fv->sf->glyphs[id]) != NULL)
+        {
+            (*i)++;
+            return sc;
+        }
+
+        (*i)++;
+    }
+
+    return (NULL);
+}
+
+
 void FVBuildItScript(void* _fv, StrokeInfo* si, int UNUSED(pointless_argument))
 {
     FontViewBase* fv = _fv;
-    int layer = ly_back;// fv->active_layer;
-    SplineSet* temp;
-    int i, cnt = 0, gid;
-    SplineChar* sc;
 
-    for (i = 0; i < fv->map->enccount; ++i)
+    if (fv->sf->multilayer)
     {
-        if ((gid = fv->map->map[i]) != -1
-            && fv->sf->glyphs[gid] != NULL
-            && fv->selected[i])
+        int source = ly_fore;
+        int target = ly_back;
+        int i, current, count;
+        SplineSet*  ss;
+        SplineChar* sc;
+        
+        i = count = 0;
+        while (TakeNextSelected(fv, &i))
         {
-            ++cnt;
+            count++;
         }
-    }
 
-    ff_progress_start_indicator(10, _("Building..."), _("Building..."), 0, cnt, 1);
+        ff_progress_start_indicator(10, _("Building Glyphs"), _("Glyph"), 0, count, 1);
 
-    //SFUntickAll(fv->sf);
-
-    for (i = 0; i < fv->map->enccount; ++i)
-    {
-        if ((gid = fv->map->map[i]) != -1 
-            && (sc = fv->sf->glyphs[gid]) != NULL 
-            && fv->selected[i])
+        i = current = 0;
+        while ((sc = TakeNextSelected(fv, &i)) 
+                && ff_progress_next())
         {
-            if (sc->parent->multilayer)
-            {
-                //SCPreserveState(sc, false);
-                //for (layer = ly_fore; layer < sc->layer_cnt; ++layer)
-                //{
-                    temp = SplineSetStroke(sc->layers[layer].splines, si, sc->layers[layer].order2);
-                    SplinePointListsFree(sc->layers[layer].splines);
-                    sc->layers[layer].splines = temp;
-                //}
-                //SCCharChangedUpdate(sc, ly_all);
-            }
-            //else
-            //{
-            //    SCPreserveLayer(sc, layer, false);
-            //    temp = SplineSetStroke(sc->layers[layer].splines, si, sc->layers[layer].order2);
-            //    SplinePointListsFree(sc->layers[layer].splines);
-            //    sc->layers[layer].splines = temp;
-            //    SCCharChangedUpdate(sc, layer);
-            //}
+            const int buff_size = 32;
+            char buff[buff_size];
+            snprintf(buff, buff_size, "%d of %d", current++, count);
+            ff_progress_change_line2(buff);
 
-            if (!ff_progress_next())
-            {
-                break;
-            }
+            UnlinkCopyLayerToLayer(sc, source, target);
+
+            SplinePointList* splines = sc->layers[target].splines;
+            unsigned int     order_2 = sc->layers[target].order2;
+
+            ss = SplineSetStroke(splines, si, order_2);
+            SplinePointListsFree(splines);
+            sc->layers[target].splines = ss;
         }
+
+        fv->sf->changed = true;
+        FVReattachCVs(fv->sf, fv->sf);
+
+        ff_progress_end_indicator();
     }
-    ff_progress_end_indicator();
 }

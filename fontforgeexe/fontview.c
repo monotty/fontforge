@@ -3571,64 +3571,9 @@ static void FVMenuSwap(GWindow gw, struct gmenuitem *mi, GEvent *UNUSED(e))
 
 static void FVMenuBuildGlyph(GWindow gw, struct gmenuitem* mi, GEvent* UNUSED(e))
 {
-    FontView* fv = (FontView*)GDrawGetUserData(gw);
-
-    // Clear Background
-    FVClearBackground((FontViewBase*)fv);
-
-    // Clear Hints (SEGFAULT if it is no Fg)
-    FVClearHints(&fv->b);
-
-    // Copy Fg to Bg
-    FVCopyFgtoBg((FontViewBase*)fv);
-
-    // Unlink references
-    FVRefsToSplines((FontViewBase*)fv);
-
-    // Expand Stroke
-    FVBuildStroke(fv);
-
-    //StrokeGetConvex(toknum, cpy);
-    //CVStrokeInfo();
-    //MakeStrokeDlg(fv, FVStrokeItScript, CVStrokeInfo(), false);
-
-
-    //FontView* fv = (FontView*)GDrawGetUserData(gw);
-    //SplineFont* sf = fv->b.sf;
-    //EncMap* map = fv->b.map;
-    //
-    //int count = 0;
-    //int* stack;
-    //
-    //stack = malloc(map->enccount);
-    //
-    //for (int i = 0; i < map->enccount; ++i)
-    //{
-    //    if (fv->b.selected[i])
-    //    {
-    //        stack[count++] = i;
-    //    }
-    //}
-    //
-    //count >>= 1;
-    //
-    //for (int i = 0; i < count; i++)
-    //{
-    //    int32 glyph1_enc = stack[i];
-    //    int32 glyph2_enc = stack[i + count];
-    //
-    //    swap_glyphs(map, glyph1_enc, glyph2_enc);
-    //}
-    //
-    //free(stack);
-    //
-
-    FontViewBase* b = fv;
-    b->sf->changed = true;
-    FVRefreshAll(b->sf);
+    FontViewBase* fv = (FontViewBase*)GDrawGetUserData(gw);
+    FV_Build_Glyphs(fv);
 }
-
-
 
 static void FVMenuAutoWidth(GWindow gw, struct gmenuitem *UNUSED(mi), GEvent *UNUSED(e)) {
     FontView *fv = (FontView *) GDrawGetUserData(gw);

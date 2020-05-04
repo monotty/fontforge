@@ -1086,14 +1086,15 @@ return( true );
 return( false );
 }
 
-int SCWorthOutputting(SplineChar *sc) {
-return( sc!=NULL &&
-	( SCDrawsSomething(sc) || sc->widthset || sc->anchor!=NULL ||
+int SCWorthOutputting(SplineChar* sc)
+{
+	return(sc != NULL &&
+		(SCDrawsSomething(sc) || sc->widthset || sc->anchor != NULL ||
 #if HANYANG
-	    sc->compositionunit ||
+			sc->compositionunit ||
 #endif
-	    sc->dependents!=NULL /*||
-	    sc->width!=sc->parent->ascent+sc->parent->descent*/ ) );
+			sc->dependents != NULL /*||
+			sc->width!=sc->parent->ascent+sc->parent->descent*/));
 }
 
 int SCHasData(SplineChar *sc) {

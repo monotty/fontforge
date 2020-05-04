@@ -2371,6 +2371,7 @@ extern void SCRound2Int(SplineChar *sc,int layer, real factor);
 
 extern void SFFlatten(SplineFont **cidmaster);
 
+extern void SCCopyLayerToLayerSilent(SplineChar *sc, int from, int to,int doclear);
 extern void SCCopyLayerToLayer(SplineChar *sc, int from, int to,int doclear);
 
 extern int hasFreeType(void);
