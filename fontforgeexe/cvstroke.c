@@ -636,8 +636,20 @@ static void MakeStrokeDlg(void *cv, void (*strokeit)(void *,StrokeInfo *,int),
 	    *jlexarray[3][8];
     GTextInfo label[54];
     int i, gcdoff, mi, sp, tfpos[6];
-    char anglebuf[20], ecbuf[20], jlbuf[20], accbuf[20];
-    char widthbuf[20], axisbuf[20];
+    
+    const int anglebuf_size = 20;
+    const int    ecbuf_size = 20;
+    const int    jlbuf_size = 20;
+    const int   accbuf_size = 20;
+    const int widthbuf_size = 20;
+    const int  axisbuf_size = 20;
+
+    char anglebuf[anglebuf_size];
+    char    ecbuf[ecbuf_size];
+    char    jlbuf[jlbuf_size];
+    char   accbuf[accbuf_size];
+    char widthbuf[widthbuf_size];
+    char  axisbuf[axisbuf_size];
 
     assert( si!=NULL );
 
@@ -763,7 +775,8 @@ static void MakeStrokeDlg(void *cv, void (*strokeit)(void *,StrokeInfo *,int),
 	split[sp][1] = GCD_HPad10; split[sp][2] = &gcd[gcdoff-1];
 	split[sp][3] = GCD_ColSpan;
 
-	sprintf( widthbuf, "%g", (double) (si->width) );
+    snprintf(widthbuf, widthbuf_size, "%g", (double)(si->width));
+
 	label[gcdoff].text = (unichar_t *) widthbuf;
 	label[gcdoff].text_is_1byte = true;
 	gcd[gcdoff].gd.pos.width = 50;
@@ -787,7 +800,8 @@ static void MakeStrokeDlg(void *cv, void (*strokeit)(void *,StrokeInfo *,int),
 	split[sp][1] = GCD_HPad10; split[sp][2] = &gcd[gcdoff-1];
 	split[sp][3] = GCD_ColSpan;
 
-	sprintf( axisbuf, "%g", (double) (si->height) );
+    snprintf(axisbuf, axisbuf_size, "%g", (double)(si->height));
+
 	label[gcdoff].text = (unichar_t *) axisbuf;
 	label[gcdoff].text_is_1byte = true;
 	gcd[gcdoff].gd.pos.width = 50;
@@ -814,7 +828,8 @@ static void MakeStrokeDlg(void *cv, void (*strokeit)(void *,StrokeInfo *,int),
 	split[sp][1] = GCD_HPad10; split[sp][2] = &gcd[gcdoff-1];
 	split[sp][3] = GCD_ColSpan;
 
-	sprintf( anglebuf, "%g", (double) (si->penangle*180/FF_PI) );
+    snprintf(anglebuf, anglebuf_size, "%g", (double)(si->penangle * 180 / FF_PI));
+
 	label[gcdoff].text = (unichar_t *) anglebuf;
 	label[gcdoff].text_is_1byte = true;
 	gcd[gcdoff].gd.pos.width = 50;
@@ -985,7 +1000,8 @@ static void MakeStrokeDlg(void *cv, void (*strokeit)(void *,StrokeInfo *,int),
 	gcd[gcdoff++].creator = GLabelCreate;
 	jlexarray[0][0] = &gcd[gcdoff-1];
 
-	sprintf( jlbuf, "%g", (double) (si->joinlimit) );
+    snprintf(jlbuf, jlbuf_size, "%g", (double)(si->joinlimit));
+
 	label[gcdoff].text = (unichar_t *) jlbuf;
 	label[gcdoff].text_is_1byte = true;
 	gcd[gcdoff].gd.pos.width = 50;
@@ -1024,7 +1040,8 @@ static void MakeStrokeDlg(void *cv, void (*strokeit)(void *,StrokeInfo *,int),
 	gcd[gcdoff++].creator = GLabelCreate;
 	jlexarray[0][5] = &gcd[gcdoff-1];
 
-	sprintf( accbuf, "%g", (double) (si->accuracy_target) );
+    snprintf(accbuf, accbuf_size, "%g", (double)(si->accuracy_target));
+
 	label[gcdoff].text = (unichar_t *) accbuf;
 	label[gcdoff].text_is_1byte = true;
 	gcd[gcdoff].gd.pos.width = 50;
@@ -1048,7 +1065,8 @@ static void MakeStrokeDlg(void *cv, void (*strokeit)(void *,StrokeInfo *,int),
 	gcd[gcdoff++].creator = GLabelCreate;
 	jlexarray[1][0] = &gcd[gcdoff-1];
 
-	sprintf( ecbuf, "%g", (double) (si->extendcap) );
+    snprintf(ecbuf, ecbuf_size, "%g", (double)(si->extendcap));
+
 	label[gcdoff].text = (unichar_t *) ecbuf;
 	label[gcdoff].text_is_1byte = true;
 	gcd[gcdoff].gd.pos.width = 50;
@@ -2115,7 +2133,9 @@ static int Pat_WidthChanged(GGadget *g, GEvent *e) {
 	DBounds b;
 	int err = false;
 	real height, width;
-	char buffer[50];
+    const int buffsize = 150;
+	char buffer[buffsize];
+	//char buffer[50];
 
 	free(name);
 	if ( patternsc==NULL )
@@ -2127,7 +2147,7 @@ return( true );
 return( true );
 	PatternSCBounds(patternsc,&b);
 	height = width * (b.maxy - b.miny)/(b.maxx - b.minx);
-	sprintf( buffer, "%g", (double) height );
+	snprintf(buffer, buffsize, "%g", (double) height );
 	GGadgetSetTitle8(GWidgetGetControl(gw,CID_THeight), buffer);
     }
 return( true );
@@ -2143,7 +2163,9 @@ static int Pat_HeightChanged(GGadget *g, GEvent *e) {
 	DBounds b;
 	int err = false;
 	real height, width;
-	char buffer[50];
+    const int buffsize = 150;
+    char buffer[buffsize];
+	//char buffer[50];
 
 	free(name);
 	if ( patternsc==NULL )
@@ -2155,7 +2177,7 @@ return( true );
 return( true );
 	PatternSCBounds(patternsc,&b);
 	width = height * (b.maxx - b.minx)/(b.maxy - b.miny);
-	sprintf( buffer, "%g", (double) width );
+	snprintf(buffer, buffsize, "%g", (double) width );
 	GGadgetSetTitle8(GWidgetGetControl(gw,CID_TWidth), buffer);
     }
 return( true );
@@ -2169,7 +2191,9 @@ static int Pat_TransformChanged(GGadget *g, GEvent *e) {
 	double trans[6];
 	char *name = GGadgetGetTitle8(g);
 	double c, s, t;
-	char buffer[50];
+    const int buffsize = 150;
+    char buffer[buffsize];
+	//char buffer[50];
 
 	if ( sscanf( name, "[%lg %lg %lg %lg %lg %lg]", &trans[0], &trans[1], &trans[2],
 		&trans[3], &trans[4], &trans[5])!=6 ) {
@@ -2188,13 +2212,13 @@ return( true );
 	if ( RealWithin(c*c+s*s,1,.005) && RealWithin(t*c-s,trans[2],.01) && RealWithin(t*s+c,trans[3],.01)) {
 	    double skew = atan(t)*180/FF_PI;
 	    double rot  = atan2(s,c)*180/FF_PI;
-	    sprintf( buffer, "%g", skew );
+        snprintf(buffer, buffsize, "%g", skew);
 	    GGadgetSetTitle8(GWidgetGetControl(gw,CID_Skew), buffer);
-	    sprintf( buffer, "%g", rot );
+        snprintf(buffer, buffsize, "%g", rot);
 	    GGadgetSetTitle8(GWidgetGetControl(gw,CID_Rotate), buffer);
-	    sprintf( buffer, "%g", trans[4] );
+        snprintf(buffer, buffsize, "%g", trans[4]);
 	    GGadgetSetTitle8(GWidgetGetControl(gw,CID_TransX), buffer);
-	    sprintf( buffer, "%g", trans[5] );
+        snprintf(buffer, buffsize, "%g", trans[5]);
 	    GGadgetSetTitle8(GWidgetGetControl(gw,CID_TransY), buffer);
 	} else {
 	    GGadgetSetTitle8(GWidgetGetControl(gw,CID_Skew), "");
@@ -2213,7 +2237,8 @@ static int Pat_AnglesChanged(GGadget *g, GEvent *e) {
 	GWindow gw = GGadgetGetWindow(g);
 	double rotate, skew, x, y;
 	double c, s, t;
-	char buffer[340];
+    const int buffsize = 340;
+	char buffer[buffsize];
 	int err=false;
 
 	skew   = GetCalmReal8(gw,CID_Skew,_("Skew"),&err)*FF_PI/180;
@@ -2224,7 +2249,7 @@ static int Pat_AnglesChanged(GGadget *g, GEvent *e) {
 return( true );
 	t = tan(skew);
 	c = cos(rotate); s = sin(rotate);
-	sprintf( buffer, "[%g %g %g %g %g %g]", c, s, t*c-s, t*s+c, x, y );
+    snprintf(buffer, buffsize, "[%g %g %g %g %g %g]", c, s, t * c - s, t * s + c, x, y);
 	GGadgetSetTitle8(GWidgetGetControl(gw,CID_Transform),buffer );
     }
 return( true );
@@ -2315,7 +2340,11 @@ static struct pattern *PatternEdit(struct layer_dlg *ld,struct pattern *active) 
     GTextInfo label[25];
     int j,k;
     char *name;
-    char width[50], height[50], transform[340];
+    const int buffsize = 340;
+    char     width[buffsize];
+    char    height[buffsize];
+    char transform[buffsize];
+    //char width[50], height[50], transform[340];
     int aspect_fixed = true;
 
     ld->pat_done = false;
@@ -2328,9 +2357,9 @@ static struct pattern *PatternEdit(struct layer_dlg *ld,struct pattern *active) 
     if ( active!=NULL ) {
 	SplineChar *patternsc = SFGetChar(ld->sf,-1,active->pattern);
 	name = active->pattern;
-	sprintf( width, "%g", (double) active->width );
-	sprintf( height, "%g", (double) active->height );
-	sprintf( transform, "[%g %g %g %g %g %g]",
+	snprintf(    width, buffsize, "%g", (double) active->width );
+	snprintf(   height, buffsize, "%g", (double) active->height );
+	snprintf(transform, buffsize, "[%g %g %g %g %g %g]",
 		(double) active->transform[0], (double) active->transform[1],
 		(double) active->transform[2], (double) active->transform[3],
 		(double) active->transform[4], (double) active->transform[5]);
@@ -2752,31 +2781,41 @@ static int Layer_Inherit(GGadget *g, GEvent *e) {
 return( true );
 }
 
-static int Layer_DoColorWheel(GGadget *g, GEvent *e) {
-    if ( e->type==et_controlevent && e->u.control.subtype == et_buttonactivate ) {
-	GWindow gw = GGadgetGetWindow(g);
-	int cid = (intpt) GGadgetGetUserData(g);
-	GGadget *tf = GWidgetGetControl(gw,cid);
-	if ( GGadgetIsEnabled(tf)) {
-	    char *pt, *text = GGadgetGetTitle8(tf);
-	    char buf[12];
-	    Color val;
-	    struct hslrgb col;
-	    pt = text;
-	    while ( isspace(*pt)) ++pt;
-	    if ( *pt=='0' && (pt[1]=='x' || pt[1]=='X')) pt += 2;
-	    else if ( *pt=='#' ) ++pt;
-	    val = strtoul(pt,NULL,16);
-	    gColor2Hslrgb(&col,val);
-	    col = GWidgetColor(_("Pick a color"),&col,NULL);
-	    if ( col.rgb ) {
-		val = gHslrgb2Color(&col);
-		sprintf(buf,"#%06x", val );
-		GGadgetSetTitle8(tf,buf);
-	    }
-	}
+static int Layer_DoColorWheel(GGadget* g, GEvent* e)
+{
+    if (e->type == et_controlevent && e->u.control.subtype == et_buttonactivate)
+    {
+        GWindow gw = GGadgetGetWindow(g);
+        int cid = (intpt)GGadgetGetUserData(g);
+        GGadget* tf = GWidgetGetControl(gw, cid);
+        if (GGadgetIsEnabled(tf))
+        {
+            char* pt, * text = GGadgetGetTitle8(tf);
+
+            const int buf_size = 12;
+            char buf[buf_size];
+            //char buf[12];
+
+            Color val;
+            struct hslrgb col;
+            pt = text;
+            while (isspace(*pt)) ++pt;
+            if (*pt == '0' && (pt[1] == 'x' || pt[1] == 'X')) pt += 2;
+            else if (*pt == '#') ++pt;
+            val = strtoul(pt, NULL, 16);
+            gColor2Hslrgb(&col, val);
+            col = GWidgetColor(_("Pick a color"), &col, NULL);
+            if (col.rgb)
+            {
+                val = gHslrgb2Color(&col);
+                
+                snprintf(buf, buf_size, "#%06x", val);
+
+                GGadgetSetTitle8(tf, buf);
+            }
+        }
     }
-return( true );
+    return(true);
 }
 
 static int layer_e_h(GWindow gw, GEvent *event) {
@@ -2805,8 +2844,23 @@ int LayerDialog(Layer *layer,SplineFont *sf) {
     struct layer_dlg ld;
     int yoff=0;
     int gcdoff, fill_gcd, stroke_gcd, k, j;
-    char widthbuf[20], fcol[12], scol[12], fopac[30], sopac[30], transbuf[150],
-	    dashbuf[60];
+
+    const int widthbuf_size = 20;
+    const int     fcol_size = 12;
+    const int     scol_size = 12;
+    const int    fopac_size = 30;
+    const int    sopac_size = 30;
+    const int transbuf_size = 150;
+    const int  dashbuf_size = 60;
+
+    char widthbuf[widthbuf_size];
+    char     fcol[fcol_size];
+    char     scol[scol_size];
+    char    fopac[fopac_size];
+    char    sopac[sopac_size];
+    char transbuf[transbuf_size];
+    char  dashbuf[dashbuf_size];
+
     int i;
     char *pt;
 
@@ -2857,7 +2911,8 @@ int LayerDialog(Layer *layer,SplineFont *sf) {
     gcd[gcdoff++].creator = GLabelCreate;
     fhvarray[k++] = &gcd[gcdoff-1];
 
-    sprintf( fcol, "#%06x", layer->fill_brush.col );
+    snprintf(fcol, fcol_size, "#%06x", layer->fill_brush.col);
+
     label[gcdoff].text = (unichar_t *) fcol;
     label[gcdoff].text_is_1byte = true;
     if ( layer->fill_brush.col==COLOR_INHERITED ) 
@@ -2900,7 +2955,8 @@ int LayerDialog(Layer *layer,SplineFont *sf) {
     gcd[gcdoff++].creator = GLabelCreate;
     fhvarray[k++] = &gcd[gcdoff-1];
 
-    sprintf( fopac, "%g", layer->fill_brush.opacity );
+    snprintf(fopac, fopac_size, "%g", layer->fill_brush.opacity);
+
     label[gcdoff].text = (unichar_t *) fopac;
     label[gcdoff].text_is_1byte = true;
     if ( layer->fill_brush.opacity<0 ) 
@@ -3052,7 +3108,8 @@ int LayerDialog(Layer *layer,SplineFont *sf) {
     gcd[gcdoff++].creator = GLabelCreate;
     shvarray[k++] = &gcd[gcdoff-1];
 
-    sprintf( scol, "#%06x", layer->stroke_pen.brush.col );
+    snprintf(scol, scol_size, "#%06x", layer->stroke_pen.brush.col);
+
     label[gcdoff].text = (unichar_t *) scol;
     label[gcdoff].text_is_1byte = true;
     if ( layer->stroke_pen.brush.col==COLOR_INHERITED ) 
@@ -3096,7 +3153,8 @@ int LayerDialog(Layer *layer,SplineFont *sf) {
     gcd[gcdoff++].creator = GLabelCreate;
     shvarray[k++] = &gcd[gcdoff-1];
 
-    sprintf( sopac, "%g", layer->stroke_pen.brush.opacity );
+    snprintf(sopac, sopac_size, "%g", layer->stroke_pen.brush.opacity);
+
     label[gcdoff].text = (unichar_t *) sopac;
     label[gcdoff].text_is_1byte = true;
     if ( layer->stroke_pen.brush.opacity<0 ) 
@@ -3231,7 +3289,8 @@ int LayerDialog(Layer *layer,SplineFont *sf) {
     gcd[gcdoff++].creator = GLabelCreate;
     shvarray[k++] = &gcd[gcdoff-1];
 
-    sprintf( widthbuf, "%g", layer->stroke_pen.width );
+    snprintf(widthbuf, widthbuf_size, "%g", layer->stroke_pen.width);
+
     label[gcdoff].text = (unichar_t *) widthbuf;
     label[gcdoff].text_is_1byte = true;
     if ( layer->stroke_pen.width==WIDTH_INHERITED ) 
@@ -3270,9 +3329,11 @@ int LayerDialog(Layer *layer,SplineFont *sf) {
     shvarray[k++] = &gcd[gcdoff-1];
 
     pt = dashbuf; dashbuf[0] = '\0';
-    for ( i=0; i<DASH_MAX && layer->stroke_pen.dashes[i]!=0; ++i ) {
-	sprintf( pt, "%d ", layer->stroke_pen.dashes[i]);
-	pt += strlen(pt);
+
+    for (i = 0; i < DASH_MAX && layer->stroke_pen.dashes[i] != 0; ++i)
+    {
+        snprintf(pt, dashbuf_size, "%d ", layer->stroke_pen.dashes[i]);
+        pt += strlen(pt);
     }
     if ( pt>dashbuf ) pt[-1] = '\0';
     label[gcdoff].text = (unichar_t *) dashbuf;
@@ -3315,9 +3376,10 @@ int LayerDialog(Layer *layer,SplineFont *sf) {
     gcd[gcdoff++].creator = GLabelCreate;
     shvarray[k++] = &gcd[gcdoff-1];
 
-    sprintf( transbuf, "[%.4g %.4g %.4g %.4g]", (double) layer->stroke_pen.trans[0],
+    snprintf( transbuf, transbuf_size, "[%.4g %.4g %.4g %.4g]", (double) layer->stroke_pen.trans[0],
 	    (double) layer->stroke_pen.trans[1], (double) layer->stroke_pen.trans[2],
 	    (double) layer->stroke_pen.trans[3]);
+
     label[gcdoff].text = (unichar_t *) transbuf;
     label[gcdoff].text_is_1byte = true;
     gcd[gcdoff].gd.label = &label[gcdoff];

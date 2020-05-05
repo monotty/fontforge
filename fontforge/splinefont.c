@@ -106,7 +106,11 @@ void SFOrderBitmapList(SplineFont *sf) {
 }
 
 SplineChar *SCBuildDummy(SplineChar *dummy,SplineFont *sf,EncMap *map,int i) {
-    static char namebuf[100];
+    
+	static int namebuf_size = 100;
+	static char namebuf[100];
+    //static char namebuf[100];
+
     static Layer layers[2];
 
     memset(dummy,'\0',sizeof(*dummy));
@@ -137,10 +141,16 @@ SplineChar *SCBuildDummy(SplineChar *dummy,SplineFont *sf,EncMap *map,int i) {
 	    dummy->name = ".notdef";
 	else*/ {
 	    int j;
-	    sprintf( namebuf, "NameMe.%d", i);
-	    j=0;
-	    while ( SFFindExistingSlot(sf,-1,namebuf)!=-1 )
-		sprintf( namebuf, "NameMe.%d.%d", i, ++j);
+		
+		snprintf(namebuf, namebuf_size, "NameMe.%d", i);
+	    
+		j=0;
+		
+		while (SFFindExistingSlot(sf, -1, namebuf) != -1)
+		{
+			snprintf(namebuf, namebuf_size, "NameMe.%d.%d", i, ++j);
+		}
+
 	    dummy->name = namebuf;
 	}
     }
@@ -408,85 +418,142 @@ void SplineFontSetUnChanged(SplineFont *sf) {
 	    _SplineFontSetUnChanged(sf->mm->instances[i]);
 }
 
-static char *scaleString(char *string, double scale) {
-    char *result;
-    char *pt;
-    char *end;
-    double val;
+static char* scaleString(char* string, double scale)
+{
+	char* result;
+	char* pt;
+	char* end;
+	double val;
 
-    if ( string==NULL )
-return( NULL );
+	if (string == NULL)
+		return(NULL);
 
-    while ( *string==' ' ) ++string;
-    result = malloc(10*strlen(string)+1);
-    if ( *string!='[' ) {
-	val = strtod(string,&end);
-	if ( end==string ) {
-	    free( result );
-return( NULL );
+	while (*string == ' ')
+	{
+		++string;
 	}
-	sprintf( result, "%g", val*scale);
-return( result );
-    }
 
-    pt = result;
-    *pt++ = '[';
-    ++string;
-    while ( *string!='\0' && *string!=']' ) {
-	val = strtod(string,&end);
-	if ( end==string ) {
-	    free(result);
-return( NULL );
+	int result_size = 10 * strlen(string) + 1;
+	result = malloc(result_size);
+	//result = malloc(10 * strlen(string) + 1);
+
+	if (*string != '[')
+	{
+		val = strtod(string, &end);
+		if (end == string)
+		{
+			free(result);
+			return(NULL);
+		}
+		snprintf(result, result_size, "%g", val * scale);
+		return(result);
 	}
-	sprintf( pt, "%g ", val*scale);
-	pt += strlen(pt);
-	string = end;
-    }
-    if ( pt[-1] == ' ' ) pt[-1] = ']';
-    else *pt++ = ']';
-    *pt = '\0';
-return( result );
+
+	pt = result;
+	*pt++ = '[';
+	
+	result_size--;
+	
+	++string;
+	while (*string != '\0' && *string != ']')
+	{
+		val = strtod(string, &end);
+		if (end == string)
+		{
+			free(result);
+			return(NULL);
+		}
+		snprintf(pt, result_size, "%g ", val * scale);
+
+		int pt_size = strlen(pt);
+		pt += pt_size;
+		result_size -= pt_size;
+
+		string = end;
+	}
+	if (pt[-1] == ' ')
+	{
+		pt[-1] = ']';
+	}
+	else
+	{
+		*pt++ = ']';
+		result_size--;
+	}
+
+	*pt = '\0';
+
+	return(result);
 }
 
-static char *iscaleString(char *string, double scale) {
-    char *result;
-    char *pt;
-    char *end;
-    double val;
+static char* iscaleString(char* string, double scale)
+{
+	char* result;
+	char* pt;
+	char* end;
+	double val;
 
-    if ( string==NULL )
-return( NULL );
-
-    while ( *string==' ' ) ++string;
-    result = malloc(10*strlen(string)+1);
-    if ( *string!='[' ) {
-	val = strtod(string,&end);
-	if ( end==string ) {
-	    free( result );
-return( NULL );
+	if (string == NULL)
+	{
+		return(NULL);
 	}
-	sprintf( result, "%g", rint(val*scale));
-return( result );
-    }
 
-    pt = result;
-    *pt++ = '[';
-    ++string;
-    while ( *string!='\0' && *string!=']' ) {
-	val = strtod(string,&end);
-	if ( end==string ) {
-	    free(result);
-return( NULL );
+	while (*string == ' ')
+	{
+		++string;
 	}
-	sprintf( pt, "%g ", rint(val*scale));
-	pt += strlen(pt);
-	string = end;
-	while ( *string==' ' ) ++string;
-    }
-    if ( pt[-1] == ' ' ) pt[-1] = ']';
-    else *pt++ = ']';
-    *pt = '\0';
-return( result );
+	
+	int result_size = 10 * strlen(string) + 1;
+	result = malloc(result_size);
+	if (*string != '[')
+	{
+		val = strtod(string, &end);
+		if (end == string)
+		{
+			free(result);
+			return(NULL);
+		}
+
+		snprintf(result, result_size, "%g", rint(val * scale));
+
+		return(result);
+	}
+
+	pt = result;
+	*pt++ = '[';
+	result_size--;
+
+	++string;
+	while (*string != '\0' && *string != ']')
+	{
+		val = strtod(string, &end);
+		if (end == string)
+		{
+			free(result);
+			return(NULL);
+		}
+		
+		snprintf(pt, result_size, "%g ", rint(val * scale));
+
+		int pt_size = strlen(pt);
+		pt += pt_size;
+		result_size -= pt_size;
+
+		string = end;
+		while (*string == ' ') ++string;
+	}
+	if (pt[-1] == ' ')
+	{
+		pt[-1] = ']';
+	}
+	else
+	{
+		*pt++ = ']';
+		result_size--;
+	}
+
+	*pt = '\0';
+	return(result);
 }
 
 static void SFScalePrivate(SplineFont *sf,double scale) {
@@ -835,22 +902,31 @@ return( NULL );
     }
 
     if ( dir==NULL ) dir = P_tmpdir;
-    archivedir = malloc(strlen(dir)+100);
-    sprintf( archivedir, "%s/ffarchive-%d-%d", dir, getpid(), ++cnt );
+
+	int archivedir_size = strlen(dir) + 100;
+    archivedir = malloc(archivedir_size);
+
+	snprintf(archivedir, archivedir_size, "%s/ffarchive-%d-%d", dir, getpid(), ++cnt);
+
     if ( GFileMkDir(archivedir, 0755)!=0 ) {
 	free(archivedir);
 return( NULL );
     }
 
-    listfile = malloc(strlen(archivedir)+strlen("/" TOC_NAME)+1);
-    sprintf( listfile, "%s/" TOC_NAME, archivedir );
+	int listfile_size = strlen(archivedir) + strlen("/" TOC_NAME) + 1;
+    listfile = malloc(listfile_size);
+	
+	snprintf(listfile, listfile_size, "%s/" TOC_NAME, archivedir);
 
-    listcommand = malloc( strlen(archivers[i].unarchive) + 1 +
-			strlen( archivers[i].listargs) + 1 +
-			strlen( name ) + 3 +
-			strlen( listfile ) +4 );
-    sprintf( listcommand, "%s %s %s > %s", archivers[i].unarchive,
-	    archivers[i].listargs, name, listfile );
+	int listcommand_size = strlen(archivers[i].unarchive) + 1 +
+		strlen(archivers[i].listargs) + 1 +
+		strlen(name) + 3 +
+		strlen(listfile) + 4;
+    listcommand = malloc(listcommand_size);
+
+	snprintf(listcommand, listcommand_size, "%s %s %s > %s", archivers[i].unarchive,
+		archivers[i].listargs, name, listfile);
+
     if ( system(listcommand)!=0 ) {
 	free(listcommand); free(listfile);
 	ArchiveCleanup(archivedir);
@@ -867,14 +943,18 @@ return( NULL );
 
     /* I tried sending everything to stdout, but that doesn't work if the */
     /*  output is a directory file (ufo, sfdir) */
-    unarchivecmd = malloc( strlen(archivers[i].unarchive) + 1 +
-			strlen( archivers[i].listargs) + 1 +
-			strlen( name ) + 1 +
-			strlen( desiredfile ) + 3 +
-			strlen( archivedir ) + 30 );
-    sprintf( unarchivecmd, "( cd %s ; %s %s %s %s ) > /dev/null", archivedir,
-	    archivers[i].unarchive,
-	    archivers[i].extractargs, name, doall ? "" : desiredfile );
+	int unarchivecmd_size = strlen(archivers[i].unarchive) + 1 +
+		strlen(archivers[i].listargs) + 1 +
+		strlen(name) + 1 +
+		strlen(desiredfile) + 3 +
+		strlen(archivedir) + 30;
+
+    unarchivecmd = malloc(unarchivecmd_size);
+
+	snprintf(unarchivecmd, unarchivecmd_size, "( cd %s ; %s %s %s %s ) > /dev/null", archivedir,
+		archivers[i].unarchive,
+		archivers[i].extractargs, name, doall ? "" : desiredfile);
+
     if ( system(unarchivecmd)!=0 ) {
 	free(unarchivecmd); free(desiredfile);
 	ArchiveCleanup(archivedir);
@@ -882,8 +962,11 @@ return( NULL );
     }
     free(unarchivecmd);
 
-    finalfile = malloc( strlen(archivedir) + 1 + strlen(desiredfile) + 1);
-    sprintf( finalfile, "%s/%s", archivedir, desiredfile );
+	int finalfile_size = strlen(archivedir) + 1 + strlen(desiredfile) + 1;
+    finalfile = malloc(finalfile_size);
+
+	snprintf(finalfile, finalfile_size, "%s/%s", archivedir, desiredfile);
+
     free( desiredfile );
 
     *_archivedir = archivedir;
@@ -919,25 +1002,38 @@ return( tmpfn );
 return( NULL );
 }
 
-static char *ForceFileToHaveName(FILE *file, char *exten) {
-    char tmpfilename[L_tmpnam+100];
-    static int try=0;
-    FILE *newfile;
+static char* ForceFileToHaveName(FILE* file, char* exten)
+{
 
-    for (;;) {
-	sprintf( tmpfilename, P_tmpdir "/fontforge%d-%d", getpid(), try++ );
-	if ( exten!=NULL )
-	    strcat(tmpfilename,exten);
-	if ( access( tmpfilename, F_OK )==-1 &&
-		(newfile = fopen(tmpfilename,"w"))!=NULL ) {
-	    char buffer[1024];
-	    int len;
-	    while ( (len = fread(buffer,1,sizeof(buffer),file))>0 )
-		fwrite(buffer,1,len,newfile);
-	    fclose(newfile);
+	const int tmpfilename_size = L_tmpnam + 100;
+	char tmpfilename[tmpfilename_size];
+
+	static int try = 0;
+	FILE* newfile;
+
+	for (;;)
+	{
+		snprintf(tmpfilename, tmpfilename_size, P_tmpdir "/fontforge%d-%d", getpid(), try++);
+
+		if (exten != NULL)
+		{
+			strcat(tmpfilename, exten);
+		}
+
+		if (access(tmpfilename, F_OK) == -1 &&
+			(newfile = fopen(tmpfilename, "w")) != NULL)
+		{
+			char buffer[1024];
+			int len;
+			while ((len = fread(buffer, 1, sizeof(buffer), file)) > 0)
+			{
+				fwrite(buffer, 1, len, newfile);
+			}
+
+			fclose(newfile);
+		}
+		return(copy(tmpfilename));			/* The filename does not exist */
 	}
-return(copy(tmpfilename));			/* The filename does not exist */
-    }
 }
 
 /* Returns a pointer to the start of the parenthesized 
@@ -1854,46 +1950,92 @@ bigreal SFDescender(SplineFont *sf, int layer, int return_error) {
 return( result );
 }
 
-static void arraystring(char *buffer,real *array,int cnt) {
-    int i, ei;
+static void arraystring(char* buffer, int buffer_size, real* array, int cnt)
+{
+	int i, ei;
 
-    for ( ei=cnt; ei>1 && array[ei-1]==0; --ei );
-    *buffer++ = '[';
-    for ( i=0; i<ei; ++i ) {
-	sprintf(buffer, "%d ", (int) array[i]);
-	buffer += strlen(buffer);
-    }
-    if ( buffer[-1] ==' ' ) --buffer;
-    *buffer++ = ']'; *buffer='\0';
+	for (ei = cnt; ei > 1 && array[ei - 1] == 0; --ei)
+	{
+		;
+	}
+
+	*buffer++ = '[';
+	buffer_size--;
+
+	for (i = 0; i < ei; ++i)
+	{
+		snprintf(buffer, buffer_size, "%d ", (int)array[i]);
+
+		int str_size = strlen(buffer);
+		buffer += str_size;
+		buffer_size -= str_size;
+	}
+
+	if (buffer[-1] == ' ')
+	{
+		--buffer;
+		buffer_size++;
+	}
+
+	if (buffer_size > 0)
+	{
+		*buffer++ = ']';
+		*buffer = '\0';
+	}
 }
 
-static void SnapSet(struct psdict *private,real stemsnap[12], real snapcnt[12],
-	char *name1, char *name2, int which ) {
-    int i, mi;
-    char buffer[211];
+static void SnapSet(struct psdict* private, real stemsnap[12], real snapcnt[12],
+	char* name1, char* name2, int which)
+{
+	int i, mi;
 
-    mi = -1;
-    for ( i=0; i<12 && stemsnap[i]!=0; ++i )
-	if ( mi==-1 ) mi = i;
-	else if ( snapcnt[i]>snapcnt[mi] ) mi = i;
-    if ( mi==-1 )
-return;
-    if ( which<2 ) {
-	sprintf( buffer, "[%d]", (int) stemsnap[mi]);
-	PSDictChangeEntry(private,name1,buffer);
-    }
-    if ( which==0 || which==2 ) {
-	arraystring(buffer,stemsnap,12);
-	PSDictChangeEntry(private,name2,buffer);
-    }
+	const int buffer_size = 211;
+	char buffer[buffer_size];
+	//char buffer[211];
+
+	mi = -1;
+	for (i = 0; i < 12 && stemsnap[i] != 0; ++i)
+	{
+		if (mi == -1)
+		{
+			mi = i;
+		}
+		else if (snapcnt[i] > snapcnt[mi])
+		{
+			mi = i;
+		}
+	}
+
+	if (mi == -1)
+	{
+		return;
+	}
+
+	if (which < 2)
+	{
+
+		snprintf(buffer, buffer_size, "[%d]", (int)stemsnap[mi]);
+
+		PSDictChangeEntry(private, name1, buffer);
+	}
+
+	if (which == 0 || which == 2)
+	{
+		arraystring(buffer, buffer_size, stemsnap, 12);
+
+		PSDictChangeEntry(private, name2, buffer);
+	}
 }
 
 int SFPrivateGuess(SplineFont *sf,int layer, struct psdict *private,char *name, int onlyone) {
     real bluevalues[14], otherblues[10];
     real snapcnt[12];
     real stemsnap[12];
-    char buffer[211];
     int ret;
+
+	const int buffer_size = 211;
+    char buffer[buffer_size];
+    //char buffer[211];
 
     locale_t tmplocale; locale_t oldlocale; // Declare temporary locale storage.
     switch_to_c_locale(&tmplocale, &oldlocale); // Switch to the C locale temporarily and cache the old locale.
@@ -1902,12 +2044,12 @@ int SFPrivateGuess(SplineFont *sf,int layer, struct psdict *private,char *name, 
     if ( strcmp(name,"BlueValues")==0 || strcmp(name,"OtherBlues")==0 ) {
 	FindBlues(sf,layer,bluevalues,otherblues);
 	if ( !onlyone || strcmp(name,"BlueValues")==0 ) {
-	    arraystring(buffer,bluevalues,14);
+	    arraystring(buffer, buffer_size, bluevalues,14);
 	    PSDictChangeEntry(private,"BlueValues",buffer);
 	}
 	if ( !onlyone || strcmp(name,"OtherBlues")==0 ) {
 	    if ( otherblues[0]!=0 || otherblues[1]!=0 ) {
-		arraystring(buffer,otherblues,10);
+		arraystring(buffer, buffer_size, otherblues,10);
 		PSDictChangeEntry(private,"OtherBlues",buffer);
 	    } else
 		PSDictRemoveEntry(private, "OtherBlues");
@@ -1927,7 +2069,9 @@ int SFPrivateGuess(SplineFont *sf,int layer, struct psdict *private,char *name, 
 	    val = BlueScaleFigureForced(private,NULL,NULL);
 	}
 	if ( val==-1 ) val = .039625;
-	sprintf(buffer,"%g", (double) val );
+	
+	snprintf(buffer, buffer_size, "%g", (double)val);
+	
 	PSDictChangeEntry(private,"BlueScale",buffer);
     } else if ( strcmp(name,"BlueShift")==0 ) {
 	PSDictChangeEntry(private,"BlueShift","7");

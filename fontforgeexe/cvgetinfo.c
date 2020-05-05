@@ -1897,35 +1897,55 @@ return( false );
 return( true );
 }
 
-static void mysprintf( char *buffer, char *format, real v) {
-    char *pt;
+static void mysprintf(char* buffer, char* format, real v)
+{
+	char* pt;
 
-    if ( v<.0001 && v>-.0001 && v!=0 )
-	sprintf( buffer, "%e", (double) v );
-    else if ( v<1 && v>0 )
-	sprintf( buffer, "%f", (double) v );
-    else if ( v<0 && v>-1 )
-	sprintf( buffer, "%.5f", (double) v );
-    else
-	sprintf( buffer, format, (double) v );
-    pt = buffer + strlen(buffer);
-    while ( pt>buffer && pt[-1]=='0' )
-	*--pt = '\0';
-    if ( pt>buffer && pt[-1]=='.' )
-	pt[-1] = '\0';
+	if (v<.0001 && v>-.0001 && v != 0)
+	{
+		sprintf(buffer, "%e", (double)v);
+	}
+	else if (v < 1 && v>0)
+	{
+		sprintf(buffer, "%f", (double)v);
+	}
+	else if (v<0 && v>-1)
+	{
+		sprintf(buffer, "%.5f", (double)v);
+	}
+	else
+	{
+		sprintf(buffer, format, (double)v);
+	}
+
+	pt = buffer + strlen(buffer);
+	while (pt > buffer && pt[-1] == '0')
+	{
+		*--pt = '\0';
+	}
+
+	if (pt > buffer && pt[-1] == '.')
+	{
+		pt[-1] = '\0';
+	}
 }
 
 static void mysprintf2( char *buffer, real v1, real v2) {
     char *pt;
 
     mysprintf(buffer,"%.2f", v1);
-    pt = buffer+strlen(buffer);
+
+    pt = buffer + strlen(buffer);
+
     *pt++ = ',';
+
     mysprintf(pt,"%.2f", v2);
 }
 
 static void PIFillup(GIData *ci, int except_cid) {
-    char buffer[51];
+	// possible bug: buffer overflow
+    //char buffer[51];
+    char buffer[151];
     double dx, dy;
     double kappa, kappa2;
     int emsize;
@@ -2077,6 +2097,9 @@ void PIChangePoint(GIData *ci) {
 
     GGadgetGetList(list,&len);
 
+	// possible bug: damaged pointers
+	//	ci->cursp->next;
+	//	ci->cursp->prev;
     PIFillup(ci,0);
 
     GGadgetSetEnabled(GWidgetGetControl(ci->gw,CID_Interpolated),
@@ -3351,7 +3374,9 @@ static void PointGetInfo(CharView *cv, SplinePoint *sp, SplinePointList *spl) {
 /* ************************************************************************** */
 
 static void SpiroFillup(GIData *ci, int except_cid) {
-    char buffer[50];
+	// possible bug: buffer overflow
+    //char buffer[50];
+    char buffer[150];
     int ty;
 
     mysprintf(buffer, "%.2f", ci->curcp->x );

@@ -2319,8 +2319,8 @@ static SplineSet* OffsetSplineSet(SplineSet* ss, StrokeContext* c)
                 }
                 else if (is_ccw_mid == -1)
                 {
-                    LogError(_("Warning: Can't identify contour direction, "
-                        "assuming clockwise\n"));
+                    //LogError(_("Warning: Can't identify contour direction, "
+                    //    "assuming clockwise\n"));
 
                     // random
                     SplineSetReverse(left);
@@ -2891,20 +2891,20 @@ void FVBuildItScript(void* _fv, StrokeInfo* si)
             SplinePointListsFree(splines);
 
             // random + srmov_none
-            splines = glyph->layers[target].splines;
-            glyph->layers[target].splines = SplineSetRemoveOverlap(NULL, splines, over_remove);
-
-            // additional simplifying
-            struct simplifyinfo smpl;
-            smpl.flags      = sf_normal;
-            smpl.err        = 2.0;
-            smpl.tan_bounds = 0.05;
-            smpl.linefixup  = 0.0;
-            smpl.linelenmax = 20;
-            smpl.set_as_default = 0;
-            smpl.check_selected_contours = 0;
-            splines = glyph->layers[target].splines;
-            glyph->layers[target].splines = SplineCharSimplify(NULL, splines, &smpl);
+            //splines = glyph->layers[target].splines;
+            //glyph->layers[target].splines = SplineSetRemoveOverlap(NULL, splines, over_remove);
+            //
+            //// additional simplifying
+            //struct simplifyinfo smpl;
+            //smpl.flags      = sf_normal;
+            //smpl.err        = 2.0;
+            //smpl.tan_bounds = 0.05;
+            //smpl.linefixup  = 0.0;
+            //smpl.linelenmax = 20;
+            //smpl.set_as_default = 0;
+            //smpl.check_selected_contours = 0;
+            //splines = glyph->layers[target].splines;
+            //glyph->layers[target].splines = SplineCharSimplify(NULL, splines, &smpl);
         }
 
         fv->sf->changed = true;
