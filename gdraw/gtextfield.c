@@ -1089,7 +1089,7 @@ static void GTextFieldIncrement(GTextField *gt,int amount) {
 return;
     }
     d = floor(d)+amount;
-    sprintf(buf,"%g", d);
+    snprintf(buf, sizeof(buf), "%g", d);
     free(gt->oldtext);
     gt->oldtext = gt->text;
     gt->text = uc_copy(buf);

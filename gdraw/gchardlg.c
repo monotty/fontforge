@@ -597,16 +597,18 @@ static int _InsChrSetSelChar(unichar_t ch, int refresh_page) {
 	    inmap = false;
 	if ( inschr.map==em_jis212 ) resch &= ~0x8000;
 	if ( !inmap || inschr.dsp_mode==d_unicode || inschr.map>em_max )
-	    sprintf( buffer,"U+0x%04x", ch );
+	    snprintf( buffer, sizeof(buffer), "U+0x%04x", ch );
 	else if ( inschr.dsp_mode==d_dec )
-	    sprintf( buffer,"%d", resch );
+	    snprintf( buffer, sizeof(buffer), "%d", resch );
 	else if ( inschr.dsp_mode==d_hex )
-	    sprintf( buffer,inschr.map<em_first2byte?"0x%02x":"0x%04x", resch );
+	    snprintf( buffer, sizeof(buffer), inschr.map<em_first2byte?"0x%02x":"0x%04x", resch );
 	else if ( inschr.map==em_unicode )
-	    sprintf( buffer,"%d,%d", highch, ch&0xff );
+	    snprintf( buffer, sizeof(buffer), "%d,%d", highch, ch&0xff );
 	else
-	    sprintf( buffer,"%d,%d", (resch>>8)-0x20, (resch&0xff)-0x20 );
-	uc_strcpy(ubuffer, buffer);
+	    snprintf( buffer, sizeof(buffer), "%d,%d", (resch>>8)-0x20, (resch&0xff)-0x20 );
+	
+	uc_strncpy(ubuffer, buffer, sizeof(buffer));
+
 	GGadgetSetTitle(GWidgetGetControl(inschr.icw,INSCHR_Char),ubuffer);
 	if ( inschr.flash ) {
 	    GDrawCancelTimer(inschr.flash_time);
@@ -730,14 +732,18 @@ static void InsChrExpose( GWindow pixmap, GRect *rect) {
     int highi, lowi, is94x94;
 
     if ( inschr.pageable ) {
-	char buffer[20]; unichar_t ubuf[20];
+	char buffer[20]; 
+	unichar_t ubuf[20];
+
 	GDrawPushClip(pixmap,rect,&old);
 	GDrawSetFont(pixmap,inschr.smallfont);
 	if ( inschr.dsp_mode==d_hex || inschr.dsp_mode == d_unicode )
-	    sprintf( buffer, "Page: 0x%02X", inschr.page );
+	    snprintf( buffer, sizeof(buffer), "Page: 0x%02X", inschr.page );
 	else
-	    sprintf( buffer, "Page: %d", inschr.page );
-	uc_strcpy(ubuf,buffer);
+	    snprintf( buffer, sizeof(buffer), "Page: %d", inschr.page );
+	
+	uc_strncpy(ubuf,buffer, sizeof(buffer));
+	
 	GDrawDrawText(pixmap,GDrawPointsToPixels(pixmap,6),
 		GDrawPointsToPixels(pixmap,90)+inschr.sas,
 		ubuf, -1, 0x000000 );
@@ -833,16 +839,18 @@ return;
     InsChrXorChar(inschr.icw,x,y);
 
     if ( inschr.dsp_mode==d_unicode || inschr.map>em_max )
-	sprintf( buffer, "U+%04lx", InsChrToUni(ch) );
+	snprintf( buffer, sizeof(buffer), "U+%04lx", InsChrToUni(ch) );
     else if ( inschr.dsp_mode==d_hex )
-	sprintf( buffer, inschr.map<em_first2byte?"0x%02x":"0x%04x", ch );
+	snprintf( buffer, sizeof(buffer), inschr.map<em_first2byte?"0x%02x":"0x%04x", ch );
     else if ( inschr.dsp_mode==d_dec )
-	sprintf( buffer, "%d", ch );
+	snprintf( buffer, sizeof(buffer), "%d", ch );
     else if ( inschr.map==em_unicode )
-	sprintf( buffer, "%d,%d", ((ch>>8)&0xff), (ch&0xff) );
+	snprintf( buffer, sizeof(buffer), "%d,%d", ((ch>>8)&0xff), (ch&0xff) );
     else
-	sprintf( buffer, "%d,%d", ((ch>>8)&0xff)-0x21, (ch&0xff)-0x21 );
-    uc_strcpy(ubuffer,buffer);
+	snprintf( buffer, sizeof(buffer), "%d,%d", ((ch>>8)&0xff)-0x21, (ch&0xff)-0x21 );
+    
+	uc_strncpy(ubuffer,buffer, sizeof(buffer));
+
     GGadgetSetTitle(GWidgetGetControl(inschr.icw,INSCHR_Char),ubuffer);
     InsChrFigureShow();
 }
@@ -869,61 +877,69 @@ static void InsChrMouseMove(GWindow gw, GEvent *event) {
 	char *uniannot;
 
 	if ( (uniname=unicode_name(uch))!=NULL ) {
-	    uc_strncpy(space, uniname, 550);
-	    if ( uch<=0xffff )
-		sprintf( cspace, " U+%04X", uch );
+	    
+		uc_strncpy(space, uniname, sizeof(space) / sizeof(unichar_t));
+	    
+		if ( uch<=0xffff )
+		snprintf( cspace, sizeof(cspace), " U+%04X", uch );
 	    else if ( uch<=0xfffff )
-		sprintf( cspace, " 0x%05X", uch );
+		snprintf( cspace, sizeof(cspace), " 0x%05X", uch );
 	    else
-		sprintf( cspace, " 0x%06X", uch );
-	    uc_strcpy(space+u_strlen(space),cspace);
+		snprintf( cspace, sizeof(cspace), " 0x%06X", uch );
+	    
+		int str_len = u_strlen(space);
+		uc_strncpy(space + str_len, cspace, sizeof(space) / sizeof(unichar_t) - str_len);
+
 	    free(uniname);
 	} else {
 	    if ( uch<160 )
-		sprintf(cspace, "Control Char U+%04X ", uch);
+		snprintf(cspace, sizeof(cspace), "Control Char U+%04X ", uch);
 	    else if ( uch>=0x3400 && uch<=0x4db5 )
-		sprintf(cspace, "CJK Ideograph Extension A U+%04X ", uch);
+		snprintf(cspace, sizeof(cspace), "CJK Ideograph Extension A U+%04X ", uch);
 	    else if ( uch>=0x4e00 && uch<=0x9fef )
-		sprintf(cspace, "CJK Ideograph U+%04X ", uch);
+		snprintf(cspace, sizeof(cspace), "CJK Ideograph U+%04X ", uch);
 	    else if ( uch>=0xAC00 && uch<=0xD7A3 )
-		sprintf(cspace, "Hangul Syllable U+%04X ", uch);
+		snprintf(cspace, sizeof(cspace), "Hangul Syllable U+%04X ", uch);
 	    else if ( uch>=0xD800 && uch<=0xDB7F )
- 		sprintf(cspace, "Non Private Use High Surrogate U+%04X ", uch);
+ 		snprintf(cspace, sizeof(cspace), "Non Private Use High Surrogate U+%04X ", uch);
 	    else if ( uch>=0xDB80 && uch<=0xDBFF )
-		sprintf(cspace, "Private Use High Surrogate U+%04X ", uch);
+		snprintf(cspace, sizeof(cspace), "Private Use High Surrogate U+%04X ", uch);
 	    else if ( uch>=0xDC00 && uch<=0xDFFF )
-		sprintf(cspace, "Low Surrogate U+%04X ", uch);
+		snprintf(cspace, sizeof(cspace), "Low Surrogate U+%04X ", uch);
 	    else if ( uch>=0xE000 && uch<=0xF8FF )
-		sprintf(cspace, "Private Use U+%04X ", uch);
+		snprintf(cspace, sizeof(cspace), "Private Use U+%04X ", uch);
 	    else if ( uch>=0x20000 && uch<=0x2a6d6 )
-		sprintf(cspace, "CJK Ideograph Extension B 0x%05X ", uch);
+		snprintf(cspace, sizeof(cspace), "CJK Ideograph Extension B 0x%05X ", uch);
 	    else if ( uch>=0x2a700 && uch<=0x2b734 )
-		sprintf(cspace, "CJK Ideograph Extension C 0x%05X ", uch);
+		snprintf(cspace, sizeof(cspace), "CJK Ideograph Extension C 0x%05X ", uch);
 	    else if ( uch>=0x2b740 && uch<=0x2b81d )
-		sprintf(cspace, "CJK Ideograph Extension D 0x%05X ", uch);
+		snprintf(cspace, sizeof(cspace), "CJK Ideograph Extension D 0x%05X ", uch);
 	    else if ( uch>=0x2b820 && uch<=0x2ceaf )
-		sprintf(cspace, "CJK Ideograph Extension E 0x%05X ", uch);
+		snprintf(cspace, sizeof(cspace), "CJK Ideograph Extension E 0x%05X ", uch);
 	    else if ( uch>=0x2ceb0 && uch<=0x2ebe0 )
-		sprintf(cspace, "CJK Ideograph Extension F 0x%05X ", uch);
+		snprintf(cspace, sizeof(cspace), "CJK Ideograph Extension F 0x%05X ", uch);
 	    else if ( uch>=0xf0000 && uch<=0xfffff )
-		sprintf(cspace, "Supplementary Private Use Area-A 0x%05X ", uch);
+		snprintf(cspace, sizeof(cspace), "Supplementary Private Use Area-A 0x%05X ", uch);
 	    else if ( uch>=0x100000 && uch<=0x10fffd )
-		sprintf(cspace, "Supplementary Private Use Area-B 0x%06X ", uch);
+		snprintf(cspace, sizeof(cspace), "Supplementary Private Use Area-B 0x%06X ", uch);
 	    else
 		if ( uch<=0xffff )
-		    sprintf(cspace, "Unencoded Unicode U+%04X ", uch);
+		    snprintf(cspace, sizeof(cspace), "Unencoded Unicode U+%04X ", uch);
 		else if ( uch<=0xfffff )
-		    sprintf(cspace, "Unencoded Unicode 0x%05X ", uch);
+		    snprintf(cspace, sizeof(cspace), "Unencoded Unicode 0x%05X ", uch);
 		else
-		    sprintf(cspace, "Unencoded Unicode 0x%06X ", uch);
-	    uc_strcpy(space,cspace);
+		    snprintf(cspace, sizeof(cspace), "Unencoded Unicode 0x%06X ", uch);
+	    
+		uc_strncpy(space,cspace, sizeof(space) / sizeof(unichar_t));
 	}
 	if ( (uniannot=unicode_annot(uch))!=NULL ) {
 	    int left = sizeof(space)/sizeof(space[0]) - u_strlen(space)-1;
-	    if ( left>4 ) {
-		uc_strcat(space,"\n");
-		uc_annot_strncat(space, uniannot, left-2);
-	    }
+		if (left > 4)
+		{
+			uc_strncat(space, "\n", sizeof(space) / sizeof(unichar_t));
+
+			uc_annot_strncat(space, uniannot, left - 2);
+		}
 	    free(uniannot);
 	}
 	GGadgetPreparePopup(gw,space);

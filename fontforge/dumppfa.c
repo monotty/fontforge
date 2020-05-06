@@ -244,7 +244,7 @@ static void dumpf(void (*dumpchar)(int ch,void *data), void *data, const char *f
     char buffer[300];
 
     va_start(args,format);
-    vsprintf( buffer, format, args);
+    vsnprintf( buffer, sizeof(buffer), format, args);
     va_end(args);
     dumpstr(dumpchar,data,buffer);
 }
@@ -518,7 +518,7 @@ static void dumpGradient(void (*dumpchar)(int ch,void *data), void *data,
     if ( pdfopers ) {
 	char buffer[200];
 	dumpf(dumpchar,data,"/Pattern %s\n", isstroke ? "CS" : "cs" );
-	makePatName(buffer,ref,sc,layer,isstroke,true);
+	makePatName(buffer, sizeof(buffer), ref,sc,layer,isstroke,true);
 	dumpf(dumpchar,data,"/%s %s\n", buffer, isstroke ? "SCN" : "scn" );
 	/* PDF output looks much simpler than postscript. It isn't. It's just */
 	/*  that the equivalent pdf dictionaries need to be created as objects*/
@@ -606,7 +606,7 @@ static void dumpPattern(void (*dumpchar)(int ch,void *data), void *data,
     if ( pdfopers ) {
 	char buffer[200];
 	dumpf(dumpchar,data,"/Pattern %s\n", isstroke ? "CS" : "cs" );
-	makePatName(buffer,ref,sc,layer,isstroke,false);
+	makePatName(buffer, sizeof(buffer), ref,sc,layer,isstroke,false);
 	dumpf(dumpchar,data,"/%s %s\n", buffer, isstroke ? "SCN" : "scn" );
 	/* PDF output looks much simpler than postscript. It isn't. It's just */
 	/*  that the equivalent pdf dictionaries need to be created as objects*/
@@ -2001,9 +2001,9 @@ static void dumprequiredfontinfo(void (*dumpchar)(int ch,void *data), void *data
 	if ( sf->multilayer )
 	    *buffer = '\0';
 	else if ( sf->strokedfont )
-	    sprintf( buffer, "%g setlinewidth stroke", (double) sf->strokewidth );
+	    snprintf( buffer, sizeof(buffer), "%g setlinewidth stroke", (double) sf->strokewidth );
 	else
-	    strcpy(buffer, "fill");
+	    strncpy(buffer, "fill", sizeof(buffer));
 	dumpf(dumpchar,data,"/BuildGlyph { 2 copy exch /CharProcs get exch 2 copy known not { pop /.notdef} if get exch pop 0 exch exec pop pop %s} bind def\n",
 		buffer );
     }
@@ -2610,7 +2610,7 @@ return( 0 );
 
     fseek(binary,0,SEEK_END);
     len = ftell(binary);
-    sprintf( buffer, "(Binary) %ld StartData ", len );
+    snprintf( buffer, sizeof(buffer), "(Binary) %ld StartData ", len );
     fprintf( out, "%%%%BeginData: %ld Binary Bytes\n", (long) (len+strlen(buffer)));
     fputs( buffer, out );
 
@@ -2715,7 +2715,7 @@ int PSBitmapDump(char *filename,BDFFont *font, EncMap *map) {
     SplineFont *sf = font->sf;
 
     if ( filename==NULL ) {
-	sprintf(buffer,"%s-%d.pt3", sf->fontname, font->pixelsize );
+	snprintf(buffer, sizeof(buffer), "%s-%d.pt3", sf->fontname, font->pixelsize );
 	filename = buffer;
     }
     file = fopen(filename,"w" );

@@ -212,30 +212,46 @@ static int mytempnam(char *buffer) {
 return( fd );
 }
 
-static char *mytempdir(void) {
-    char buffer[1025];
-    char *dir, *eon;
-    static int cnt=0;
-    int tries=0;
+static char* mytempdir(void)
+{
+	char buffer[1025];
+	char* dir, * eon;
+	static int cnt = 0;
+	int tries = 0;
 
-    if ( (dir=getenv("TMPDIR"))!=NULL )
-	strncpy(buffer,dir,sizeof(buffer)-1-5);
+	if ((dir = getenv("TMPDIR")) != NULL)
+	{
+		strncpy(buffer, dir, sizeof(buffer) - 1 - 5);
+	}
 #ifndef P_tmpdir
 #define P_tmpdir	"/tmp"
 #endif
-    else
-	strcpy(buffer,P_tmpdir);
-    strcat(buffer,"/PfaEd");
-    eon = buffer+strlen(buffer);
-    while ( 1 ) {
-	sprintf( eon, "%04X_mf%d", getpid(), ++cnt );
-	if ( GFileMkDir(buffer,0770)==0 )
-return( copy(buffer) );
-	else if ( errno!=EEXIST )
-return( NULL );
-	if ( ++tries>100 )
-return( NULL );
-    }
+	else
+	{
+		strncpy(buffer, P_tmpdir, sizeof(buffer));
+	}
+
+	strcat(buffer, "/PfaEd");
+	int str_size = strlen(buffer);
+	eon = buffer + str_size;
+	while (1)
+	{
+		snprintf(eon, sizeof(buffer) - str_size, "%04X_mf%d", getpid(), ++cnt);
+
+		if (GFileMkDir(buffer, 0770) == 0)
+		{
+			return(copy(buffer));
+		}
+		else if (errno != EEXIST)
+		{
+			return(NULL);
+		}
+
+		if (++tries > 100)
+		{
+			return(NULL);
+		}
+	}
 }
 #endif
 

@@ -1003,7 +1003,7 @@ static int haschar(SplineFont *sf,unichar_t ch,char *dot) {
     if ( dot==NULL || ch==-1 )
 return( SCWorthOutputting(SFGetChar(sf,ch,NULL)) );
     snprintf(buffer,sizeof(buffer),"%s%s",
-	    (char *) StdGlyphName(namebuf,ch,sf->uni_interp,sf->for_new_glyphs),
+	    (char *) StdGlyphName(namebuf, sizeof(namebuf), ch,sf->uni_interp,sf->for_new_glyphs),
 	    dot);
     if ( SCWorthOutputting(SFGetChar(sf,-1,buffer)) )
 return( true );
@@ -1021,7 +1021,7 @@ static SplineChar *GetChar(SplineFont *sf,unichar_t ch,char *dot) {
     if ( dot==NULL || ch==-1 )
 return( SFGetChar(sf,ch,NULL) );
     snprintf(buffer,sizeof(buffer),"%s%s",
-	    (char *) StdGlyphName(namebuf,ch,sf->uni_interp,sf->for_new_glyphs),
+	    (char *) StdGlyphName(namebuf, sizeof(namebuf), ch,sf->uni_interp,sf->for_new_glyphs),
 	    dot);
     if ( (sc = SFGetChar(sf,-1,buffer)) )
 return( sc );
@@ -1696,7 +1696,7 @@ static int SCMakeBaseReference(SplineChar *sc,SplineFont *sf,int layer,int ch, B
 
     if ( (dot = strchr(sc->name,'.'))!=NULL && sc->user_decomp==NULL ) {
 	snprintf(buffer,sizeof(buffer),"%s%s",
-		(char *) StdGlyphName(namebuf,ch,sf->uni_interp,sf->for_new_glyphs),
+		(char *) StdGlyphName(namebuf, sizeof(namebuf), ch,sf->uni_interp,sf->for_new_glyphs),
 		dot);
 	rsc = SFGetChar(sf,-1,buffer);
     } else
@@ -1805,7 +1805,7 @@ static SplineChar *GetGoodAccentGlyph(SplineFont *sf, int uni, int basech,
     rsc = NULL;
     if ( dot!=NULL ) {
 	snprintf(buffer,sizeof(buffer),"%s%s",
-		(char *) StdGlyphName(namebuf,ach,sf->uni_interp,sf->for_new_glyphs),
+		(char *) StdGlyphName(namebuf, sizeof(namebuf), ach,sf->uni_interp,sf->for_new_glyphs),
 		dot);
 	rsc = SFGetChar(sf,-1,buffer);
     }
@@ -1822,12 +1822,19 @@ static SplineChar *GetGoodAccentGlyph(SplineFont *sf, int uni, int basech,
 	char *suffixes[4];
 	int scnt=0, i;
 
-	if ( rsc!=NULL ) {
-	    uc_accent = malloc(strlen(rsc->name)+11);
-	    strcpy(uc_accent,rsc->name);
-	} else
-	    uc_accent = NULL;
+	if (rsc != NULL)
+	{
+		int str_size = strlen(rsc->name) + 11;
+		uc_accent = malloc(str_size);
+		strncpy(uc_accent, rsc->name, str_size);
+	}
+	else
+	{
+		uc_accent = NULL;
+	}
+
 	memset(suffixes,0,sizeof(suffixes));
+	
 	if ( basech>=0x400 && basech<=0x52f ) {
 	    if ( isupper(basech) )
 		suffixes[scnt++] = "cyrcap";
@@ -1841,11 +1848,11 @@ static SplineChar *GetGoodAccentGlyph(SplineFont *sf, int uni, int basech,
 		apt = accents[uni-BottomAccent]; end = apt+sizeof(accents[0])/sizeof(accents[0][0]);
 		while ( test==NULL && apt<end ) {
 		    int acc = *apt ? *apt : uni;
-		    sprintf( buffer,"%.70s.%s", StdGlyphName(buffer,acc,ui_none,(NameList *) -1), suffixes[i]);
+		    snprintf( buffer, sizeof(buffer), "%.70s.%s", StdGlyphName(buffer, sizeof(buffer), acc,ui_none,(NameList *) -1), suffixes[i]);
 		    if ( (test = SFGetChar(sf,-1,buffer))!=NULL )
 			rsc = test;
 		    if ( test==NULL ) {
-			sprintf( buffer,"uni%04X.%s", acc, suffixes[i]);
+			snprintf( buffer, sizeof(buffer), "uni%04X.%s", acc, suffixes[i]);
 			if ( (test = SFGetChar(sf,-1,buffer))!=NULL )
 			    rsc = test;
 		    }
@@ -1860,7 +1867,7 @@ static SplineChar *GetGoodAccentGlyph(SplineFont *sf, int uni, int basech,
 	    apt = accents[uni-BottomAccent]; end = apt+sizeof(accents[0])/sizeof(accents[0][0]);
 	    while ( test==NULL && apt<end ) {
 		int acc = *apt ? *apt : uni;
-		sprintf( buffer,"%.70s.%s", StdGlyphName(buffer,acc,ui_none,(NameList *) -1), suffixes[i]);
+		snprintf( buffer, sizeof(buffer), "%.70s.%s", StdGlyphName(buffer, sizeof(buffer), acc,ui_none,(NameList *) -1), suffixes[i]);
 		if ( islower(buffer[0])) {
 		    buffer[0] = toupper(buffer[0]);
 		    if ( (test = SFGetChar(sf,-1,buffer))!=NULL )
@@ -2306,7 +2313,7 @@ static void SCPutRefAfter(SplineChar *sc,SplineFont *sf,int layer, int ch,
 	    rsc = SFGetChar(sf,-1,buffer);
 	} else if ( dot!=NULL ) {
 	    snprintf(buffer,sizeof(buffer),"%s%s",
-		    (char *) StdGlyphName(namebuf,ch,sf->uni_interp,sf->for_new_glyphs),
+		    (char *) StdGlyphName(namebuf, sizeof(namebuf), ch,sf->uni_interp,sf->for_new_glyphs),
 		    dot);
 	    rsc = SFGetChar(sf,-1,buffer);
 	}

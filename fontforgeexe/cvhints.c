@@ -96,7 +96,7 @@ static void RH_SetupHint(ReviewHintData *hd) {
 	++cnt;
 	if ( h==hd->active ) pos=cnt;
     }
-    sprintf( buffer,"%d/%d", pos, cnt );
+    snprintf( buffer, sizeof(buffer), "%d/%d", pos, cnt );
     if ( cnt==3 ) {
 	StemInfo *h2, *h3;
 	h = hd->ishstem ? hd->cv->b.sc->hstem : hd->cv->b.sc->vstem;
@@ -105,7 +105,8 @@ static void RH_SetupHint(ReviewHintData *hd) {
 		h2->start-h->start == h3->start-h2->start )
 	    strcat( buffer, hd->ishstem ? " hstem3" : " vstem3" );
     }
-    uc_strcpy(ubuf,buffer);
+    uc_strncpy(ubuf,buffer, sizeof(buffer));
+
     GGadgetSetTitle(GWidgetGetControl(hd->gw,CID_Count),ubuf);
     
     if ( hd->active==NULL ) {
@@ -114,12 +115,16 @@ static void RH_SetupHint(ReviewHintData *hd) {
 	GGadgetSetVisible(GWidgetGetControl(hd->gw,CID_Overlap),false);
     } else {
 	hd->active->active = true;
-	sprintf( buffer,"%g", (double) (!hd->active->ghost ? hd->active->start : hd->active->start+hd->active->width) );
-	uc_strcpy(ubuf,buffer);
+	
+	snprintf( buffer, sizeof(buffer), "%g", (double) (!hd->active->ghost ? hd->active->start : hd->active->start+hd->active->width) );
+	uc_strncpy(ubuf,buffer, sizeof(buffer));
+
 	GGadgetSetTitle(GWidgetGetControl(hd->gw,CID_Base),ubuf);
 	GTextFieldShow(GWidgetGetControl(hd->gw,CID_Base),0);
-	sprintf( buffer,"%g", (double) (!hd->active->ghost ? hd->active->width : -hd->active->width) );
-	uc_strcpy(ubuf,buffer);
+	snprintf( buffer, sizeof(buffer), "%g", (double) (!hd->active->ghost ? hd->active->width : -hd->active->width) );
+	
+	uc_strncpy(ubuf,buffer, sizeof(buffer));
+	
 	GGadgetSetTitle(GWidgetGetControl(hd->gw,CID_Width),ubuf);
 	GTextFieldShow(GWidgetGetControl(hd->gw,CID_Width),0);
 	GGadgetSetVisible(GWidgetGetControl(hd->gw,CID_Overlap),hd->active->hasconflicts);
@@ -779,7 +784,7 @@ void CVCreateHint(CharView *cv,int ishstem,int preservehints) {
 	gcd[0].creator = GLabelCreate;
 	harray2[0] = GCD_Glue; harray2[1] = &gcd[0];
 
-	sprintf( buffer, "%g", (double) (ishstem ? cv->p.cy : cv->p.cx) );
+	snprintf( buffer, sizeof(buffer), "%g", (double) (ishstem ? cv->p.cy : cv->p.cx) );
 	label[1].text = (unichar_t *) buffer;
 	label[1].text_is_1byte = true;
 	gcd[1].gd.label = &label[1];
@@ -876,8 +881,9 @@ void CVCreateHint(CharView *cv,int ishstem,int preservehints) {
 	GHVBoxFitWindow(boxes[0].ret);
     } else {
 	gw = chd.gw;
-	sprintf( buffer, "%g", (double) (ishstem ? cv->p.cy : cv->p.cx) );
-	uc_strcpy(ubuf,buffer);
+	snprintf( buffer, sizeof(buffer), "%g", (double) (ishstem ? cv->p.cy : cv->p.cx) );
+	uc_strncpy(ubuf,buffer, sizeof(buffer));
+
 	GGadgetSetTitle(GWidgetGetControl(gw,CID_Base),ubuf);
 	GDrawSetTransientFor(gw,(GWindow) -1);
     }

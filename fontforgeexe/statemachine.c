@@ -276,7 +276,7 @@ static void SMD_Fillup(SMD *smd) {
     snprintf(buffer,sizeof(buffer)/sizeof(buffer[0]),
 	    _("State %d,  %.40s"), state, classes[class*1+0].u.md_str );
     GGadgetSetTitle8(GWidgetGetControl(smd->editgw,CID_StateClass),buffer);
-    sprintf(buf,"%d", this->next_state );
+    snprintf(buf, sizeof(buf), "%d", this->next_state );
     GGadgetSetTitle8(GWidgetGetControl(smd->editgw,CID_NextState),buf);
 
     GGadgetSetChecked(GWidgetGetControl(smd->editgw,CID_Flag4000),
@@ -304,8 +304,12 @@ static void SMD_Fillup(SMD *smd) {
 	GGadgetSetTitle8(GWidgetGetControl(smd->editgw,CID_InsCur),temp==NULL?buffer:temp);
     } else if ( smd->sm->type==asm_kern ) {
 	buf[0] = '\0';
-	for ( j=0; j<this->u.kern.kcnt; ++j )
-	    sprintf( buf+strlen(buf), "%d ", this->u.kern.kerns[j]);
+    for (j = 0; j < this->u.kern.kcnt; ++j)
+    {
+        int str_size = strlen(buf);
+        snprintf(buf + str_size, sizeof(buf) - str_size, "%d ", this->u.kern.kerns[j]);
+    }
+
 	if ( buf[0]!='\0' && buf[strlen(buf)-1]==' ' )
 	    buf[strlen(buf)-1] = '\0';
 	GGadgetSetTitle8(GWidgetGetControl(smd->editgw,CID_Kerns),buf);
@@ -885,13 +889,16 @@ return;
 	int s = (event->u.mouse.y - smd->ystart2)/smd->stateh + smd->offtop;
 	space[0] = '\0';
 	if ( event->u.mouse.y>=smd->ystart2 && s<smd->state_cnt ) {
-	    sprintf( buf, "State %d\n", s );
-	    uc_strcpy(space,buf);
+	    snprintf( buf, sizeof(buf), "State %d\n", s );
+        
+        uc_strncpy(space, buf, sizeof(space) / sizeof(space[0]));
 	}
 	if ( event->u.mouse.x>=smd->xstart2 && c<smd->class_cnt ) {
-	    sprintf( buf, "Class %d\n", c );
-	    uc_strcat(space,buf);
-	    classes = GMatrixEditGet(GWidgetGetControl(smd->gw,CID_Classes),&len);
+	    snprintf( buf, sizeof(buf), "Class %d\n", c );
+	    
+        uc_strncat(space,buf, sizeof(space) / sizeof(space[0]));
+	    
+        classes = GMatrixEditGet(GWidgetGetControl(smd->gw,CID_Classes),&len);
 	    len = u_strlen(space);
 	    pt = strstr(classes[c].u.md_str,": ");
 	    if ( pt==NULL ) pt = classes[c].u.md_str;
@@ -899,6 +906,7 @@ return;
 	    utf82u_strncpy(space+len,pt,(sizeof(space)/sizeof(space[0]))-1 - len);
 	} else if ( event->u.mouse.x<smd->xstart2 ) {
 	    if ( s==0 )
+            //todo check overflow 
 		utf82u_strcat(space,_("{Start of Input}"));
 	    else if ( s==1 )
 		utf82u_strcat(space,_("{Start of Line}"));
@@ -918,143 +926,180 @@ return;
     }
 }
 
-static void SMD_Expose(SMD *smd,GWindow pixmap,GEvent *event) {
-    GRect *area = &event->u.expose.rect;
+static void SMD_Expose(SMD* smd, GWindow pixmap, GEvent* event)
+{
+    GRect* area = &event->u.expose.rect;
     GRect rect;
-    GRect clip,old1,old2;
-    int len, off, i, j, x, y, kddd=false;
+    GRect clip, old1, old2;
+    int len, off, i, j, x, y, kddd = false;
     unichar_t ubuf[8];
     char buf[101];
 
-    if ( area->y+area->height<smd->ystart )
-return;
-    if ( area->y>smd->ystart2+smd->height )
-return;
+    if (area->y + area->height < smd->ystart)
+        return;
+    if (area->y > smd->ystart2 + smd->height)
+        return;
 
-    GDrawPushClip(pixmap,area,&old1);
-    GDrawSetFont(pixmap,smd->font);
-    GDrawSetLineWidth(pixmap,0);
+    GDrawPushClip(pixmap, area, &old1);
+    GDrawSetFont(pixmap, smd->font);
+    GDrawSetLineWidth(pixmap, 0);
     rect.x = smd->xstart; rect.y = smd->ystart;
-    rect.width = smd->width+(smd->xstart2-smd->xstart);
-    rect.height = smd->height+(smd->ystart2-smd->ystart);
+    rect.width = smd->width + (smd->xstart2 - smd->xstart);
+    rect.height = smd->height + (smd->ystart2 - smd->ystart);
     clip = rect;
-    GDrawPushClip(pixmap,&clip,&old2);
-    for ( i=0 ; smd->offtop+i<=smd->state_cnt && (i-1)*smd->stateh<smd->height; ++i ) {
-	GDrawDrawLine(pixmap,smd->xstart,smd->ystart2+i*smd->stateh,smd->xstart+rect.width,smd->ystart2+i*smd->stateh,
-		0x808080);
-	if ( i+smd->offtop<smd->state_cnt ) {
-	    sprintf( buf, i+smd->offtop<100 ? "St%d" : "%d", i+smd->offtop );
-	    len = strlen( buf );
-	    off = (smd->stateh-len*smd->fh)/2;
-	    for ( j=0; j<len; ++j ) {
-		ubuf[0] = buf[j];
-		GDrawDrawText(pixmap,smd->xstart+3,smd->ystart2+i*smd->stateh+off+j*smd->fh+smd->as,
-		    ubuf,1,0xff0000);
-	    }
-	}
+    GDrawPushClip(pixmap, &clip, &old2);
+    for (i = 0; smd->offtop + i <= smd->state_cnt && (i - 1) * smd->stateh < smd->height; ++i)
+    {
+        GDrawDrawLine(pixmap, smd->xstart, smd->ystart2 + i * smd->stateh, smd->xstart + rect.width, smd->ystart2 + i * smd->stateh,
+            0x808080);
+        if (i + smd->offtop < smd->state_cnt)
+        {
+            snprintf(buf, sizeof(buf), i + smd->offtop < 100 ? "St%d" : "%d", i + smd->offtop);
+            len = strlen(buf);
+            off = (smd->stateh - len * smd->fh) / 2;
+            for (j = 0; j < len; ++j)
+            {
+                ubuf[0] = buf[j];
+                GDrawDrawText(pixmap, smd->xstart + 3, smd->ystart2 + i * smd->stateh + off + j * smd->fh + smd->as,
+                    ubuf, 1, 0xff0000);
+            }
+        }
     }
-    for ( i=0 ; smd->offleft+i<=smd->class_cnt && (i-1)*smd->statew<smd->width; ++i ) {
-	GDrawDrawLine(pixmap,smd->xstart2+i*smd->statew,smd->ystart,smd->xstart2+i*smd->statew,smd->ystart+rect.height,
-		0x808080);
-	if ( i+smd->offleft<smd->class_cnt ) {
-	    GDrawDrawText8(pixmap,smd->xstart2+i*smd->statew+1,smd->ystart+smd->as+1,
-		"Class",-1,0xff0000);
-	    sprintf( buf, "%d", i+smd->offleft );
-	    len = GDrawGetText8Width(pixmap,buf,-1);
-	    GDrawDrawText8(pixmap,smd->xstart2+i*smd->statew+(smd->statew-len)/2,smd->ystart+smd->fh+smd->as+1,
-		buf,-1,0xff0000);
-	}
-    }
-
-    for ( i=0 ; smd->offtop+i<smd->state_cnt && (i-1)*smd->stateh<smd->height; ++i ) {
-	y = smd->ystart2+i*smd->stateh;
-	if ( y>area->y+area->height )
-    break;
-	if ( y+smd->stateh<area->y )
-    continue;
-	for ( j=0 ; smd->offleft+j<smd->class_cnt && (j-1)*smd->statew<smd->width; ++j ) {
-	    struct asm_state *this = &smd->states[(i+smd->offtop)*smd->class_cnt+j+smd->offleft];
-	    x = smd->xstart2+j*smd->statew;
-	    if ( x>area->x+area->width )
-	break;
-	    if ( x+smd->statew<area->x )
-	continue;
-
-	    sprintf( buf, "%d", this->next_state );
-	    len = GDrawGetText8Width(pixmap,buf,-1);
-	    GDrawDrawText8(pixmap,x+(smd->statew-len)/2,y+smd->as+1,
-		buf,-1,0x000000);
-
-	    ubuf[0] = (this->flags&0x8000)? 'M' : ' ';
-	    if ( smd->sm->type==asm_kern && (this->flags&0x8000))
-		ubuf[0] = 'P';
-	    ubuf[1] = (this->flags&0x4000)? ' ' : 'A';
-	    ubuf[2] = '\0';
-	    if ( smd->sm->type==asm_indic ) {
-		ubuf[2] = (this->flags&0x2000) ? 'L' : ' ';
-		ubuf[3] = '\0';
-	    }
-	    len = GDrawGetTextWidth(pixmap,ubuf,-1);
-	    GDrawDrawText(pixmap,x+(smd->statew-len)/2,y+smd->fh+smd->as+1,
-		ubuf,-1,0x000000);
-
-	    buf[0]='\0';
-	    if ( smd->sm->type==asm_indic ) {
-		strcpy(buf,indicverbs[0][this->flags&0xf]);
-	    } else if ( smd->sm->type==asm_context ) {
-		if ( this->u.context.mark_lookup!=NULL ) {
-		    strncpy(buf,this->u.context.mark_lookup->lookup_name,6);
-		    buf[6] = '\0';
-		}
-	    } else if ( smd->sm->type==asm_insert ) {
-		if ( this->u.insert.mark_ins!=NULL )
-		    strncpy(buf,this->u.insert.mark_ins,5);
-	    } else { /* kern */
-		if ( this->u.kern.kerns!=NULL ) {
-		    int j;
-		    buf[0] = '\0';
-		    for ( j=0; j<this->u.kern.kcnt; ++j )
-			sprintf(buf+strlen(buf),"%d ", this->u.kern.kerns[j]);
-		    kddd = ( strlen(buf)>5 );
-		    buf[5] = '\0';
-		} else
-		    kddd = false;
-	    }
-	    len = GDrawGetText8Width(pixmap,buf,-1);
-	    GDrawDrawText8(pixmap,x+(smd->statew-len)/2,y+2*smd->fh+smd->as+1,
-		buf,-1,0x000000);
-
-	    buf[0] = '\0';
-	    if ( smd->sm->type==asm_indic ) {
-		strncpy(buf,indicverbs[1][this->flags&0xf],sizeof(buf)-1);
-	    } else if ( smd->sm->type==asm_context ) {
-		if ( this->u.context.cur_lookup!=NULL ) {
-		    strncpy(buf,this->u.context.cur_lookup->lookup_name,6);
-		    buf[6] = '\0';
-		}
-	    } else if ( smd->sm->type==asm_insert ) {
-		if ( this->u.insert.cur_ins!=NULL )
-		    strncpy(buf,this->u.insert.cur_ins,5);
-	    } else { /* kern */
-		if ( kddd ) strcpy(buf,"...");
-		else buf[0] = '\0';
-	    }
-	    len = GDrawGetText8Width(pixmap,buf,-1);
-	    GDrawDrawText8(pixmap,x+(smd->statew-len)/2,y+3*smd->fh+smd->as+1,
-		buf,-1,0x000000);
-	}
+    for (i = 0; smd->offleft + i <= smd->class_cnt && (i - 1) * smd->statew < smd->width; ++i)
+    {
+        GDrawDrawLine(pixmap, smd->xstart2 + i * smd->statew, smd->ystart, smd->xstart2 + i * smd->statew, smd->ystart + rect.height,
+            0x808080);
+        if (i + smd->offleft < smd->class_cnt)
+        {
+            GDrawDrawText8(pixmap, smd->xstart2 + i * smd->statew + 1, smd->ystart + smd->as + 1,
+                "Class", -1, 0xff0000);
+            snprintf(buf, sizeof(buf), "%d", i + smd->offleft);
+            len = GDrawGetText8Width(pixmap, buf, -1);
+            GDrawDrawText8(pixmap, smd->xstart2 + i * smd->statew + (smd->statew - len) / 2, smd->ystart + smd->fh + smd->as + 1,
+                buf, -1, 0xff0000);
+        }
     }
 
-    GDrawDrawLine(pixmap,smd->xstart,smd->ystart2,smd->xstart+rect.width,smd->ystart2,
-	    0x000000);
-    GDrawDrawLine(pixmap,smd->xstart2,smd->ystart,smd->xstart2,smd->ystart+rect.height,
-	    0x000000);
-    GDrawPopClip(pixmap,&old2);
-    GDrawPopClip(pixmap,&old1);
-    GDrawDrawRect(pixmap,&rect,0x000000);
+    for (i = 0; smd->offtop + i < smd->state_cnt && (i - 1) * smd->stateh < smd->height; ++i)
+    {
+        y = smd->ystart2 + i * smd->stateh;
+        if (y > area->y + area->height)
+            break;
+        if (y + smd->stateh < area->y)
+            continue;
+        for (j = 0; smd->offleft + j < smd->class_cnt && (j - 1) * smd->statew < smd->width; ++j)
+        {
+            struct asm_state* this = &smd->states[(i + smd->offtop) * smd->class_cnt + j + smd->offleft];
+            x = smd->xstart2 + j * smd->statew;
+            if (x > area->x + area->width)
+                break;
+            if (x + smd->statew < area->x)
+                continue;
+
+            snprintf(buf, sizeof(buf), "%d", this->next_state);
+            len = GDrawGetText8Width(pixmap, buf, -1);
+            GDrawDrawText8(pixmap, x + (smd->statew - len) / 2, y + smd->as + 1,
+                buf, -1, 0x000000);
+
+            ubuf[0] = (this->flags & 0x8000) ? 'M' : ' ';
+            if (smd->sm->type == asm_kern && (this->flags & 0x8000))
+                ubuf[0] = 'P';
+            ubuf[1] = (this->flags & 0x4000) ? ' ' : 'A';
+            ubuf[2] = '\0';
+            if (smd->sm->type == asm_indic)
+            {
+                ubuf[2] = (this->flags & 0x2000) ? 'L' : ' ';
+                ubuf[3] = '\0';
+            }
+            len = GDrawGetTextWidth(pixmap, ubuf, -1);
+            GDrawDrawText(pixmap, x + (smd->statew - len) / 2, y + smd->fh + smd->as + 1,
+                ubuf, -1, 0x000000);
+
+            buf[0] = '\0';
+            if (smd->sm->type == asm_indic)
+            {
+                strncpy(buf, indicverbs[0][this->flags & 0xf], sizeof(buf));
+            }
+            else if (smd->sm->type == asm_context)
+            {
+                if (this->u.context.mark_lookup != NULL)
+                {
+                    strncpy(buf, this->u.context.mark_lookup->lookup_name, 6);
+                    buf[6] = '\0';
+                }
+            }
+            else if (smd->sm->type == asm_insert)
+            {
+                if (this->u.insert.mark_ins != NULL)
+                    strncpy(buf, this->u.insert.mark_ins, 5);
+            }
+            else
+            { /* kern */
+                if (this->u.kern.kerns != NULL)
+                {
+                    int j;
+                    buf[0] = '\0';
+                    for (j = 0; j < this->u.kern.kcnt; ++j)
+                    {
+                        int str_size = strlen(buf);
+                        snprintf(buf + str_size, sizeof(buf) - str_size, "%d ", this->u.kern.kerns[j]);
+                    }
+
+                    kddd = (strlen(buf) > 5);
+                    buf[5] = '\0';
+                }
+                else
+                    kddd = false;
+            }
+            len = GDrawGetText8Width(pixmap, buf, -1);
+            GDrawDrawText8(pixmap, x + (smd->statew - len) / 2, y + 2 * smd->fh + smd->as + 1,
+                buf, -1, 0x000000);
+
+            buf[0] = '\0';
+            if (smd->sm->type == asm_indic)
+            {
+                strncpy(buf, indicverbs[1][this->flags & 0xf], sizeof(buf) - 1);
+            }
+            else if (smd->sm->type == asm_context)
+            {
+                if (this->u.context.cur_lookup != NULL)
+                {
+                    strncpy(buf, this->u.context.cur_lookup->lookup_name, 6);
+                    buf[6] = '\0';
+                }
+            }
+            else if (smd->sm->type == asm_insert)
+            {
+                if (this->u.insert.cur_ins != NULL)
+                    strncpy(buf, this->u.insert.cur_ins, 5);
+            }
+            else
+            { /* kern */
+                if (kddd)
+                {
+                    strncpy(buf, "...", sizeof(buf));
+                }
+                else
+                {
+                    buf[0] = '\0';
+                }
+            }
+            len = GDrawGetText8Width(pixmap, buf, -1);
+            GDrawDrawText8(pixmap, x + (smd->statew - len) / 2, y + 3 * smd->fh + smd->as + 1,
+                buf, -1, 0x000000);
+        }
+    }
+
+    GDrawDrawLine(pixmap, smd->xstart, smd->ystart2, smd->xstart + rect.width, smd->ystart2,
+        0x000000);
+    GDrawDrawLine(pixmap, smd->xstart2, smd->ystart, smd->xstart2, smd->ystart + rect.height,
+        0x000000);
+    GDrawPopClip(pixmap, &old2);
+    GDrawPopClip(pixmap, &old1);
+    GDrawDrawRect(pixmap, &rect, 0x000000);
     rect.y += rect.height;
     rect.x += rect.width;
-    LogoExpose(pixmap,event,&rect,dm_fore);
+    LogoExpose(pixmap, event, &rect, dm_fore);
 }
 
 static int SMD_SBReset(SMD *smd) {

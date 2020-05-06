@@ -680,23 +680,23 @@ static char *MD_Text(GMatrixEdit *gme,int r, int c ) {
       case me_enum:
 	/* Fall through into next case */
       case me_int:
-	sprintf( buffer,"%d",(int) d->u.md_ival );
+	snprintf( buffer, sizeof(buffer), "%d",(int) d->u.md_ival );
 	str = buffer;
       break;
       case me_hex:
-	sprintf( buffer,"0x%x",(int) d->u.md_ival );
+	snprintf( buffer, sizeof(buffer), "0x%x",(int) d->u.md_ival );
 	str = buffer;
       break;
       case me_uhex:
-	sprintf( buffer,"U+%04X",(int) d->u.md_ival );
+	snprintf( buffer, sizeof(buffer), "U+%04X",(int) d->u.md_ival );
 	str = buffer;
       break;
       case me_addr:
-	sprintf( buffer,"%p", d->u.md_addr );
+	snprintf( buffer, sizeof(buffer), "%p", d->u.md_addr );
 	str = buffer;
       break;
       case me_real:
-	sprintf( buffer,"%g",d->u.md_real );
+	snprintf( buffer, sizeof(buffer), "%g",d->u.md_real );
 	str = buffer;
       break;
       case me_string: case me_bigstr:

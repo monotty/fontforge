@@ -107,10 +107,7 @@ void SFOrderBitmapList(SplineFont *sf) {
 
 SplineChar *SCBuildDummy(SplineChar *dummy,SplineFont *sf,EncMap *map,int i) {
     
-	static int namebuf_size = 100;
 	static char namebuf[100];
-    //static char namebuf[100];
-
     static Layer layers[2];
 
     memset(dummy,'\0',sizeof(*dummy));
@@ -135,20 +132,20 @@ SplineChar *SCBuildDummy(SplineChar *dummy,SplineFont *sf,EncMap *map,int i) {
     else if ( dummy->unicodeenc==-1 )
 	dummy->name = NULL;
     else
-	dummy->name = (char *) StdGlyphName(namebuf,dummy->unicodeenc,sf->uni_interp,sf->for_new_glyphs);
+	dummy->name = (char *) StdGlyphName(namebuf, sizeof(namebuf), dummy->unicodeenc,sf->uni_interp,sf->for_new_glyphs);
     if ( dummy->name==NULL ) {
 	/*if ( dummy->unicodeenc!=-1 || i<256 )
 	    dummy->name = ".notdef";
 	else*/ {
 	    int j;
 		
-		snprintf(namebuf, namebuf_size, "NameMe.%d", i);
+		snprintf(namebuf, sizeof(namebuf), "NameMe.%d", i);
 	    
 		j=0;
 		
 		while (SFFindExistingSlot(sf, -1, namebuf) != -1)
 		{
-			snprintf(namebuf, namebuf_size, "NameMe.%d.%d", i, ++j);
+			snprintf(namebuf, sizeof(namebuf), "NameMe.%d.%d", i, ++j);
 		}
 
 	    dummy->name = namebuf;
@@ -1004,16 +1001,13 @@ return( NULL );
 
 static char* ForceFileToHaveName(FILE* file, char* exten)
 {
-
-	const int tmpfilename_size = L_tmpnam + 100;
-	char tmpfilename[tmpfilename_size];
-
+	char tmpfilename[L_tmpnam + 100];
 	static int try = 0;
 	FILE* newfile;
 
 	for (;;)
 	{
-		snprintf(tmpfilename, tmpfilename_size, P_tmpdir "/fontforge%d-%d", getpid(), try++);
+		snprintf(tmpfilename, sizeof(tmpfilename), P_tmpdir "/fontforge%d-%d", getpid(), try++);
 
 		if (exten != NULL)
 		{
@@ -1988,10 +1982,7 @@ static void SnapSet(struct psdict* private, real stemsnap[12], real snapcnt[12],
 	char* name1, char* name2, int which)
 {
 	int i, mi;
-
-	const int buffer_size = 211;
-	char buffer[buffer_size];
-	//char buffer[211];
+	char buffer[211];
 
 	mi = -1;
 	for (i = 0; i < 12 && stemsnap[i] != 0; ++i)
@@ -2014,14 +2005,14 @@ static void SnapSet(struct psdict* private, real stemsnap[12], real snapcnt[12],
 	if (which < 2)
 	{
 
-		snprintf(buffer, buffer_size, "[%d]", (int)stemsnap[mi]);
+		snprintf(buffer, sizeof(buffer), "[%d]", (int)stemsnap[mi]);
 
 		PSDictChangeEntry(private, name1, buffer);
 	}
 
 	if (which == 0 || which == 2)
 	{
-		arraystring(buffer, buffer_size, stemsnap, 12);
+		arraystring(buffer, sizeof(buffer), stemsnap, 12);
 
 		PSDictChangeEntry(private, name2, buffer);
 	}
@@ -2032,10 +2023,7 @@ int SFPrivateGuess(SplineFont *sf,int layer, struct psdict *private,char *name, 
     real snapcnt[12];
     real stemsnap[12];
     int ret;
-
-	const int buffer_size = 211;
-    char buffer[buffer_size];
-    //char buffer[211];
+	char buffer[211];
 
     locale_t tmplocale; locale_t oldlocale; // Declare temporary locale storage.
     switch_to_c_locale(&tmplocale, &oldlocale); // Switch to the C locale temporarily and cache the old locale.
@@ -2044,12 +2032,12 @@ int SFPrivateGuess(SplineFont *sf,int layer, struct psdict *private,char *name, 
     if ( strcmp(name,"BlueValues")==0 || strcmp(name,"OtherBlues")==0 ) {
 	FindBlues(sf,layer,bluevalues,otherblues);
 	if ( !onlyone || strcmp(name,"BlueValues")==0 ) {
-	    arraystring(buffer, buffer_size, bluevalues,14);
+	    arraystring(buffer, sizeof(buffer), bluevalues,14);
 	    PSDictChangeEntry(private,"BlueValues",buffer);
 	}
 	if ( !onlyone || strcmp(name,"OtherBlues")==0 ) {
 	    if ( otherblues[0]!=0 || otherblues[1]!=0 ) {
-		arraystring(buffer, buffer_size, otherblues,10);
+		arraystring(buffer, sizeof(buffer), otherblues,10);
 		PSDictChangeEntry(private,"OtherBlues",buffer);
 	    } else
 		PSDictRemoveEntry(private, "OtherBlues");
@@ -2070,7 +2058,7 @@ int SFPrivateGuess(SplineFont *sf,int layer, struct psdict *private,char *name, 
 	}
 	if ( val==-1 ) val = .039625;
 	
-	snprintf(buffer, buffer_size, "%g", (double)val);
+	snprintf(buffer, sizeof(buffer), "%g", (double)val);
 	
 	PSDictChangeEntry(private,"BlueScale",buffer);
     } else if ( strcmp(name,"BlueShift")==0 ) {

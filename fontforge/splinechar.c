@@ -1094,9 +1094,9 @@ return( false );
 		if ( strncmp(sc->name,"uni",3)==0 && sf->glyphs[i]->unicodeenc!=-1) {
 		    char buffer[12];
 		    if ( sf->glyphs[i]->unicodeenc<0x10000 )
-			sprintf( buffer,"uni%04X", sf->glyphs[i]->unicodeenc);
+			snprintf( buffer, sizeof(buffer), "uni%04X", sf->glyphs[i]->unicodeenc);
 		    else
-			sprintf( buffer,"u%04X", sf->glyphs[i]->unicodeenc);
+			snprintf( buffer, sizeof(buffer), "u%04X", sf->glyphs[i]->unicodeenc);
 		    sf->glyphs[i]->name = copy(buffer);
 		} else {
 		    sf->glyphs[i]->name = sc->name;

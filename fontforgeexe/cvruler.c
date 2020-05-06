@@ -47,16 +47,23 @@ Color measuretoolwindowbackgroundcol = 0xe0e0c0;
 BasePoint last_ruler_offset[2] = { {0,0}, {0,0} };
 int infowindowdistance = 30;
 
-static void SlopeToBuf(char *buf,char *label,double dx, double dy) {
-    if ( dx==0 && dy==0 )
-	sprintf( buf, _("%s No Slope"), label );
-    else if ( dx==0 )
-	sprintf( buf, "%s dy/dx= ∞, %4g°", label, atan2(dy,dx)*180/FF_PI);
-    else
-	sprintf( buf, "%s dy/dx= %4g, %4g°", label, dy/dx, atan2(dy,dx)*180/FF_PI);
+static void SlopeToBuf(char* buf, size_t buf_size, char* label, double dx, double dy)
+{
+	if (dx == 0 && dy == 0)
+	{
+		snprintf(buf, buf_size, _("%s No Slope"), label);
+	}
+	else if (dx == 0)
+	{
+		snprintf(buf, buf_size, "%s dy/dx= ∞, %4g°", label, atan2(dy, dx) * 180 / FF_PI);
+	}
+	else
+	{
+		snprintf(buf, buf_size, "%s dy/dx= %4g, %4g°", label, dy / dx, atan2(dy, dx) * 180 / FF_PI);
+	}
 }
 
-static void CurveToBuf(char *buf,CharView *cv,Spline *s, double t) {
+static void CurveToBuf(char *buf, size_t buf_size,CharView *cv,Spline *s, double t) {
     double kappa, emsize;
 
     kappa = SplineCurvature(s,t);
@@ -65,9 +72,9 @@ static void CurveToBuf(char *buf,CharView *cv,Spline *s, double t) {
     else {
 	emsize = cv->b.sc->parent->ascent + cv->b.sc->parent->descent;
 	if ( kappa==0 )
-	    sprintf(buf,_(" Curvature: %g"), kappa*emsize);
+	    snprintf(buf, buf_size, _(" Curvature: %g"), kappa*emsize);
 	else
-	    sprintf(buf,_(" Curvature: %g  Radius: %g"), kappa*emsize, 1.0/kappa );
+	    snprintf(buf, buf_size, _(" Curvature: %g  Radius: %g"), kappa*emsize, 1.0/kappa );
     }
 }
 
@@ -92,9 +99,9 @@ static int RulerText(CharView *cv, unichar_t *ubuf, int line) {
 
 	if ( !cv->autonomous_ruler_w && !cv->p.pressed )
 	    /* Give current location accurately */
-	    sprintf( buf, "%f,%f", (double) cv->info.x, (double) cv->info.y);
+	    snprintf( buf, sizeof(buf), "%f,%f", (double) cv->info.x, (double) cv->info.y);
 	else
-	    sprintf( buf, "%f %.0f° (%f,%f)", (double) len,
+	    snprintf( buf, sizeof(buf), "%f %.0f° (%f,%f)", (double) len,
 		    atan2(yoff,xoff)*180/FF_PI,
 		    (double) xoff,(double) yoff);
       break; }
@@ -126,7 +133,7 @@ static int RulerText(CharView *cv, unichar_t *ubuf, int line) {
 		len = sqrt(slope.x*slope.x + slope.y*slope.y);
 		if ( len!=0 ) {
 		    slope.x /= len; slope.y /= len;
-		    sprintf( buf, _("Normal Distance: %.2f Along Spline: %.2f"),
+		    snprintf( buf, sizeof(buf), _("Normal Distance: %.2f Along Spline: %.2f"),
 			    fabs(slope.y*xoff - slope.x*yoff),
 			    slope.x*xoff + slope.y*yoff );
 		}
@@ -134,15 +141,15 @@ static int RulerText(CharView *cv, unichar_t *ubuf, int line) {
 	} else if ( cv->dv!=NULL || cv->b.gridfit!=NULL ) {
 	    double scalex = (cv->b.sc->parent->ascent+cv->b.sc->parent->descent)/(rint(cv->ft_pointsizex*cv->ft_dpi/72.0));
 	    double scaley = (cv->b.sc->parent->ascent+cv->b.sc->parent->descent)/(rint(cv->ft_pointsizey*cv->ft_dpi/72.0));
-	    sprintf( buf, "%.2f,%.2f", (double) (cv->info.x/scalex), (double) (cv->info.y/scaley));
+	    snprintf( buf, sizeof(buf), "%.2f,%.2f", (double) (cv->info.x/scalex), (double) (cv->info.y/scaley));
 	} else if ( cv->p.spline!=NULL ) {
 	    s = cv->p.spline;
 	    t = cv->p.t;
-	    sprintf( buf, _("Near (%f,%f)"),
+	    snprintf( buf, sizeof(buf), _("Near (%f,%f)"),
 		    (double) (((s->splines[0].a*t+s->splines[0].b)*t+s->splines[0].c)*t+s->splines[0].d),
 		    (double) (((s->splines[1].a*t+s->splines[1].b)*t+s->splines[1].c)*t+s->splines[1].d) );
 	} else if ( cv->p.sp!=NULL ) {
-	    sprintf( buf, _("Near (%f,%f)"),(double) cv->p.sp->me.x,(double) cv->p.sp->me.y );
+	    snprintf( buf, sizeof(buf), _("Near (%f,%f)"),(double) cv->p.sp->me.x,(double) cv->p.sp->me.y );
 	} else
 return( false );
       break;
@@ -172,20 +179,20 @@ return( false );
 	    else
 return( false );
 	    if ( len>1 )
-		sprintf( buf, _("Spline Length=%.1f"), len);
+		snprintf( buf, sizeof(buf), _("Spline Length=%.1f"), len);
 	    else
-		sprintf( buf, _("Spline Length=%g"), len);
+		snprintf( buf, sizeof(buf), _("Spline Length=%g"), len);
 	} else if ( cv->p.spline!=NULL ) {
 	    s = cv->p.spline;
 	    t = cv->p.t;
 	    dx = (3*s->splines[0].a*t+2*s->splines[0].b)*t+s->splines[0].c;
 	    dy = (3*s->splines[1].a*t+2*s->splines[1].b)*t+s->splines[1].c;
-	    SlopeToBuf(buf,"",dx,dy);
+	    SlopeToBuf(buf, sizeof(buf), "",dx,dy);
 	} else if ( cv->p.sp!=NULL ) {
 	    if ( cv->p.sp->nonextcp )
-		strcpy(buf,_("No Next Control Point"));
+		strncpy(buf, _("No Next Control Point"), sizeof(buf));
 	    else
-		sprintf(buf,_("Next CP: (%f,%f)"), (double) cv->p.sp->nextcp.x, (double) cv->p.sp->nextcp.y);
+		snprintf(buf, sizeof(buf), _("Next CP: (%f,%f)"), (double) cv->p.sp->nextcp.x, (double) cv->p.sp->nextcp.y);
 	} else
 return( false );
       break;
@@ -193,17 +200,17 @@ return( false );
 	if ( cv->p.pressed )
 return( false );
 	else if ( cv->p.spline!=NULL ) {
-	    CurveToBuf(buf,cv,cv->p.spline,cv->p.t);
+	    CurveToBuf(buf, sizeof(buf), cv,cv->p.spline,cv->p.t);
 	} else if ( cv->p.sp!=NULL && cv->p.sp->next!=NULL ) {
 	    s = cv->p.sp->next;
 	    dx = s->splines[0].c;
 	    dy = s->splines[1].c;
-	    SlopeToBuf(buf,_(" Next"),dx,dy);
+	    SlopeToBuf(buf, sizeof(buf), _(" Next"),dx,dy);
 	} else if ( cv->p.sp!=NULL ) {
 	    if ( cv->p.sp->noprevcp )
-		strcpy(buf,_("No Previous Control Point"));
+		strncpy(buf,_("No Previous Control Point"), sizeof(buf));
 	    else
-		sprintf(buf,_("Prev CP: (%f,%f)"), (double) cv->p.sp->prevcp.x, (double) cv->p.sp->prevcp.y);
+		snprintf(buf, sizeof(buf), _("Prev CP: (%f,%f)"), (double) cv->p.sp->prevcp.x, (double) cv->p.sp->prevcp.y);
 	} else
 return( false );
       break;
@@ -211,23 +218,23 @@ return( false );
 	if ( cv->p.spline!=NULL )
 return( false );
 	else if ( cv->p.sp->next!=NULL ) {
-	    CurveToBuf(buf,cv,cv->p.sp->next,0);
+	    CurveToBuf(buf, sizeof(buf), cv,cv->p.sp->next,0);
 	} else if ( cv->p.sp->prev!=NULL ) {
 	    s = cv->p.sp->prev;
 	    dx = (3*s->splines[0].a*1+2*s->splines[0].b)*1+s->splines[0].c;
 	    dy = (3*s->splines[1].a*1+2*s->splines[1].b)*1+s->splines[1].c;
-	    SlopeToBuf(buf,_(" Prev"),dx,dy);
+	    SlopeToBuf(buf, sizeof(buf), _(" Prev"),dx,dy);
 	} else
 return( false );
       break;
       case 5:
 	if ( cv->p.sp->next!=NULL ) {
 	    if ( cv->p.sp->noprevcp )
-		strcpy(buf,_("No Previous Control Point"));
+		strncpy(buf,_("No Previous Control Point"), sizeof(buf));
 	    else
-		sprintf(buf,_("Prev CP: (%f,%f)"), (double) cv->p.sp->prevcp.x, (double) cv->p.sp->prevcp.y);
+		snprintf(buf, sizeof(buf), _("Prev CP: (%f,%f)"), (double) cv->p.sp->prevcp.x, (double) cv->p.sp->prevcp.y);
 	} else {
-	    CurveToBuf(buf,cv,cv->p.sp->prev,1);
+	    CurveToBuf(buf, sizeof(buf), cv,cv->p.sp->prev,1);
 	}
       break;
       case 6:
@@ -235,13 +242,13 @@ return( false );
 	    s = cv->p.sp->prev;
 	    dx = (3*s->splines[0].a*1+2*s->splines[0].b)*1+s->splines[0].c;
 	    dy = (3*s->splines[1].a*1+2*s->splines[1].b)*1+s->splines[1].c;
-	    SlopeToBuf(buf,_(" Prev"),dx,dy);
+	    SlopeToBuf(buf, sizeof(buf), _(" Prev"),dx,dy);
 	} else
 return( false );
       break;
       case 7:
 	if ( cv->p.sp->next!=NULL && cv->p.sp->prev!=NULL ) {
-	    CurveToBuf(buf,cv,cv->p.sp->prev,1);
+	    CurveToBuf(buf, sizeof(buf), cv,cv->p.sp->prev,1);
 	} else
 return( false );
       break;

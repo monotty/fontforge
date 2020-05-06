@@ -576,7 +576,7 @@ static int Ask(char *rb1, char *rb2, int rb, char *lab, float *val, int *co,
 	gcd[2].gd.flags = gg_enabled|gg_visible ;
 	gcd[2].creator = GLabelCreate;
 
-	sprintf( buffer, "%g", *val );
+	snprintf( buffer, sizeof(buffer), "%g", *val );
 	label[3].text = (unichar_t *) buffer;
 	label[3].text_is_1byte = true;
 	gcd[3].gd.label = &label[3];
@@ -622,7 +622,7 @@ static int Ask(char *rb1, char *rb2, int rb, char *lab, float *val, int *co,
 	    gcd[7].gd.flags = gg_enabled|gg_visible | (rb==1?gg_cb_on:0);
 	    gcd[7].creator = GRadioCreate;
 
-	    sprintf( buf, "%4g", star_percent*100 );
+	    snprintf( buf, sizeof(buf), "%4g", star_percent*100 );
 	    label[8].text = (unichar_t *) buf;
 	    label[8].text_is_1byte = true;
 	    gcd[8].gd.label = &label[8];
@@ -686,7 +686,7 @@ static int Ask(char *rb1, char *rb2, int rb, char *lab, float *val, int *co,
 		gcd[10].gd.cid = CID_CentCornLab;
 		gcd[10].creator = GLabelCreate;
 
-		sprintf( cenx, "%g", (double) cv->info.x );
+		snprintf( cenx, sizeof(cenx), "%g", (double) cv->info.x );
 		label[11].text = (unichar_t *) cenx;
 		label[11].text_is_1byte = true;
 		gcd[11].gd.label = &label[11];
@@ -696,7 +696,7 @@ static int Ask(char *rb1, char *rb2, int rb, char *lab, float *val, int *co,
 		gcd[11].gd.cid = CID_CentCornX;
 		gcd[11].creator = GTextFieldCreate;
 
-		sprintf( ceny, "%g", (double) cv->info.y );
+		snprintf( ceny, sizeof(ceny), "%g", (double) cv->info.y );
 		label[12].text = (unichar_t *) ceny;
 		label[12].text_is_1byte = true;
 		gcd[12].gd.label = &label[12];
@@ -714,7 +714,7 @@ static int Ask(char *rb1, char *rb2, int rb, char *lab, float *val, int *co,
 		gcd[13].gd.cid = CID_RadDiamLab;
 		gcd[13].creator = GLabelCreate;
 
-		sprintf( radx, "%g", (double) raddiam_x );
+		snprintf( radx, sizeof(radx), "%g", (double) raddiam_x );
 		label[14].text = (unichar_t *) radx;
 		label[14].text_is_1byte = true;
 		gcd[14].gd.label = &label[14];
@@ -724,7 +724,7 @@ static int Ask(char *rb1, char *rb2, int rb, char *lab, float *val, int *co,
 		gcd[14].gd.cid = CID_RadDiamX;
 		gcd[14].creator = GTextFieldCreate;
 
-		sprintf( rady, "%g", (double) raddiam_y );
+		snprintf( rady, sizeof(rady), "%g", (double) raddiam_y );
 		label[15].text = (unichar_t *) rady;
 		label[15].text_is_1byte = true;
 		gcd[15].gd.label = &label[15];
@@ -741,7 +741,7 @@ static int Ask(char *rb1, char *rb2, int rb, char *lab, float *val, int *co,
 		gcd[16].gd.flags = gg_enabled|gg_visible;
 		gcd[16].creator = GLabelCreate;
 
-		sprintf( angle, "%g", (double) rotate_by );
+		snprintf( angle, sizeof(angle), "%g", (double) rotate_by );
 		label[17].text = (unichar_t *) angle;
 		label[17].text_is_1byte = true;
 		gcd[17].gd.label = &label[17];
@@ -2487,10 +2487,12 @@ static void CVLCheckLayerCount(CharView *cv, int resize) {
 	    if ( hasmn==NULL && i>=2 && i<9 && strlen(sc->parent->layers[i].name)<30 ) {
 		 /* For the first 10 or so layers, add a mnemonic like "(_3)" to the name label */
 		 /* if it does not already have a mnemonic.                                     */
-		/* sprintf(namebuf, "%s (_%d)", sc->parent->layers[i].name, i+1); */
-		sprintf(namebuf, "%s", sc->parent->layers[i].name);
+		/* snprintf(namebuf, "%s (_%d)", sc->parent->layers[i].name, i+1); */
+		
+            snprintf(namebuf, sizeof(namebuf), "%s", sc->parent->layers[i].name);
+
 	    } else if ( hasmn==NULL ) {
-                sprintf(namebuf,"%s", i==-1 ? _("Guide") : (i==0 ?_("Back") : _("Fore")) );
+                snprintf(namebuf, sizeof(namebuf), "%s", i==-1 ? _("Guide") : (i==0 ?_("Back") : _("Fore")) );
             }
             width = GDrawGetText8Width(cvlayers, namebuf, -1);
 	    width += 10; // padding takes up some space.
@@ -2602,8 +2604,8 @@ static char *UniqueLayerName(SplineChar *sc, const char *base)
     if ( basestr==NULL || basestr[0]=='\0' ) basestr=_("Layer");
 
     while (1) {
-        if (i==1) sprintf( buffer,"%s",basestr );
-        else sprintf( buffer,"%s %d",basestr, i );
+        if (i==1) snprintf( buffer, sizeof(buffer), "%s",basestr );
+        else snprintf( buffer, sizeof(buffer), "%s %d",basestr, i );
         
         for (c=0; c<sc->layer_cnt; c++) {
             if (!strcmp(sc->parent->layers[c].name,buffer)) break;

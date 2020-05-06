@@ -460,7 +460,7 @@ static void RegionControl(CharView *cv,DBounds *b,int cnt) {
 	gcd[3].creator = GLabelCreate;
 	hvarray[2][0] = &gcd[3]; hvarray[2][1] = NULL;
 
-	sprintf( buffer, "%g", lastsize );
+	snprintf( buffer, sizeof(buffer), "%g", lastsize );
 	label[4].text = (unichar_t *) buffer;
 	label[4].text_is_1byte = true;
 	gcd[4].gd.label = &label[4];

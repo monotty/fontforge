@@ -2878,9 +2878,8 @@ void FVBuildItScript(void* _fv, StrokeInfo* si)
         while ((glyph = TakeNextSelected(fv, &i))
                 && ff_progress_next())
         {
-            const int buff_size = 32;
-            char buff[buff_size];
-            snprintf(buff, buff_size, "%d of %d", current++, count);
+            char buff[32];
+            snprintf(buff, sizeof(buff), "%d of %d", current++, count);
             ff_progress_change_line2(buff);
 
             UnlinkCopyLayerToLayer(glyph, source, target);
@@ -2891,20 +2890,22 @@ void FVBuildItScript(void* _fv, StrokeInfo* si)
             SplinePointListsFree(splines);
 
             // random + srmov_none
-            //splines = glyph->layers[target].splines;
-            //glyph->layers[target].splines = SplineSetRemoveOverlap(NULL, splines, over_remove);
-            //
-            //// additional simplifying
-            //struct simplifyinfo smpl;
-            //smpl.flags      = sf_normal;
-            //smpl.err        = 2.0;
-            //smpl.tan_bounds = 0.05;
-            //smpl.linefixup  = 0.0;
-            //smpl.linelenmax = 20;
-            //smpl.set_as_default = 0;
-            //smpl.check_selected_contours = 0;
-            //splines = glyph->layers[target].splines;
-            //glyph->layers[target].splines = SplineCharSimplify(NULL, splines, &smpl);
+            splines = glyph->layers[target].splines;
+            glyph->layers[target].splines = SplineSetRemoveOverlap(NULL, splines, over_remove);
+            
+            // additional simplifying
+            struct simplifyinfo smpl;
+            smpl.flags      = sf_normal;
+            smpl.err        = 2.0;
+            smpl.tan_bounds = 0.05;
+            smpl.linefixup  = 0.0;
+            smpl.linelenmax = 20;
+            smpl.set_as_default = 0;
+            smpl.check_selected_contours = 0;
+            splines = glyph->layers[target].splines;
+            glyph->layers[target].splines = SplineCharSimplify(NULL, splines, &smpl);
+
+            //todo round to int
         }
 
         fv->sf->changed = true;

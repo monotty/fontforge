@@ -164,52 +164,52 @@ static void DVRegExpose(GWindow pixmap,DebugView *dv,GEvent *event) {
 return;
     }
 
-    sprintf( buffer, " rp0: %d", exc->GS.rp0 );
+    snprintf( buffer, sizeof(buffer), " rp0: %d", exc->GS.rp0 );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, " rp1: %d", exc->GS.rp1 );
+    snprintf( buffer, sizeof(buffer), " rp1: %d", exc->GS.rp1 );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, " rp2: %d", exc->GS.rp2 );
+    snprintf( buffer, sizeof(buffer), " rp2: %d", exc->GS.rp2 );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, "loop: %ld", exc->GS.loop );
-    GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    y+=2;
-
-    sprintf( buffer, " zp0: %s", exc->GS.gep0?"Normal":"Twilight" );
-    GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, " zp1: %s", exc->GS.gep1?"Normal":"Twilight" );
-    GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, " zp2: %s", exc->GS.gep2?"Normal":"Twilight" );
+    snprintf( buffer, sizeof(buffer), "loop: %ld", exc->GS.loop );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
     y+=2;
 
-    sprintf( buffer, "MinDist: %.2f", exc->GS.minimum_distance/64.0 );
+    snprintf( buffer, sizeof(buffer), " zp0: %s", exc->GS.gep0?"Normal":"Twilight" );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, "CvtCutin: %.2f", exc->GS.control_value_cutin/64.0 );
+    snprintf( buffer, sizeof(buffer), " zp1: %s", exc->GS.gep1?"Normal":"Twilight" );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, "SingWidCut: %.2f", exc->GS.single_width_cutin/64.0 );
-    GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, "SingWidVal: %.2f", exc->GS.single_width_value/64.0 );
+    snprintf( buffer, sizeof(buffer), " zp2: %s", exc->GS.gep2?"Normal":"Twilight" );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
     y+=2;
 
-    sprintf( buffer, "freeVec: %g,%g", (((int)exc->GS.freeVector.x<<16)>>(16+14)) + ((exc->GS.freeVector.x&0x3fff)/16384.0),
+    snprintf( buffer, sizeof(buffer), "MinDist: %.2f", exc->GS.minimum_distance/64.0 );
+    GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
+    snprintf( buffer, sizeof(buffer), "CvtCutin: %.2f", exc->GS.control_value_cutin/64.0 );
+    GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
+    snprintf( buffer, sizeof(buffer), "SingWidCut: %.2f", exc->GS.single_width_cutin/64.0 );
+    GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
+    snprintf( buffer, sizeof(buffer), "SingWidVal: %.2f", exc->GS.single_width_value/64.0 );
+    GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
+    y+=2;
+
+    snprintf( buffer, sizeof(buffer), "freeVec: %g,%g", (((int)exc->GS.freeVector.x<<16)>>(16+14)) + ((exc->GS.freeVector.x&0x3fff)/16384.0),
 	    (((int)exc->GS.freeVector.y<<16)>>(16+14)) + ((exc->GS.freeVector.y&0x3fff)/16384.0) );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, "projVec: %g,%g", (((int)exc->GS.projVector.x<<16)>>(16+14)) + ((exc->GS.projVector.x&0x3fff)/16384.0),
+    snprintf( buffer, sizeof(buffer), "projVec: %g,%g", (((int)exc->GS.projVector.x<<16)>>(16+14)) + ((exc->GS.projVector.x&0x3fff)/16384.0),
 	    (((int)exc->GS.projVector.y<<16)>>(16+14)) + ((exc->GS.projVector.y&0x3fff)/16384.0) );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, "dualVec: %g,%g", (((int)exc->GS.dualVector.x<<16)>>(16+14)) + ((exc->GS.dualVector.x&0x3fff)/16384.0),
+    snprintf( buffer, sizeof(buffer), "dualVec: %g,%g", (((int)exc->GS.dualVector.x<<16)>>(16+14)) + ((exc->GS.dualVector.x&0x3fff)/16384.0),
 	    (((int)exc->GS.dualVector.y<<16)>>(16+14)) + ((exc->GS.dualVector.y&0x3fff)/16384.0) );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
     y+=2;
 
-    sprintf( buffer, "AutoFlip: %s", exc->GS.auto_flip?"True": "False" );
+    snprintf( buffer, sizeof(buffer), "AutoFlip: %s", exc->GS.auto_flip?"True": "False" );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, "DeltaBase: %d", exc->GS.delta_base );
+    snprintf( buffer, sizeof(buffer), "DeltaBase: %d", exc->GS.delta_base );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, "DeltaShift: %d", exc->GS.delta_shift );
+    snprintf( buffer, sizeof(buffer), "DeltaShift: %d", exc->GS.delta_shift );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, "RndState: %s",
+    snprintf( buffer, sizeof(buffer), "RndState: %s",
 	    exc->GS.round_state==TT_Round_To_Half_Grid? "To Half Grid" :
 	    exc->GS.round_state==TT_Round_To_Grid? "To Grid" :
 	    exc->GS.round_state==TT_Round_To_Double_Grid? "To Double Grid" :
@@ -220,23 +220,23 @@ return;
 	    exc->GS.round_state==TT_Round_Super_45? "Super45" :
 		"Unknown" );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, "SRndPeriod: %.2f", exc->period/64.0 );
+    snprintf( buffer, sizeof(buffer), "SRndPeriod: %.2f", exc->period/64.0 );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, "SRndPhase: %.2f", exc->phase/64.0 );
+    snprintf( buffer, sizeof(buffer), "SRndPhase: %.2f", exc->phase/64.0 );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, "SRndThreshold: %.2f", exc->threshold/64.0 );
+    snprintf( buffer, sizeof(buffer), "SRndThreshold: %.2f", exc->threshold/64.0 );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, "InstrControl: %d", exc->GS.instruct_control );
+    snprintf( buffer, sizeof(buffer), "InstrControl: %d", exc->GS.instruct_control );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, "ScanControl: %s", exc->GS.scan_control?"True": "False" );
+    snprintf( buffer, sizeof(buffer), "ScanControl: %s", exc->GS.scan_control?"True": "False" );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
-    sprintf( buffer, "ScanType: %d", exc->GS.scan_type );
+    snprintf( buffer, sizeof(buffer), "ScanType: %d", exc->GS.scan_type );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
 
     /* Instruction control, scan control, scan type, phase, threshold for super rounding */
 
     y += 2;
-    sprintf( buffer, "Pixels/Em: %d", PPEMY(exc) );
+    snprintf( buffer, sizeof(buffer), "Pixels/Em: %d", PPEMY(exc) );
     GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND); y += dv->ii.fh;
 }
 
@@ -252,7 +252,7 @@ static void DVStackExpose(GWindow pixmap,DebugView *dv,GEvent *event) {
 	GDrawDrawText8(pixmap,3,y,"<empty>",-1,MAIN_FOREGROUND);
     } else {
 	for ( i=exc->top-1; i>=0; --i ) {
-	    sprintf(buffer, "%3d: %3ld (%.2f)", i, exc->stack[i], exc->stack[i]/64.0 );
+	    snprintf(buffer, sizeof(buffer), "%3d: %3ld (%.2f)", i, exc->stack[i], exc->stack[i]/64.0 );
 	    GDrawDrawText8(pixmap,3,y,buffer,-1,MAIN_FOREGROUND);
 	    if ( y>event->u.expose.rect.y+event->u.expose.rect.height )
 	break;
@@ -276,9 +276,9 @@ static void DVStorageExpose(GWindow pixmap,DebugView *dv,GEvent *event) {
 	uint8 *watches = DebuggerGetWatchStores(dv->dc,&n_watch);
 	for ( i=0; i<exc->storeSize; ++i ) {
 	    if ( !DebuggerIsStorageSet(dv->dc,i) )
-		sprintf( buffer, _("%3d: <uninitialized>"), i );
+		snprintf( buffer, sizeof(buffer), _("%3d: <uninitialized>"), i );
 	    else
-		sprintf(buffer, "%3d: %3ld (%.2f)", i, exc->storage[i], exc->storage[i]/64.0 );
+		snprintf(buffer, sizeof(buffer), "%3d: %3ld (%.2f)", i, exc->storage[i], exc->storage[i]/64.0 );
 	    if ( i<n_watch && watches!=NULL && watches[i] && y>0 )
 		GDrawDrawImage(pixmap,&GIcon_Stop,NULL,3,
 			    y-dv->ii.as-2);
@@ -304,7 +304,7 @@ static void DVCvtExpose(GWindow pixmap,DebugView *dv,GEvent *event) {
 	int n_watch;
 	uint8 *watches = DebuggerGetWatchCvts(dv->dc,&n_watch);
 	for ( i=0; dv->cvt_offtop+i<exc->cvtSize; ++i ) {
-	    sprintf(buffer, "%3d: %3ld (%.2f)", dv->cvt_offtop+i,
+	    snprintf(buffer, sizeof(buffer), "%3d: %3ld (%.2f)", dv->cvt_offtop+i,
 		    exc->cvt[dv->cvt_offtop+i], exc->cvt[dv->cvt_offtop+i]/64.0 );
 	    if ( dv->cvt_offtop+i<n_watch && watches!=NULL && watches[dv->cvt_offtop+i] && y>0 )
 		GDrawDrawImage(pixmap,&GIcon_Stop,NULL,3,
@@ -395,13 +395,13 @@ static void DVPointsVExpose(GWindow pixmap,DebugView *dv,GEvent *event) {
 		ScalePoint(&me2,&pts[l],dv->scalex,dv->scaley,actives);
 		me.x = (me.x+me2.x)/2;  me.y = (me.y+me2.y)/2;
 		if ( show_grid )
-		    sprintf(buffer, "   : I   %.2f,%.2f",
+		    snprintf(buffer, sizeof(buffer), "   : I   %.2f,%.2f",
 			    (double) (me.x/dv->scalex/64.0), (double) (me.y/dv->scaley/64.0) );
 		else if ( show_raw )
-		    sprintf(buffer, "   : I   %g,%g",
+		    snprintf(buffer, sizeof(buffer), "   : I   %g,%g",
 			    (double) ((pts[i].x+pts[l].x)/2.0), (double) ((pts[i].y+pts[l].y)/2.0) );
 		else
-		    sprintf(buffer, "   : I   %g,%g", (double) me.x , (double) me.y );
+		    snprintf(buffer, sizeof(buffer), "   : I   %g,%g", (double) me.x , (double) me.y );
 		if ( y>0 )
 		    GDrawDrawText8(pixmap,3+19,y,buffer,-1,MAIN_FOREGROUND);
 		y += dv->ii.fh;
@@ -417,16 +417,16 @@ static void DVPointsVExpose(GWindow pixmap,DebugView *dv,GEvent *event) {
 			    y-dv->ii.as-2);
 	    ScalePoint(&me,&pts[i],dv->scalex,dv->scaley,actives);
 	    if ( show_grid )
-		sprintf(buffer, "%3d: %c%c%c %.2f,%.2f", i,
+		snprintf(buffer, sizeof(buffer), "%3d: %c%c%c %.2f,%.2f", i,
 			show_twilight ? 'T' : i>=n-ph? 'F' : r->tags[i]&FT_Curve_Tag_On?'P':'C',
 			r->tags[i]&FT_Curve_Tag_Touch_X?'X':' ', r->tags[i]&FT_Curve_Tag_Touch_Y?'Y':' ',
 			(double) (me.x/dv->scalex/64.0), (double) (me.y/dv->scaley/64.0) );
 	    else if ( show_raw )
-		sprintf(buffer, "%3d: %c%c%c %d,%d", i,
+		snprintf(buffer, sizeof(buffer), "%3d: %c%c%c %d,%d", i,
 			r->tags[i]&FT_Curve_Tag_On?'P':'C', r->tags[i]&FT_Curve_Tag_Touch_X?'X':' ', r->tags[i]&FT_Curve_Tag_Touch_Y?'Y':' ',
 			(int) pts[i].x, (int) pts[i].y );
 	    else
-		sprintf(buffer, "%3d: %c%c%c %g,%g", i,
+		snprintf(buffer, sizeof(buffer), "%3d: %c%c%c %g,%g", i,
 			r->tags[i]&FT_Curve_Tag_On?'P':'C', r->tags[i]&FT_Curve_Tag_Touch_X?'X':' ', r->tags[i]&FT_Curve_Tag_Touch_Y?'Y':' ',
 			(double) me.x, (double) me.y );
 	    if ( y>0 )

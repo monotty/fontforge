@@ -461,7 +461,7 @@ return( true );
 
 static void SVSetTitle(SearchView *sv) {
     char ubuf[150];
-    sprintf(ubuf,_("Find in %.100s"),sv->sd.fv->sf->fontname);
+    snprintf(ubuf, sizeof(ubuf), _("Find in %.100s"),sv->sd.fv->sf->fontname);
     GDrawSetWindowTitles8(sv->gw,ubuf,_("Find"));
 }
 
@@ -747,7 +747,7 @@ return( NULL );
     gcd[k].creator = GLabelCreate;
     fudgearray[0] = &gcd[k++];
 
-    sprintf(fudgebuf,"%g",old_fudge);
+    snprintf(fudgebuf, sizeof(fudgebuf), "%g",old_fudge);
     label[k].text = (unichar_t *) fudgebuf;
     label[k].text_is_1byte = true;
     label[k].text_in_resource = true;

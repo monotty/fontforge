@@ -293,15 +293,16 @@ static int Trans_TypeChange(GGadget *g, GEvent *e) {
 	    GGadgetSelectOneListItem( g,index );
 	    mask &= ~0x400;
 	    if ( mask&1 ) {		/* Move */
-		sprintf( buf, "%.1f", (double) xoff );
-		uc_strcpy(ubuf,buf);
+		snprintf( buf, sizeof(buf), "%.1f", (double) xoff );
+		uc_strncpy(ubuf,buf, sizeof(buf));
 		GGadgetSetTitle(GWidgetGetControl(bw,CID_XMove+offset), ubuf );
-		sprintf( buf, "%.1f", (double) yoff );
-		uc_strcpy(ubuf,buf);
+		snprintf( buf, sizeof(buf), "%.1f", (double) yoff );
+		uc_strncpy(ubuf,buf, sizeof(buf));
 		GGadgetSetTitle(GWidgetGetControl(bw,CID_YMove+offset), ubuf );
 	    } else {
-		sprintf( buf, "%.0f", atan2(yoff,xoff)*180/FF_PI );
-		uc_strcpy(ubuf,buf);
+		snprintf( buf, sizeof(buf), "%.0f", atan2(yoff,xoff)*180/FF_PI );
+		uc_strncpy(ubuf,buf, sizeof(buf));
+
 		GGadgetSetTitle(GWidgetGetControl(bw,((mask&0x2)?CID_Angle:CID_SkewAng)+offset), ubuf );
 		GGadgetSetChecked(GWidgetGetControl(bw,CID_Clockwise+offset), false );
 		GGadgetSetChecked(GWidgetGetControl(bw,CID_CounterClockwise+offset), true );

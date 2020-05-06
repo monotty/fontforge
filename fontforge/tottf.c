@@ -1597,7 +1597,7 @@ static void dumpdbl(FILE *cfff,double d) {
 	/* The type2 strings have a fixed format, but the dict data does not */
 	char buffer[20], *pt;
 	int sofar,n,odd;
-	sprintf( buffer, "%g", d);
+	snprintf( buffer, sizeof(buffer), "%g", d);
 	sofar = 0; odd=true;
 	putc(30,cfff);		/* Start a double */
 	for ( pt=buffer; *pt; ++pt ) {
@@ -3792,11 +3792,11 @@ void DefaultTTFEnglishNames(struct ttflangname *dummy, SplineFont *sf) {
 	dummy->names[ttf_fullname] = utf8_verify_copy(sf->fullname);
     if ( dummy->names[ttf_version]==NULL || *dummy->names[ttf_version]=='\0' ) {
 	if ( sf->subfontcnt!=0 )
-	    sprintf( buffer, "Version %f ", (double)sf->cidversion );
+	    snprintf( buffer, sizeof(buffer), "Version %f ", (double)sf->cidversion );
 	else if ( sf->version!=NULL )
-	    sprintf(buffer,"Version %.20s ", sf->version);
+	    snprintf(buffer, sizeof(buffer), "Version %.20s ", sf->version);
 	else
-	    strcpy(buffer,"Version 1.0" );
+	    strncpy(buffer,"Version 1.0", sizeof(buffer));
 	dummy->names[ttf_version] = copy(buffer);
     }
     if ( dummy->names[ttf_postscriptname]==NULL || *dummy->names[ttf_postscriptname]=='\0' )
@@ -5975,7 +5975,7 @@ static int dumpcff(struct alltabs *at,SplineFont *sf,enum fontformat format,
 	fseek(at->cfff,0,SEEK_END);
 	len = ftell(at->cfff);
 	rewind(at->cfff);
-	sprintf( buffer, "/%s %ld StartData\n", sf->fontname, len );
+	snprintf( buffer, sizeof(buffer), "/%s %ld StartData\n", sf->fontname, len );
 	fprintf(cff,"%%%%BeginData: %ld Binary Bytes\n", (long) (len+strlen(buffer)) );
 	fputs(buffer,cff);
 	if ( !ttfcopyfile(cff,at->cfff,ftell(cff),"CFF"))

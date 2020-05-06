@@ -704,67 +704,77 @@ int32 utf8_ildb(const char **_text) {
 return( val );
 }
 
-char *utf8_idpb(char *utf8_text,uint32 ch,int flags) {
-/* Increment and deposit character, no '\0' appended */
-/* NOTE: Unicode only needs range of 17x65535 values */
-/* and strings must be long enough to hold +4 chars. */
-/* ISO/IEC 10646 description of UTF8 allows encoding */
-/* character values up to U+7FFFFFFF before RFC3629. */
+char* utf8_idpb(char* utf8_text, uint32 ch, int flags)
+{
+    /* Increment and deposit character, no '\0' appended */
+    /* NOTE: Unicode only needs range of 17x65535 values */
+    /* and strings must be long enough to hold +4 chars. */
+    /* ISO/IEC 10646 description of UTF8 allows encoding */
+    /* character values up to U+7FFFFFFF before RFC3629. */
 
-    if ( ch>0x7fffffff || \
-	 (!(flags&UTF8IDPB_OLDLIMIT) && ((ch>=0xd800 && ch<=0xdfff) || ch>=17*65536)) )
-	return( 0 ); /* Error, ch is out of range */
+    if (ch > 0x7fffffff || \
+        (!(flags & UTF8IDPB_OLDLIMIT) && ((ch >= 0xd800 && ch <= 0xdfff) || ch >= 17 * 65536)))
+        return(0); /* Error, ch is out of range */
 
-    if ( (flags&(UTF8IDPB_UCS2|UTF8IDPB_UTF16|UTF8IDPB_UTF32)) ) {
-	if ( (flags&UTF8IDPB_UCS2) && ch>0xffff )
-	    return( 0 ); /* Error, ch is out of range */
-	if ( (flags&UTF8IDPB_UTF32) ) {
-	    *utf8_text++ = ((ch>>24)&0xff);
-	    *utf8_text++ = ((ch>>16)&0xff);
-	    ch &= 0xffff;
-	}
-	if ( ch>0xffff ) {
-	    /* ...here if a utf16 encoded value */
-	    unsigned long us;
-	    ch -= 0x10000;
-	    us = (ch>>10)+0xd800;
-	    *utf8_text++ = us>>8;
-	    *utf8_text++ = us&0xff;
-	    ch = (ch&0x3ff)+0xdc00;
-	}
-	*utf8_text++ = ch>>8;
-	ch &= 0xff;
-    } else if ( ch>127 || (ch==0 && (flags&UTF8IDPB_NOZERO)) ) {
-	if ( ch<=0x7ff )
-	    /* ch>=0x80 && ch<=0x7ff */
-	    *utf8_text++ = 0xc0 | (ch>>6);
-	else {
-	    if ( ch<=0xffff )
-		/* ch>=0x800 && ch<=0xffff */
-		*utf8_text++ = 0xe0 | (ch>>12);
-	    else {
-		if ( ch<=0x1fffff )
-		    /* ch>=0x10000 && ch<=0x1fffff */
-		    *utf8_text++ = 0xf0 | (ch>>18);
-		else {
-		    if ( ch<=0x3ffffff )
-			/* ch>=0x200000 && ch<=0x3ffffff */
-			*utf8_text++ = 0xf8 | (ch>>24);
-		    else {
-			/* ch>=0x4000000 && ch<=0x7fffffff */
-			*utf8_text++ = 0xfc | (ch>>30);
-			*utf8_text++ = 0x80 | ((ch>>24)&0x3f);
-		    }
-		    *utf8_text++ = 0x80 | ((ch>>18)&0x3f);
-		}
-		*utf8_text++ = 0x80 | ((ch>>12)&0x3f);
-	    }
-	    *utf8_text++ = 0x80 | ((ch>>6)&0x3f);
-	}
-	ch = 0x80 | (ch&0x3f);
+    if ((flags & (UTF8IDPB_UCS2 | UTF8IDPB_UTF16 | UTF8IDPB_UTF32)))
+    {
+        if ((flags & UTF8IDPB_UCS2) && ch > 0xffff)
+            return(0); /* Error, ch is out of range */
+        if ((flags & UTF8IDPB_UTF32))
+        {
+            *utf8_text++ = ((ch >> 24) & 0xff);
+            *utf8_text++ = ((ch >> 16) & 0xff);
+            ch &= 0xffff;
+        }
+        if (ch > 0xffff)
+        {
+            /* ...here if a utf16 encoded value */
+            unsigned long us;
+            ch -= 0x10000;
+            us = (ch >> 10) + 0xd800;
+            *utf8_text++ = us >> 8;
+            *utf8_text++ = us & 0xff;
+            ch = (ch & 0x3ff) + 0xdc00;
+        }
+        *utf8_text++ = ch >> 8;
+        ch &= 0xff;
+    }
+    else if (ch > 127 || (ch == 0 && (flags & UTF8IDPB_NOZERO)))
+    {
+        if (ch <= 0x7ff)
+            /* ch>=0x80 && ch<=0x7ff */
+            *utf8_text++ = 0xc0 | (ch >> 6);
+        else
+        {
+            if (ch <= 0xffff)
+                /* ch>=0x800 && ch<=0xffff */
+                *utf8_text++ = 0xe0 | (ch >> 12);
+            else
+            {
+                if (ch <= 0x1fffff)
+                    /* ch>=0x10000 && ch<=0x1fffff */
+                    *utf8_text++ = 0xf0 | (ch >> 18);
+                else
+                {
+                    if (ch <= 0x3ffffff)
+                        /* ch>=0x200000 && ch<=0x3ffffff */
+                        *utf8_text++ = 0xf8 | (ch >> 24);
+                    else
+                    {
+                        /* ch>=0x4000000 && ch<=0x7fffffff */
+                        *utf8_text++ = 0xfc | (ch >> 30);
+                        *utf8_text++ = 0x80 | ((ch >> 24) & 0x3f);
+                    }
+                    *utf8_text++ = 0x80 | ((ch >> 18) & 0x3f);
+                }
+                *utf8_text++ = 0x80 | ((ch >> 12) & 0x3f);
+            }
+            *utf8_text++ = 0x80 | ((ch >> 6) & 0x3f);
+        }
+        ch = 0x80 | (ch & 0x3f);
     }
     *utf8_text++ = ch;
-    return( utf8_text );
+    return(utf8_text);
 }
 
 char *utf8_ib(char *utf8_text) {

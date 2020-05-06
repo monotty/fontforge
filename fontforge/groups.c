@@ -87,7 +87,7 @@ static char *getPfaEditGroups(void) {
     if ( groupname==NULL ) {
         userConfigDir = getFontForgeUserDir(Config);
         if ( userConfigDir!=NULL ) {
-            sprintf(buffer,"%s/groups", userConfigDir);
+            snprintf(buffer, sizeof(buffer), "%s/groups", userConfigDir);
             groupname = copy(buffer);
             free(userConfigDir);
         }

@@ -1103,7 +1103,7 @@ return( false );
 		(isc && entry->d_name[0]=='c' && entry->d_name[1]=='i' && entry->d_name[2]=='d' && (val=strtol(entry->d_name+3,&end,10), end==pt)) ||
 		(ise && entry->d_name[0]=='e' && entry->d_name[1]=='n' && entry->d_name[2]=='c' && (val=strtol(entry->d_name+3,&end,10), end==pt)) ))
     continue;
-	sprintf (start, "%s/%s", dirname, entry->d_name);
+	snprintf (start, sizeof(start), "%s/%s", dirname, entry->d_name);
 	if ( isu ) {
 	    i = SFFindSlot(fv->sf,fv->map,val,NULL);
 	    if ( i==-1 ) {

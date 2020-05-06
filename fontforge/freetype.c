@@ -128,7 +128,7 @@ char *FreeTypeStringVersion(void) {
     if ( !hasFreeType())
 return( "" );
     FT_Library_Version(ff_ft_context,&ma,&mi,&pa);
-    sprintf( buffer, "FreeType %d.%d.%d", ma, mi, pa );
+    snprintf( buffer, sizeof(buffer), "FreeType %d.%d.%d", ma, mi, pa );
 return( buffer );
 }
 

@@ -190,7 +190,7 @@ static int svg_pathdump(FILE *file, SplineSet *spl, int lineout,
     last.x = last.y = 0;
     while ( spl!=NULL ) {
       if ( (do_clips && spl->is_clip_path) || (!do_clips && !spl->is_clip_path)) {
-	sprintf( buffer, "M%g %g", (double) spl->first->me.x, (double) spl->first->me.y );
+	snprintf( buffer, sizeof(buffer), "M%g %g", (double) spl->first->me.x, (double) spl->first->me.y );
 	if ( lineout+strlen(buffer)>=255 ) { putc('\n',file); lineout = 0; }
 	fputs( buffer,file );
 	lineout += strlen( buffer );
@@ -202,32 +202,32 @@ static int svg_pathdump(FILE *file, SplineSet *spl, int lineout,
 	    if ( first==NULL ) first=sp;
 	    if ( sp->knownlinear ) {
 		if ( sp->to->me.x==sp->from->me.x )
-		    sprintf( buffer,"v%g", (double) (sp->to->me.y-last.y) );
+		    snprintf( buffer, sizeof(buffer), "v%g", (double) (sp->to->me.y-last.y) );
 		else if ( sp->to->me.y==sp->from->me.y )
-		    sprintf( buffer,"h%g", (double) (sp->to->me.x-last.x) );
+		    snprintf( buffer, sizeof(buffer), "h%g", (double) (sp->to->me.x-last.x) );
 		else if ( sp->to->next==first ) {
-		    strcpy( buffer, "z");
+		    strncpy( buffer, "z", sizeof(buffer));
 		    closed = true;
 		} else
-		    sprintf( buffer,"l%g %g", (double) (sp->to->me.x-last.x), (double) (sp->to->me.y-last.y) );
+		    snprintf( buffer, sizeof(buffer), "l%g %g", (double) (sp->to->me.x-last.x), (double) (sp->to->me.y-last.y) );
 	    } else if ( sp->order2 ) {
 		if ( sp->from->prev!=NULL && sp->from!=spl->first &&
 			sp->from->me.x-sp->from->prevcp.x == sp->from->nextcp.x-sp->from->me.x &&
 			sp->from->me.y-sp->from->prevcp.y == sp->from->nextcp.y-sp->from->me.y )
-		    sprintf( buffer,"t%g %g", (double) (sp->to->me.x-last.x), (double) (sp->to->me.y-last.y) );
+		    snprintf( buffer, sizeof(buffer), "t%g %g", (double) (sp->to->me.x-last.x), (double) (sp->to->me.y-last.y) );
 		else
-		    sprintf( buffer,"q%g %g %g %g",
+		    snprintf( buffer, sizeof(buffer), "q%g %g %g %g",
 			    (double) (sp->to->prevcp.x-last.x), (double) (sp->to->prevcp.y-last.y),
 			    (double) (sp->to->me.x-last.x),(double) (sp->to->me.y-last.y));
 	    } else {
 		if ( sp->from->prev!=NULL && sp->from!=spl->first &&
 			sp->from->me.x-sp->from->prevcp.x == sp->from->nextcp.x-sp->from->me.x &&
 			sp->from->me.y-sp->from->prevcp.y == sp->from->nextcp.y-sp->from->me.y )
-		    sprintf( buffer,"s%g %g %g %g",
+		    snprintf( buffer, sizeof(buffer), "s%g %g %g %g",
 			    (double) (sp->to->prevcp.x-last.x), (double) (sp->to->prevcp.y-last.y),
 			    (double) (sp->to->me.x-last.x),(double) (sp->to->me.y-last.y));
 		else
-		    sprintf( buffer,"c%g %g %g %g %g %g",
+		    snprintf( buffer, sizeof(buffer), "c%g %g %g %g %g %g",
 			    (double) (sp->from->nextcp.x-last.x), (double) (sp->from->nextcp.y-last.y),
 			    (double) (sp->to->prevcp.x-last.x), (double) (sp->to->prevcp.y-last.y),
 			    (double) (sp->to->me.x-last.x),(double) (sp->to->me.y-last.y));
@@ -2926,9 +2926,9 @@ static SplineChar *SVGParseGlyphArgs(xmlNodePtr glyph,int defh, int defv,
 	xmlFree(glyphname);
     } else if ( orientation!=NULL && *orientation=='v' && sc->unicodeenc!=-1 ) {
 	if ( sc->unicodeenc<0x10000 )
-	    sprintf( buffer, "uni%04X.vert", sc->unicodeenc );
+	    snprintf( buffer, sizeof(buffer), "uni%04X.vert", sc->unicodeenc );
 	else
-	    sprintf( buffer, "u%04X.vert", sc->unicodeenc );
+	    snprintf( buffer, sizeof(buffer), "u%04X.vert", sc->unicodeenc );
 	sc->name = copy( buffer );
     }
     /* we finish off defaulting the glyph name in the parseglyph routine */
@@ -2956,94 +2956,125 @@ static SplineChar *SVGParseGlyph(SplineFont *sf,xmlNodePtr glyph,int defh,
     sc->parent = sf;
     if ( sc->name==NULL ) {
 	if ( sc->unicodeenc==-1 ) {
-	    sprintf( buffer, "glyph%d", enc);
+	    snprintf( buffer, sizeof(buffer), "glyph%d", enc);
 	    sc->name = copy(buffer);
 	} else
-	    sc->name = copy(StdGlyphName(buffer,sc->unicodeenc,ui_none,NULL));
+	    sc->name = copy(StdGlyphName(buffer, sizeof(buffer), sc->unicodeenc,ui_none,NULL));
     }
     SVGParseGlyphBody(sc,glyph,ip);
 return( sc );
 }
 
-static void SVGLigatureFixupCheck(SplineChar *sc,xmlNodePtr glyph) {
-    xmlChar *unicode;
-    uint32 *u;
-    int len, len2;
-    SplineChar **chars, *any = NULL;
-    char *comp, *pt;
+static void SVGLigatureFixupCheck(SplineChar* sc, xmlNodePtr glyph)
+{
+	xmlChar* unicode;
+	uint32* u;
+	int len, len2;
+	SplineChar** chars, * any = NULL;
+	char* comp, * pt;
 
-    unicode = xmlGetProp(glyph,(xmlChar *) "unicode");
-    if ( unicode!=NULL ) {
-	u = utf82u_copy((char *) unicode);
-	xmlFree(unicode);
-	if ( u[1]!='\0' && u[2]=='\0' &&
-		((u[1]>=0x180B && u[1]<=0x180D) ||	/* Mongolian VS */
-		 (u[1]>=0xfe00 && u[1]<=0xfe0f) ||	/* First VS block */
-		 (u[1]>=0xE0100 && u[1]<=0xE01EF)) ) {	/* Second VS block */
-	    /* Problably a variant glyph marked with a variation selector */
-	    /* ... not a true ligature at all */
-	    /* http://babelstone.blogspot.com/2007/06/secret-life-of-variation-selectors.html */
-	    struct altuni *altuni = chunkalloc(sizeof(struct altuni));
-	    altuni->unienc = u[0];
-	    altuni->vs = u[1];
-	    altuni->fid = 0;
-	    altuni->next = sc->altuni;
-	    sc->altuni = altuni;
-	} else if ( u[1]!='\0' ) {
-	    /* Normal ligature */
-	    for ( len=0; u[len]!=0; ++len );
-	    chars = malloc(len*sizeof(SplineChar *));
-	    for ( len=len2=0; u[len]!=0; ++len ) {
-		chars[len] = SFGetChar(sc->parent,u[len],NULL);
-		if ( chars[len]==NULL )
-		    len2 += 9;
-		else {
-		    len2 += strlen(chars[len]->name)+1;
-		    if ( any==NULL ) any = chars[len];
+	unicode = xmlGetProp(glyph, (xmlChar*)"unicode");
+	if (unicode != NULL)
+	{
+		u = utf82u_copy((char*)unicode);
+		xmlFree(unicode);
+		if (u[1] != '\0' && u[2] == '\0' &&
+			((u[1] >= 0x180B && u[1] <= 0x180D) ||	/* Mongolian VS */
+				(u[1] >= 0xfe00 && u[1] <= 0xfe0f) ||	/* First VS block */
+				(u[1] >= 0xE0100 && u[1] <= 0xE01EF)))
+		{	/* Second VS block */
+/* Problably a variant glyph marked with a variation selector */
+/* ... not a true ligature at all */
+/* http://babelstone.blogspot.com/2007/06/secret-life-of-variation-selectors.html */
+			struct altuni* altuni = chunkalloc(sizeof(struct altuni));
+			altuni->unienc = u[0];
+			altuni->vs = u[1];
+			altuni->fid = 0;
+			altuni->next = sc->altuni;
+			sc->altuni = altuni;
 		}
-	    }
-	    if ( any==NULL ) any=sc;
-	    comp = pt = malloc(len2+1);
-	    *pt = '\0';
-	    for ( len=0; u[len]!=0; ++len ) {
-		if ( chars[len]!=NULL )
-		    strcpy(pt,chars[len]->name);
-		else if ( u[len]<0x10000 )
-		    sprintf(pt,"uni%04X",  (unsigned int) u[len]);
-		else
-		    sprintf(pt,"u%04X",  (unsigned int) u[len]);
-		pt += strlen(pt);
-		if ( u[len+1]!='\0' )
-		    *pt++ = ' ';
-	    }
-	    SubsNew(sc,pst_ligature,CHR('l','i','g','a'),comp,any);
-		/* Understand the unicode latin ligatures. There are too many */
-		/*  arabic ones */
-	    if ( u[0]=='f' ) {
-		if ( u[1]=='f' && u[2]==0 )
-		    sc->unicodeenc = 0xfb00;
-		else if ( u[1]=='i' && u[2]==0 )
-		    sc->unicodeenc = 0xfb01;
-		else if ( u[1]=='l' && u[2]==0 )
-		    sc->unicodeenc = 0xfb02;
-		else if ( u[1]=='f' && u[2]=='i' && u[3]==0 )
-		    sc->unicodeenc = 0xfb03;
-		else if ( u[1]=='f' && u[2]=='l' && u[3]==0 )
-		    sc->unicodeenc = 0xfb04;
-		else if ( u[1]=='t' && u[2]==0 )
-		    sc->unicodeenc = 0xfb05;
-	    } else if ( u[0]=='s' && u[1]=='t' && u[2]==0 )
-		sc->unicodeenc = 0xfb06;
-	    if ( strncmp(sc->name,"glyph",5)==0 && isdigit(sc->name[5])) {
-		/* It's a default name, we can do better */
-		free(sc->name);
-		sc->name = copy(comp);
-		for ( pt = sc->name; *pt; ++pt )
-		    if ( *pt==' ' ) *pt = '_';
-	    }
+		else if (u[1] != '\0')
+		{
+			/* Normal ligature */
+			for (len = 0; u[len] != 0; ++len);
+			chars = malloc(len * sizeof(SplineChar*));
+			for (len = len2 = 0; u[len] != 0; ++len)
+			{
+				chars[len] = SFGetChar(sc->parent, u[len], NULL);
+				if (chars[len] == NULL)
+					len2 += 9;
+				else
+				{
+					len2 += strlen(chars[len]->name) + 1;
+					if (any == NULL) any = chars[len];
+				}
+			}
+			if (any == NULL) any = sc;
+
+			int buf_size = len2 + 1;
+			comp = pt = malloc(buf_size);
+			*pt = '\0';
+			for (len = 0; u[len] != 0; ++len)
+			{
+				if (chars[len] != NULL)
+				{
+					strncpy(pt, chars[len]->name, buf_size);
+				}
+				else if (u[len] < 0x10000)
+				{
+					snprintf(pt, buf_size, "uni%04X", (unsigned int)u[len]);
+				}
+				else
+				{
+					snprintf(pt, buf_size, "u%04X", (unsigned int)u[len]);
+				}
+
+				int str_size = strlen(pt);
+				pt += str_size;
+				buf_size -= str_size;
+
+				if (u[len + 1] != '\0')
+				{
+					*pt++ = ' ';
+					buf_size--;
+				}
+			}
+			SubsNew(sc, pst_ligature, CHR('l', 'i', 'g', 'a'), comp, any);
+			/* Understand the unicode latin ligatures. There are too many */
+			/*  arabic ones */
+			if (u[0] == 'f')
+			{
+				if (u[1] == 'f' && u[2] == 0)
+					sc->unicodeenc = 0xfb00;
+				else if (u[1] == 'i' && u[2] == 0)
+					sc->unicodeenc = 0xfb01;
+				else if (u[1] == 'l' && u[2] == 0)
+					sc->unicodeenc = 0xfb02;
+				else if (u[1] == 'f' && u[2] == 'i' && u[3] == 0)
+					sc->unicodeenc = 0xfb03;
+				else if (u[1] == 'f' && u[2] == 'l' && u[3] == 0)
+					sc->unicodeenc = 0xfb04;
+				else if (u[1] == 't' && u[2] == 0)
+					sc->unicodeenc = 0xfb05;
+			}
+			else if (u[0] == 's' && u[1] == 't' && u[2] == 0)
+				sc->unicodeenc = 0xfb06;
+			if (strncmp(sc->name, "glyph", 5) == 0 && isdigit(sc->name[5]))
+			{
+				/* It's a default name, we can do better */
+				free(sc->name);
+				sc->name = copy(comp);
+				for (pt = sc->name; *pt; ++pt)
+				{
+					if (*pt == ' ')
+					{
+						*pt = '_';
+					}
+				}
+			}
+		}
+		free(u);
 	}
-	free(u);
-    }
 }
 
 static char *SVGGetNames(SplineFont *sf,xmlChar *g,xmlChar *utf8,SplineChar **sc) {
@@ -3388,10 +3419,12 @@ return( NULL );
     sf->fullname = copy(sf->fontname);
 
     /* Give ourselves an xuid, just in case they want to convert to PostScript*/
-    if ( xuid!=NULL ) {
-	sf->xuid = malloc(strlen(xuid)+20);
-	sprintf(sf->xuid,"[%s %d]", xuid, (rand()&0xffffff));
-    }
+	if (xuid != NULL)
+	{
+		int buf_size = strlen(xuid) + 20;
+		sf->xuid = malloc(buf_size);
+		snprintf(sf->xuid, buf_size, "[%s %d]", xuid, (rand() & 0xffffff));
+	}
 
     ff_progress_change_total(cnt);
     sf->glyphcnt = sf->glyphmax = cnt;

@@ -1265,7 +1265,7 @@ static void FVMenuSetExtremumBound(GWindow gw, struct gmenuitem *UNUSED(mi), GEv
     char buffer[40], *end, *ret;
     int val;
 
-    sprintf( buffer, "%d", fv->b.sf->extrema_bound<=0 ?
+    snprintf( buffer, sizeof(buffer), "%d", fv->b.sf->extrema_bound<=0 ?
 	    (int) rint((fv->b.sf->ascent+fv->b.sf->descent)/100.0) :
 	    fv->b.sf->extrema_bound );
     ret = gwwv_ask_string(_("Extremum bound..."),buffer,_("Adobe says that \"big\" splines should not have extrema.\nBut they don't define what big means.\nIf the distance between the spline's end-points is bigger than this value, then the spline is \"big\" to fontforge."));
@@ -3363,7 +3363,7 @@ static void FVMenuMagnify(GWindow gw, struct gmenuitem *UNUSED(mi), GEvent *UNUS
     int val;
     BDFFont *show = fv->show;
 
-    sprintf( def, "%d", magnify );
+    snprintf( def, sizeof(def), "%d", magnify );
     ret = gwwv_ask_string(_("Bitmap Magnification..."),def,_("Please specify a bitmap magnification factor."));
     if ( ret==NULL )
 return;
@@ -3981,7 +3981,7 @@ static void FVMenuChangeSupplement(GWindow gw, struct gmenuitem *UNUSED(mi), GEv
 
     if ( cidmaster==NULL )
 return;
-    sprintf(buffer,"%d",cidmaster->supplement);
+    snprintf(buffer, sizeof(buffer), "%d",cidmaster->supplement);
     ret = gwwv_ask_string(_("Change Supplement..."),buffer,_("Please specify a new supplement for %.20s-%.20s"),
 	    cidmaster->cidregistry,cidmaster->ordering);
     if ( ret==NULL )
@@ -5334,9 +5334,9 @@ static void vwlistcheck(GWindow gw, struct gmenuitem *mi, GEvent *UNUSED(e)) {
 		i<sizeof(vwlist)/sizeof(vwlist[0])-1 && bdf!=NULL;
 		++i, bdf = bdf->next ) {
 	    if ( BDFDepth(bdf)==1 )
-		sprintf( buffer, _("%d pixel bitmap"), bdf->pixelsize );
+		snprintf( buffer, sizeof(buffer), _("%d pixel bitmap"), bdf->pixelsize );
 	    else
-		sprintf( buffer, _("%d@%d pixel bitmap"),
+		snprintf( buffer, sizeof(buffer), _("%d@%d pixel bitmap"),
 			bdf->pixelsize, BDFDepth(bdf) );
 	    vwlist[i].ti.text = (unichar_t *) utf82u_copy(buffer);
 	    vwlist[i].ti.checkable = true;
@@ -5818,64 +5818,78 @@ static void AddSubPST(SplineChar *sc,struct lookup_subtable *sub,char *variant) 
     sc->possub = pst;
 }
 
-SplineChar *FVMakeChar(FontView *fv,int enc) {
-    SplineFont *sf = fv->b.sf;
-    SplineChar *base_sc = SFMakeChar(sf,fv->b.map,enc), *feat_sc = NULL;
-    int feat_gid = FeatureTrans(fv,enc);
+SplineChar* FVMakeChar(FontView* fv, int enc)
+{
+    SplineFont* sf = fv->b.sf;
+    SplineChar* base_sc = SFMakeChar(sf, fv->b.map, enc), * feat_sc = NULL;
+    int feat_gid = FeatureTrans(fv, enc);
 
-    if ( fv->cur_subtable==NULL )
-return( base_sc );
+    if (fv->cur_subtable == NULL)
+        return(base_sc);
 
-    if ( feat_gid==-1 ) {
-	int uni = -1;
-	FeatureScriptLangList *fl = fv->cur_subtable->lookup->features;
+    if (feat_gid == -1)
+    {
+        int uni = -1;
+        FeatureScriptLangList* fl = fv->cur_subtable->lookup->features;
 
-	if ( base_sc->unicodeenc>=0x600 && base_sc->unicodeenc<=0x6ff &&
-		fl!=NULL &&
-		(fl->featuretag == CHR('i','n','i','t') ||
-		 fl->featuretag == CHR('m','e','d','i') ||
-		 fl->featuretag == CHR('f','i','n','a') ||
-		 fl->featuretag == CHR('i','s','o','l')) ) {
-	    uni = fl->featuretag == CHR('i','n','i','t') ? ArabicForms[base_sc->unicodeenc-0x600].initial  :
-		  fl->featuretag == CHR('m','e','d','i') ? ArabicForms[base_sc->unicodeenc-0x600].medial   :
-		  fl->featuretag == CHR('f','i','n','a') ? ArabicForms[base_sc->unicodeenc-0x600].final    :
-		  fl->featuretag == CHR('i','s','o','l') ? ArabicForms[base_sc->unicodeenc-0x600].isolated :
-		  -1;
-	    feat_sc = SFGetChar(sf,uni,NULL);
-	    if ( feat_sc!=NULL )
-return( feat_sc );
-	}
-	feat_sc = SFSplineCharCreate(sf);
-	feat_sc->unicodeenc = uni;
-	if ( uni!=-1 ) {
-	    feat_sc->name = malloc(8);
-	    feat_sc->unicodeenc = uni;
-	    sprintf( feat_sc->name,"uni%04X", uni );
-	} else if ( fv->cur_subtable->suffix!=NULL ) {
-	    feat_sc->name = malloc(strlen(base_sc->name)+strlen(fv->cur_subtable->suffix)+2);
-	    sprintf( feat_sc->name, "%s.%s", base_sc->name, fv->cur_subtable->suffix );
-	} else if ( fl==NULL ) {
-	    feat_sc->name = strconcat(base_sc->name,".unknown");
-	} else if ( fl->ismac ) {
-	    /* mac feature/setting */
-	    feat_sc->name = malloc(strlen(base_sc->name)+14);
-	    sprintf( feat_sc->name,"%s.m%d_%d", base_sc->name,
-		    (int) (fl->featuretag>>16),
-		    (int) ((fl->featuretag)&0xffff) );
-	} else {
-	    /* OpenType feature tag */
-	    feat_sc->name = malloc(strlen(base_sc->name)+6);
-	    sprintf( feat_sc->name,"%s.%c%c%c%c", base_sc->name,
-		    (int) (fl->featuretag>>24),
-		    (int) ((fl->featuretag>>16)&0xff),
-		    (int) ((fl->featuretag>>8)&0xff),
-		    (int) ((fl->featuretag)&0xff) );
-	}
-	SFAddGlyphAndEncode(sf,feat_sc,fv->b.map,fv->b.map->enccount);
-	AddSubPST(base_sc,fv->cur_subtable,feat_sc->name);
-return( feat_sc );
-    } else
-return( base_sc );
+        if (base_sc->unicodeenc >= 0x600 && base_sc->unicodeenc <= 0x6ff &&
+            fl != NULL &&
+            (fl->featuretag == CHR('i', 'n', 'i', 't') ||
+                fl->featuretag == CHR('m', 'e', 'd', 'i') ||
+                fl->featuretag == CHR('f', 'i', 'n', 'a') ||
+                fl->featuretag == CHR('i', 's', 'o', 'l')))
+        {
+            uni = fl->featuretag == CHR('i', 'n', 'i', 't') ? ArabicForms[base_sc->unicodeenc - 0x600].initial :
+                fl->featuretag == CHR('m', 'e', 'd', 'i') ? ArabicForms[base_sc->unicodeenc - 0x600].medial :
+                fl->featuretag == CHR('f', 'i', 'n', 'a') ? ArabicForms[base_sc->unicodeenc - 0x600].final :
+                fl->featuretag == CHR('i', 's', 'o', 'l') ? ArabicForms[base_sc->unicodeenc - 0x600].isolated :
+                -1;
+            feat_sc = SFGetChar(sf, uni, NULL);
+            if (feat_sc != NULL)
+                return(feat_sc);
+        }
+        feat_sc = SFSplineCharCreate(sf);
+        feat_sc->unicodeenc = uni;
+        int str_size;
+        if (uni != -1)
+        {
+            feat_sc->name = malloc(str_size = 8);
+            feat_sc->unicodeenc = uni;
+            snprintf(feat_sc->name, str_size, "uni%04X", uni);
+        }
+        else if (fv->cur_subtable->suffix != NULL)
+        {
+            feat_sc->name = malloc(str_size = strlen(base_sc->name) + strlen(fv->cur_subtable->suffix) + 2);
+            snprintf(feat_sc->name, str_size, "%s.%s", base_sc->name, fv->cur_subtable->suffix);
+        }
+        else if (fl == NULL)
+        {
+            feat_sc->name = strconcat(base_sc->name, ".unknown");
+        }
+        else if (fl->ismac)
+        {
+            /* mac feature/setting */
+            feat_sc->name = malloc(str_size = strlen(base_sc->name) + 14);
+            snprintf(feat_sc->name, str_size, "%s.m%d_%d", base_sc->name,
+                (int)(fl->featuretag >> 16),
+                (int)((fl->featuretag) & 0xffff));
+        }
+        else
+        {
+            /* OpenType feature tag */
+            feat_sc->name = malloc(str_size = strlen(base_sc->name) + 6);
+            snprintf(feat_sc->name, str_size, "%s.%c%c%c%c", base_sc->name,
+                (int)(fl->featuretag >> 24),
+                (int)((fl->featuretag >> 16) & 0xff),
+                (int)((fl->featuretag >> 8) & 0xff),
+                (int)((fl->featuretag) & 0xff));
+        }
+        SFAddGlyphAndEncode(sf, feat_sc, fv->b.map, fv->b.map->enccount);
+        AddSubPST(base_sc, fv->cur_subtable, feat_sc->name);
+        return(feat_sc);
+    }
+    else
+        return(base_sc);
 }
 
 /* we style some glyph names differently, see FVExpose() */
@@ -5995,7 +6009,7 @@ static void FVExpose(FontView *fv,GWindow pixmap, GEvent *event) {
 	      break;
 	      case gl_unicode:
 		if ( sc->unicodeenc!=-1 ) {
-		    sprintf(cbuf,"%04x",sc->unicodeenc);
+		    snprintf(cbuf, sizeof(cbuf), "%04x",sc->unicodeenc);
 		    uc_strcpy(buf,cbuf);
 		} else
 		    uc_strcpy(buf,"?");
@@ -6003,9 +6017,9 @@ static void FVExpose(FontView *fv,GWindow pixmap, GEvent *event) {
 	      case gl_encoding:
 		if ( fv->b.map->enc->only_1byte ||
 			(fv->b.map->enc->has_1byte && index<256))
-		    sprintf(cbuf,"%02x",index);
+		    snprintf(cbuf, sizeof(cbuf), "%02x",index);
 		else
-		    sprintf(cbuf,"%04x",index);
+		    snprintf(cbuf, sizeof(cbuf), "%04x",index);
 		uc_strcpy(buf,cbuf);
 	      break;
 	      case gl_glyph:

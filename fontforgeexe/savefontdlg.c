@@ -1067,7 +1067,7 @@ return( -1 );
 
 	label[5].text = (unichar_t *) (bf == bf_bdf ? "96" : "72");
 	if ( def_res>0 ) {
-	    sprintf( buf, "%d", def_res );
+	    snprintf( buf, sizeof(buf), "%d", def_res );
 	    label[5].text = (unichar_t *) buf;
 	}
 	label[5].text_is_1byte = true;
@@ -1213,7 +1213,7 @@ static char *GetWernerSFDFile(SplineFont *sf,EncMap *map) {
     for ( supl = sf->supplement; supl<sf->supplement+10 ; ++supl ) {
 	if ( no_windowing_ui ) {
 	    if ( sf->subfontcnt!=0 ) {
-		sprintf(buffer,"%.40s-%.40s-%d.sfd", sf->cidregistry,sf->ordering,supl);
+		snprintf(buffer, sizeof(buffer), "%.40s-%.40s-%d.sfd", sf->cidregistry,sf->ordering,supl);
 		def = buffer;
 	    } else if ( strstrmatch(map->enc->enc_name,"big")!=NULL &&
 		    strchr(map->enc->enc_name,'5')!=NULL ) {
@@ -1294,8 +1294,9 @@ static void prepend_timestamp(struct gfc_data *d){
       if (timestamp_found)
         original_name = original_name + 11; //skip previous timestamp
 
-      new_name = malloc (sizeof(char) * (strlen(original_name) + 12));
-      sprintf(new_name, "%s-%s", timestamp, original_name);
+	  size_t new_name_size = sizeof(char) * (strlen(original_name) + 12);
+      new_name = malloc(new_name_size);
+      snprintf(new_name, new_name_size, "%s-%s", timestamp, original_name);
 
       d->sf->familyname_with_timestamp = new_name;
     }
@@ -1920,26 +1921,41 @@ return( GGadgetDispatchEvent((GGadget *) (d->gfc),event));
 return( true );
 }
 
-static unichar_t *BitmapList(SplineFont *sf) {
-    BDFFont *bdf;
-    int i;
-    char *cret, *pt;
-    unichar_t *uret;
+static unichar_t* BitmapList(SplineFont* sf)
+{
+	BDFFont* bdf;
+	int i;
+	char* cret, * pt;
+	unichar_t* uret;
 
-    for ( bdf=sf->bitmaps, i=0; bdf!=NULL; bdf=bdf->next, ++i );
-    pt = cret = malloc((i+1)*20);
-    for ( bdf=sf->bitmaps; bdf!=NULL; bdf=bdf->next ) {
-	if ( pt!=cret ) *pt++ = ',';
-	if ( bdf->clut==NULL )
-	    sprintf( pt, "%d", bdf->pixelsize );
-	else
-	    sprintf( pt, "%d@%d", bdf->pixelsize, BDFDepth(bdf) );
-	pt += strlen(pt);
-    }
-    *pt = '\0';
-    uret = uc_copy(cret);
-    free(cret);
-return( uret );
+	for (bdf = sf->bitmaps, i = 0; bdf != NULL; bdf = bdf->next, ++i)
+	{
+		;
+	}
+
+	int pt_size = (i + 1) * 20;
+	pt = cret = malloc(pt_size);
+
+	for (bdf = sf->bitmaps; bdf != NULL; bdf = bdf->next)
+	{
+		if (pt != cret) *pt++ = ',';
+		if (bdf->clut == NULL)
+		{
+			snprintf(pt, pt_size, "%d", bdf->pixelsize);
+		}
+		else
+		{
+			snprintf(pt, pt_size, "%d@%d", bdf->pixelsize, BDFDepth(bdf));
+		}
+
+		int str_size = strlen(pt);;
+		pt += str_size;
+		pt_size -= str_size;
+	}
+	*pt = '\0';
+	uret = uc_copy(cret);
+	free(cret);
+	return(uret);
 }
 
 static const char *styleName(SplineFont *sf) {

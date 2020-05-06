@@ -690,12 +690,12 @@ void _GPSDraw_ProcessFont(GPSWindow ps, struct font_data *fd) {
 	    ((style&fs_condensed) && !(base->style&fs_condensed)) ) {
 	/* Let's do some skewing.  It's not real italic, but it's the best we gots */
 	if ( base->base==NULL )
-	    sprintf( buffer, "%s__%d_%s%s%s", base->localname, point,
+	    snprintf( buffer, sizeof(buffer), "%s__%d_%s%s%s", base->localname, point,
 		    ((style&fs_italic) && !(base->style&fs_italic))? "O":"",
 		    ((style&fs_extended) && !(base->style&fs_extended))? "E":"",
 		    ((style&fs_condensed) && !(base->style&fs_condensed))? "C":"");
 	else
-	    sprintf( buffer, "%s_%s%s%s", base->localname, 
+	    snprintf( buffer, sizeof(buffer), "%s_%s%s%s", base->localname,
 		    ((style&fs_italic) && !(base->style&fs_italic))? "O":"",
 		    ((style&fs_extended) && !(base->style&fs_extended))? "E":"",
 		    ((style&fs_condensed) && !(base->style&fs_condensed))? "C":"");
@@ -709,7 +709,7 @@ void _GPSDraw_ProcessFont(GPSWindow ps, struct font_data *fd) {
 		buffer, base->localname, base->remapped?"-ISO-8859-1":"",
 		factor*point, skew, point );
     } else {
-	sprintf( buffer, "%s__%d", base->localname, point );
+	snprintf( buffer, sizeof(buffer), "%s__%d", base->localname, point );
 	fprintf( output_file, "MyFontDict /%s /%s%s findfont %d scalefont put\n",
 		buffer, base->localname, base->remapped?"-ISO-8859-1":"", point );
     }

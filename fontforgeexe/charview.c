@@ -896,8 +896,8 @@ static void DrawPoint( CharView *cv, GWindow pixmap, SplinePoint *sp,
     int x, y, cx, cy;
     CharViewTab* tab = CVGetActiveTab(cv);
     Color col = sp==spl->first ? firstpointcol : pointcol;
+	char buf[16];
     int pnum;
-    char buf[16];
     int isfake;
 
     if ( cv->markextrema && SpIsExtremum(sp) && sp!=spl->first )
@@ -988,12 +988,18 @@ return;
 	    }
 	    if ( cv->showpointnumbers || cv->show_ft_results || cv->dv ) {
 		pnum = sp->nextcpindex;
-		if ( pnum!=0xffff && pnum!=0xfffe ) {
-                    if (cv->showpointnumbers == 2)
-			SplinePointCoords( buf, sizeof(buf), sp);
-                    else
-		        sprintf( buf,"%d", pnum );
-		    GDrawDrawText8(pixmap,cx,cy-6,buf,-1,nextcpcol);
+		if (pnum != 0xffff && pnum != 0xfffe)
+		{
+			if (cv->showpointnumbers == 2)
+			{
+				SplinePointCoords(buf, sizeof(buf), sp);
+			}
+			else
+			{
+				snprintf(buf, sizeof(buf), "%d", pnum);
+			}
+
+			GDrawDrawText8(pixmap, cx, cy - 6, buf, -1, nextcpcol);
 		}
 	    }
 	}
@@ -1124,11 +1130,11 @@ return;
 	 && sp->ttfindex!=0xffff )
     {
 	if ( sp->ttfindex==0xfffe )
-	    strcpy(buf,"??");
+	    strncpy(buf,"??", sizeof(buf));
         else if (cv->showpointnumbers == 2)
 	    SplinePointCoords(buf, sizeof(buf), sp);
 	else
-	    sprintf( buf,"%d", sp->ttfindex );
+	    snprintf( buf, sizeof(buf), "%d", sp->ttfindex );
 	GDrawDrawText8(pixmap,x,y-6,buf,-1,col);
     }
     if ( truetype_markup && sp->roundx ) {
@@ -1954,12 +1960,19 @@ return;
     GDrawSetDashedLine(pixmap,0,0,0);
 }
 
-static void dtos(char *buf,real val) {
-    char *pt;
+static void dtos(char* buf, size_t buf_size, real val)
+{
+	char* pt;
 
-    sprintf( buf,"%.1f", (double) val);
-    pt = buf+strlen(buf);
-    if ( pt[-1]=='0' && pt[-2]=='.' ) pt[-2] = '\0';
+	snprintf(buf, buf_size, "%.1f", (double)val);
+
+	pt = buf + strlen(buf);
+
+	if (pt[-1] == '0' && 
+		pt[-2] == '.')
+	{
+		pt[-2] = '\0';
+	}
 }
 
 static void CVDrawBlues(CharView *cv,GWindow pixmap,char *bluevals,char *others,
@@ -2023,13 +2036,13 @@ return;
 	GDrawSetStippled(pixmap,0, 0,0);
 
 	if ( first>-20 && first<cv->height+20 ) {
-	    dtos( buf, blues[i]);
+	    dtos( buf, sizeof(buf), blues[i]);
 	    len = GDrawGetText8Width(pixmap,buf,-1);
 	    GDrawDrawText8(pixmap,cv->width-len-5,first-3,buf,-1,hintlabelcol);
 	} else
 	    len = 0;
 	if ( other>-20 && other<cv->height+20 ) {
-	    dtos( buf, blues[i+1]-blues[i]);
+	    dtos( buf, sizeof(buf), blues[i+1]-blues[i]);
 	    len2 = GDrawGetText8Width(pixmap,buf,-1);
 	    GDrawDrawText8(pixmap,cv->width-len-5-len2-5,other+cv->sas-3,buf,-1,hintlabelcol);
 	}
@@ -2101,7 +2114,7 @@ static void CVShowHints(CharView *cv, GWindow pixmap) {
 	    r.y = -tab->yoff + cv->height - rint(hint->start*tab->scale);
 	    r.y += ( hint->width>0 ) ? -3 : cv->sas+3;
 	    if ( r.y>-20 && r.y<cv->height+20 ) {
-		dtos( buf, hint->start);
+		dtos( buf, sizeof(buf), hint->start);
 		len = GDrawGetText8Width(pixmap,buf,-1);
 		GDrawDrawText8(pixmap,cv->width-len-5,r.y,buf,-1,hintlabelcol);
 	    } else
@@ -2112,9 +2125,9 @@ static void CVShowHints(CharView *cv, GWindow pixmap) {
 		if ( hint->ghost ) {
 		    buf[0] = 'G';
 		    buf[1] = ' ';
-		    dtos(buf+2, hint->width);
+		    dtos(buf+2, sizeof(buf) - 2, hint->width);
 		} else
-		    dtos( buf, hint->width);
+		    dtos( buf, sizeof(buf), hint->width);
 		len2 = GDrawGetText8Width(pixmap,buf,-1);
 		GDrawDrawText8(pixmap,cv->width-len-5-len2-5,r.y,buf,-1,hintlabelcol);
 	    }
@@ -2155,7 +2168,7 @@ static void CVShowHints(CharView *cv, GWindow pixmap) {
 
 	    r.x = tab->xoff + rint(hint->start*tab->scale);
 	    if ( r.x>-60 && r.x<cv->width+20 ) {
-		dtos( buf, hint->start);
+		dtos( buf, sizeof(buf), hint->start);
 		len = GDrawGetText8Width(pixmap,buf,-1);
 		r.x += ( hint->width>0 ) ? 3 : -len-3;
 		GDrawDrawText8(pixmap,r.x,cv->sas+3,buf,-1,hintlabelcol);
@@ -2165,9 +2178,9 @@ static void CVShowHints(CharView *cv, GWindow pixmap) {
 		if ( hint->ghost ) {
 		    buf[0] = 'G';
 		    buf[1] = ' ';
-		    dtos(buf+2, hint->width);
+		    dtos(buf+2, sizeof(buf) - 2, hint->width);
 		} else
-		    dtos( buf, hint->width);
+		    dtos( buf, sizeof(buf), hint->width);
 		len = GDrawGetText8Width(pixmap,buf,-1);
 		r.x += ( hint->width>0 ) ? -len-3 : 3;
 		GDrawDrawText8(pixmap,r.x,cv->sas+cv->sfh+3,buf,-1,hintlabelcol);
@@ -2282,7 +2295,10 @@ return;
 		name = ubuf;
 	    } else if ( ap->type==at_baselig ) {
 		cc_strncpy(ubuf,ap->anchor->name,30);
-		sprintf(ubuf+strlen(ubuf),"#%d", ap->lig_index);
+		
+		int str_size = strlen(ubuf);
+		snprintf(ubuf + str_size, sizeof(ubuf) - str_size, "#%d", ap->lig_index);
+		
 		name = ubuf;
 	    } else
 		name = NULL;		/* Should never happen */
@@ -2353,7 +2369,7 @@ static void DrawVLine(CharView *cv,GWindow pixmap,real pos,Color fg, int flags,
     DrawLine(cv,pixmap,pos,-32768,pos,32767,fg);
     if ( x>-400 && x<cv->width+400 ) {
 	if ( flags&1 ) {
-	    dtos( buf, pos);
+	    dtos( buf, sizeof(buf), pos);
 	    GDrawSetFont(pixmap,cv->small);
 	    GDrawDrawText8(pixmap,x+5,cv->sas+3,buf,-1,metricslabelcol);
 	    if ( lock!=NULL )
@@ -2677,7 +2693,7 @@ return;				/* no points. no side bearings */
 	     DrawPLine(cv,pixmap,tab->xoff,y,tab->xoff+4,y-4,metricslabelcol);
 	     DrawPLine(cv,pixmap,x,y,x-4,y-4,metricslabelcol);
 	     DrawPLine(cv,pixmap,x,y,x-4,y+4,metricslabelcol);
-	    dtos( buf, bounds[0]->x);
+	    dtos( buf, sizeof(buf), bounds[0]->x);
 	    x = tab->xoff + (x-tab->xoff-GDrawGetText8Width(pixmap,buf,-1))/2;
 	    GDrawDrawText8(pixmap,x,y-4,buf,-1,metricslabelcol);
 	}
@@ -2692,7 +2708,7 @@ return;				/* no points. no side bearings */
 	     DrawPLine(cv,pixmap,x,y,x+4,y-4,metricslabelcol);
 	     DrawPLine(cv,pixmap,x2,y,x2-4,y-4,metricslabelcol);
 	     DrawPLine(cv,pixmap,x2,y,x2-4,y+4,metricslabelcol);
-	    dtos( buf, sc->width-bounds[1]->x);
+	    dtos( buf, sizeof(buf), sc->width-bounds[1]->x);
 	    x = x + (x2-x-GDrawGetText8Width(pixmap,buf,-1))/2;
 	    GDrawDrawText8(pixmap,x,y-4,buf,-1,metricslabelcol);
 	}
@@ -2716,7 +2732,7 @@ return;				/* no points. no side bearings */
 		     DrawPLine(cv,pixmap,x,y,x+4,y-4,italiccoordcol);
 		     DrawPLine(cv,pixmap,x2,y,x2-4,y-4,italiccoordcol);
 		     DrawPLine(cv,pixmap,x2,y,x2-4,y+4,italiccoordcol);
-		    dtos( buf, leftmost->me.x-leftmost->me.y*t);
+		    dtos( buf, sizeof(buf), leftmost->me.x-leftmost->me.y*t);
 		    x = x + (x2-x-GDrawGetText8Width(pixmap,buf,-1))/2;
 		    GDrawDrawText8(pixmap,x,y+12,buf,-1,italiccoordcol);
 		}
@@ -2730,7 +2746,7 @@ return;				/* no points. no side bearings */
 		     DrawPLine(cv,pixmap,x,y,x+4,y-4,italiccoordcol);
 		     DrawPLine(cv,pixmap,x2,y,x2-4,y-4,italiccoordcol);
 		     DrawPLine(cv,pixmap,x2,y,x2-4,y+4,italiccoordcol);
-		    dtos( buf, sc->width+rightmost->me.y*t-rightmost->me.x);
+		    dtos( buf, sizeof(buf), sc->width+rightmost->me.y*t-rightmost->me.x);
 		    x = x + (x2-x-GDrawGetText8Width(pixmap,buf,-1))/2;
 		    GDrawDrawText8(pixmap,x,y+12,buf,-1,italiccoordcol);
 		}
@@ -2748,7 +2764,7 @@ return;				/* no points. no side bearings */
 	 DrawPLine(cv,pixmap,x,y,x+4,y+4,metricslabelcol);
 	 DrawPLine(cv,pixmap,x,y2,x+4,y2-4,metricslabelcol);
 	 DrawPLine(cv,pixmap,x,y2,x-4,y2-4,metricslabelcol);
-	dtos( buf, bounds[2]->y+sc->parent->descent);
+	dtos( buf, sizeof(buf), bounds[2]->y+sc->parent->descent);
 	y = y - (y-y2-cv->sfh)/2;
 	GDrawDrawText8(pixmap,x+4,y,buf,-1,metricslabelcol);
 
@@ -2761,7 +2777,7 @@ return;				/* no points. no side bearings */
 	 DrawPLine(cv,pixmap,x,y,x+4,y-4,metricslabelcol);
 	 DrawPLine(cv,pixmap,x,y2,x+4,y2+4,metricslabelcol);
 	 DrawPLine(cv,pixmap,x,y2,x-4,y2+4,metricslabelcol);
-	dtos( buf, sc->parent->ascent-bounds[3]->y);
+	dtos( buf, sizeof(buf), sc->parent->ascent-bounds[3]->y);
 	x = x + (x2-x-GDrawGetText8Width(pixmap,buf,-1))/2;
 	GDrawDrawText8(pixmap,x,y-4,buf,-1,metricslabelcol);
     }
@@ -3101,7 +3117,7 @@ static void CVExpose(CharView *cv, GWindow pixmap, GEvent *event ) {
 	DrawLine(cv,pixmap,-32768,vertical_height,32767,vertical_height,
 		(!cv->inactive && cv->vwidthsel)?widthselcol:widthcol);
 	if ( y>-40 && y<cv->height+40 ) {
-	    dtos( buf, cv->b.sc->vwidth);
+	    dtos( buf, sizeof(buf), cv->b.sc->vwidth);
 	    GDrawSetFont(pixmap,cv->small);
 	    len = GDrawGetText8Width(pixmap,buf,-1);
 	    GDrawDrawText8(pixmap,cv->width-len-5,y,buf,-1,metricslabelcol);
@@ -4018,158 +4034,208 @@ static void CVCharUp(CharView *cv, GEvent *event ) {
 #endif
 }
 
-void CVInfoDrawText(CharView *cv, GWindow pixmap ) {
-    CharViewTab* tab = CVGetActiveTab(cv);
-    GRect r;
-    Color bg = GDrawGetDefaultBackground(GDrawGetDisplayOfWindow(pixmap));
-    Color fg = GDrawGetDefaultForeground(GDrawGetDisplayOfWindow(pixmap));
-    const int buffersz = 150;
-    char buffer[buffersz+1];
-    int ybase = cv->mbh+cv->charselectorh+(cv->infoh-cv->sfh)/2+cv->sas;
-    real xdiff, ydiff;
-    SplinePoint *sp, dummy;
-    spiro_cp *cp;
+void CVInfoDrawText(CharView* cv, GWindow pixmap)
+{
+	CharViewTab* tab = CVGetActiveTab(cv);
+	GRect r;
+	Color bg = GDrawGetDefaultBackground(GDrawGetDisplayOfWindow(pixmap));
+	Color fg = GDrawGetDefaultForeground(GDrawGetDisplayOfWindow(pixmap));
+	const int buffersz = 150;
+	char buffer[buffersz + 1];
+	int ybase = cv->mbh + cv->charselectorh + (cv->infoh - cv->sfh) / 2 + cv->sas;
+	real xdiff, ydiff;
+	SplinePoint* sp, dummy;
+	spiro_cp* cp;
 
-    GDrawSetFont(pixmap,cv->small);
-    r.x = RPT_DATA; r.width = SPT_BASE-RPT_DATA;
-    r.y = cv->mbh+cv->charselectorh; r.height = cv->infoh-1;
-    GDrawFillRect(pixmap,&r,bg);
-    r.x = SPT_DATA; r.width = SOF_BASE-SPT_DATA;
-    GDrawFillRect(pixmap,&r,bg);
-    r.x = SOF_DATA; r.width = SDS_BASE-SOF_DATA;
-    GDrawFillRect(pixmap,&r,bg);
-    r.x = SDS_DATA; r.width = SAN_BASE-SDS_DATA;
-    GDrawFillRect(pixmap,&r,bg);
-    r.x = SAN_DATA; r.width = MAG_BASE-SAN_DATA;
-    GDrawFillRect(pixmap,&r,bg);
-    r.x = MAG_DATA; r.width = LAYER_DATA-MAG_DATA;
-    GDrawFillRect(pixmap,&r,bg);
-    r.x = LAYER_DATA; r.width = CODERANGE_DATA-LAYER_DATA;
-    GDrawFillRect(pixmap,&r,bg);
-    r.x = CODERANGE_DATA; r.width = FLAGS_DATA-CODERANGE_DATA;
-    GDrawFillRect(pixmap,&r,bg);
-    r.x = FLAGS_DATA; r.width = 200;
-    GDrawFillRect(pixmap,&r,bg);
+	GDrawSetFont(pixmap, cv->small);
+	r.x = RPT_DATA; r.width = SPT_BASE - RPT_DATA;
+	r.y = cv->mbh + cv->charselectorh; r.height = cv->infoh - 1;
+	GDrawFillRect(pixmap, &r, bg);
+	r.x = SPT_DATA; r.width = SOF_BASE - SPT_DATA;
+	GDrawFillRect(pixmap, &r, bg);
+	r.x = SOF_DATA; r.width = SDS_BASE - SOF_DATA;
+	GDrawFillRect(pixmap, &r, bg);
+	r.x = SDS_DATA; r.width = SAN_BASE - SDS_DATA;
+	GDrawFillRect(pixmap, &r, bg);
+	r.x = SAN_DATA; r.width = MAG_BASE - SAN_DATA;
+	GDrawFillRect(pixmap, &r, bg);
+	r.x = MAG_DATA; r.width = LAYER_DATA - MAG_DATA;
+	GDrawFillRect(pixmap, &r, bg);
+	r.x = LAYER_DATA; r.width = CODERANGE_DATA - LAYER_DATA;
+	GDrawFillRect(pixmap, &r, bg);
+	r.x = CODERANGE_DATA; r.width = FLAGS_DATA - CODERANGE_DATA;
+	GDrawFillRect(pixmap, &r, bg);
+	r.x = FLAGS_DATA; r.width = 200;
+	GDrawFillRect(pixmap, &r, bg);
 
-    if ( cv->info_within ) {
-	if ( cv->info.x>=1000 || cv->info.x<=-1000 || cv->info.y>=1000 || cv->info.y<=-1000 )
-	    sprintf(buffer,"%d%s%d", (int) cv->info.x, coord_sep, (int) cv->info.y );
-	else
-	    sprintf(buffer,"%.4g%s%.4g", (double) cv->info.x, coord_sep, (double) cv->info.y );
-	buffer[11] = '\0';
-	GDrawDrawText8(pixmap,RPT_DATA,ybase,buffer,-1,fg);
-    }
-    if ( tab->scale>=.25 )
-	sprintf( buffer, "%d%%", (int) (100*tab->scale));
-    else
-	sprintf( buffer, "%.3g%%", (double) (100*tab->scale));
-    GDrawDrawText8(pixmap,MAG_DATA,ybase,buffer,-1,fg);
+	if (cv->info_within)
+	{
+		if (cv->info.x >= 1000 || cv->info.x <= -1000 || cv->info.y >= 1000 || cv->info.y <= -1000)
+		{
+			snprintf(buffer, buffersz, "%d%s%d", (int)cv->info.x, coord_sep, (int)cv->info.y);
+		}
+		else
+		{
+			snprintf(buffer, buffersz, "%.4g%s%.4g", (double)cv->info.x, coord_sep, (double)cv->info.y);
+		}
 
-    const int layernamesz = 100;
-    char layername[layernamesz+1];
-    strncpy(layername,_("Guide"),layernamesz);
-    if(cv->b.drawmode!=dm_grid) {
-	int idx = CVLayer((CharViewBase *) cv);
-	if(idx >= 0 && idx < cv->b.sc->parent->layer_cnt) {
-	    strncpy(layername,cv->b.sc->parent->layers[idx].name,layernamesz);
+		buffer[11] = '\0';
+		GDrawDrawText8(pixmap, RPT_DATA, ybase, buffer, -1, fg);
 	}
-    }
-    snprintf( buffer, buffersz, _("Active Layer: %s (%s)"),
-	      layername,
-/* GT: Guide layer, make it short */
-	      ( cv->b.drawmode==dm_grid ? _("Guide") :
-/* GT: Background, make it short */
-		cv->b.layerheads[cv->b.drawmode]->background ? _("Back") :
-/* GT: Foreground, make it short */
-		_("Fore") )
-	      );
-    GDrawDrawText8(pixmap,LAYER_DATA,ybase,buffer,-1,fg);
-    GDrawDrawText8(pixmap,LAYER_DATA,ybase,buffer,-1,fg);
 
-    if ( cv->coderange==cr_none )
-    {
-	snprintf( buffer, buffersz, _("Modes: "));
-	if( CVShouldInterpolateCPsOnMotion(cv) )
-	    strcat( buffer, "Interpolate" );
-	GDrawDrawText8(pixmap,FLAGS_DATA,ybase,buffer,-1,fg);
-    }
-    
-    
-    if ( cv->coderange!=cr_none ) {
-	GDrawDrawText8(pixmap,CODERANGE_DATA,ybase,
-		cv->coderange==cr_fpgm ? _("'fpgm'") :
-		cv->coderange==cr_prep ? _("'prep'") : _("Glyph"),
-	    -1,fg);
-	GDrawDrawText8(pixmap,CODERANGE_DATA+40,ybase,
-		FreeTypeStringVersion(), -1,fg);
-    }
-    sp = NULL; cp = NULL;
-    if ( cv->b.sc->inspiro && hasspiro())
-	cp = cv->p.spiro!=NULL ? cv->p.spiro : cv->lastselcp;
-    else
-	sp = cv->p.sp!=NULL ? cv->p.sp : cv->lastselpt;
-    if ( sp==NULL && cp==NULL )
-	    if ( cv->active_tool==cvt_rect || cv->active_tool==cvt_elipse ||
-		    cv->active_tool==cvt_poly || cv->active_tool==cvt_star ||
-		    cv->active_tool==cvt_scale || cv->active_tool==cvt_skew ||
-		    cv->active_tool==cvt_rotate || cv->active_tool==cvt_flip ) {
-	dummy.me.x = cv->p.cx; dummy.me.y = cv->p.cy;
-	sp = &dummy;
-    }
-    if ( sp || cp ) {
-	real selx, sely;
-	if ( sp ) {
-	    if ( cv->pressed && sp==cv->p.sp ) {
-		selx = cv->p.constrain.x;
-		sely = cv->p.constrain.y;
-	    } else {
-		selx = sp->me.x;
-		sely = sp->me.y;
-	    }
-	} else {
-	    selx = cp->x;
-	    sely = cp->y;
+	if (tab->scale >= .25)
+	{
+		snprintf(buffer, buffersz, "%d%%", (int)(100 * tab->scale));
 	}
-	xdiff=cv->info.x-selx;
-	ydiff = cv->info.y-sely;
-
-	if ( selx>=1000 || selx<=-1000 || sely>=1000 || sely<=-1000 )
-	    sprintf(buffer,"%d%s%d", (int) selx, coord_sep, (int) sely );
 	else
-	    sprintf(buffer,"%.4g%s%.4g", (double) selx, coord_sep, (double) sely );
+	{
+		snprintf(buffer, buffersz, "%.3g%%", (double)(100 * tab->scale));
+	}
+
+	GDrawDrawText8(pixmap, MAG_DATA, ybase, buffer, -1, fg);
+
+	const int layernamesz = 100;
+	char layername[layernamesz + 1];
+	strncpy(layername, _("Guide"), layernamesz);
+	if (cv->b.drawmode != dm_grid)
+	{
+		int idx = CVLayer((CharViewBase*)cv);
+		if (idx >= 0 && idx < cv->b.sc->parent->layer_cnt)
+		{
+			strncpy(layername, cv->b.sc->parent->layers[idx].name, layernamesz);
+		}
+	}
+
+	snprintf(buffer, buffersz, _("Active Layer: %s (%s)"),
+		layername,
+		/* GT: Guide layer, make it short */
+		(cv->b.drawmode == dm_grid ? _("Guide") :
+			/* GT: Background, make it short */
+			cv->b.layerheads[cv->b.drawmode]->background ? _("Back") :
+			/* GT: Foreground, make it short */
+			_("Fore"))
+	);
+
+	GDrawDrawText8(pixmap, LAYER_DATA, ybase, buffer, -1, fg);
+	GDrawDrawText8(pixmap, LAYER_DATA, ybase, buffer, -1, fg);
+
+	if (cv->coderange == cr_none)
+	{
+		snprintf(buffer, buffersz, _("Modes: "));
+		if (CVShouldInterpolateCPsOnMotion(cv))
+			strcat(buffer, "Interpolate");
+		GDrawDrawText8(pixmap, FLAGS_DATA, ybase, buffer, -1, fg);
+	}
+
+
+	if (cv->coderange != cr_none)
+	{
+		GDrawDrawText8(pixmap, CODERANGE_DATA, ybase,
+			cv->coderange == cr_fpgm ? _("'fpgm'") :
+			cv->coderange == cr_prep ? _("'prep'") : _("Glyph"),
+			-1, fg);
+		GDrawDrawText8(pixmap, CODERANGE_DATA + 40, ybase,
+			FreeTypeStringVersion(), -1, fg);
+	}
+	sp = NULL; cp = NULL;
+	if (cv->b.sc->inspiro && hasspiro())
+		cp = cv->p.spiro != NULL ? cv->p.spiro : cv->lastselcp;
+	else
+		sp = cv->p.sp != NULL ? cv->p.sp : cv->lastselpt;
+	if (sp == NULL && cp == NULL)
+		if (cv->active_tool == cvt_rect || cv->active_tool == cvt_elipse ||
+			cv->active_tool == cvt_poly || cv->active_tool == cvt_star ||
+			cv->active_tool == cvt_scale || cv->active_tool == cvt_skew ||
+			cv->active_tool == cvt_rotate || cv->active_tool == cvt_flip)
+		{
+			dummy.me.x = cv->p.cx; dummy.me.y = cv->p.cy;
+			sp = &dummy;
+		}
+	if (sp || cp)
+	{
+		real selx, sely;
+		if (sp)
+		{
+			if (cv->pressed && sp == cv->p.sp)
+			{
+				selx = cv->p.constrain.x;
+				sely = cv->p.constrain.y;
+			}
+			else
+			{
+				selx = sp->me.x;
+				sely = sp->me.y;
+			}
+		}
+		else
+		{
+			selx = cp->x;
+			sely = cp->y;
+		}
+		xdiff = cv->info.x - selx;
+		ydiff = cv->info.y - sely;
+
+		if (selx >= 1000 || selx <= -1000 || sely >= 1000 || sely <= -1000)
+		{
+			snprintf(buffer, buffersz, "%d%s%d", (int)selx, coord_sep, (int)sely);
+		}
+		else
+		{
+			snprintf(buffer, buffersz, "%.4g%s%.4g", (double)selx, coord_sep, (double)sely);
+		}
+
+		buffer[11] = '\0';
+		GDrawDrawText8(pixmap, SPT_DATA, ybase, buffer, -1, fg);
+	}
+	else if (cv->widthsel && cv->info_within)
+	{
+		xdiff = cv->info.x - cv->p.cx;
+		ydiff = 0;
+	}
+	else if (cv->p.rubberbanding && cv->info_within)
+	{
+		xdiff = cv->info.x - cv->p.cx;
+		ydiff = cv->info.y - cv->p.cy;
+	}
+	else
+		return;
+	if (!cv->info_within)
+		return;
+
+	if (cv->active_tool == cvt_scale)
+	{
+		xdiff = 100.0 + (cv->info.x - cv->p.cx) / (4 * tab->scale);
+		ydiff = 100.0 + (cv->info.y - cv->p.cy) / (4 * tab->scale);
+		
+		if (xdiff >= 100 || xdiff <= -100 || ydiff >= 100 || ydiff <= -100)
+		{
+			snprintf(buffer, buffersz, "%d%%%s%d%%", (int)xdiff, coord_sep, (int)ydiff);
+		}
+		else
+		{
+			snprintf(buffer, buffersz, "%.3g%%%s%.3g%%", (double)xdiff, coord_sep, (double)ydiff);
+		}
+	}
+	else if (xdiff >= 1000 || xdiff <= -1000 || ydiff >= 1000 || ydiff <= -1000)
+	{
+		snprintf(buffer, buffersz, "%d%s%d", (int)xdiff, coord_sep, (int)ydiff);
+	}
+	else
+	{
+		snprintf(buffer, buffersz, "%.4g%s%.4g", (double)xdiff, coord_sep, (double)ydiff);
+	}
+
 	buffer[11] = '\0';
-	GDrawDrawText8(pixmap,SPT_DATA,ybase,buffer,-1,fg);
-    } else if ( cv->widthsel && cv->info_within ) {
-	xdiff = cv->info.x-cv->p.cx;
-	ydiff = 0;
-    } else if ( cv->p.rubberbanding && cv->info_within ) {
-	xdiff=cv->info.x-cv->p.cx;
-	ydiff = cv->info.y-cv->p.cy;
-    } else
-return;
-    if ( !cv->info_within )
-return;
+	GDrawDrawText8(pixmap, SOF_DATA, ybase, buffer, -1, fg);
 
-    if ( cv->active_tool==cvt_scale ) {
-	xdiff = 100.0 + (cv->info.x-cv->p.cx)/(4*tab->scale);
-	ydiff = 100.0 + (cv->info.y-cv->p.cy)/(4*tab->scale);
-	if ( xdiff>=100 || xdiff<=-100 || ydiff>=100 || ydiff<=-100 )
-	    sprintf(buffer,"%d%%%s%d%%", (int) xdiff, coord_sep, (int) ydiff );
-	else
-	    sprintf(buffer,"%.3g%%%s%.3g%%", (double) xdiff, coord_sep, (double) ydiff );
-    } else if ( xdiff>=1000 || xdiff<=-1000 || ydiff>=1000 || ydiff<=-1000 )
-	sprintf(buffer,"%d%s%d", (int) xdiff, coord_sep, (int) ydiff );
-    else
-	sprintf(buffer,"%.4g%s%.4g", (double) xdiff, coord_sep, (double) ydiff );
-    buffer[11] = '\0';
-    GDrawDrawText8(pixmap,SOF_DATA,ybase,buffer,-1,fg);
+	snprintf(buffer, buffersz, "%.1f", sqrt(xdiff * xdiff + ydiff * ydiff));
 
-    sprintf( buffer, "%.1f", sqrt(xdiff*xdiff+ydiff*ydiff));
-    GDrawDrawText8(pixmap,SDS_DATA,ybase,buffer,-1,fg);
+	GDrawDrawText8(pixmap, SDS_DATA, ybase, buffer, -1, fg);
 
 	/* Utf-8 for degree sign */
-    sprintf( buffer, "%d\302\260", (int) rint(180*atan2(ydiff,xdiff)/FF_PI));
-    GDrawDrawText8(pixmap,SAN_DATA,ybase,buffer,-1,fg);
+	snprintf(buffer, buffersz, "%d\302\260", (int)rint(180 * atan2(ydiff, xdiff) / FF_PI));
+
+	GDrawDrawText8(pixmap, SAN_DATA, ybase, buffer, -1, fg);
 }
 
 static void CVInfoDrawRulers(CharView *cv, GWindow pixmap ) {
@@ -5802,12 +5868,17 @@ return( true );
 }
 
 static void CVDrawNum(CharView *UNUSED(cv),GWindow pixmap,int x, int y, char *format,real val, int align) {
-    char buffer[40];
+	char buffer[40];
     int len;
 
-    if ( val==0 ) val=0;		/* avoid -0 */
-    sprintf(buffer,format,(double)val); /* formats are given as for doubles */
-    if ( align!=0 ) {
+	if (val == 0)
+	{
+		val = 0;		/* avoid -0 */
+	}
+
+	snprintf(buffer, sizeof(buffer), format, (double)val); /* formats are given as for doubles */
+    
+	if ( align!=0 ) {
 	len = GDrawGetText8Width(pixmap,buffer,-1);
 	if ( align==1 )
 	    x-=len/2;
@@ -5818,11 +5889,17 @@ static void CVDrawNum(CharView *UNUSED(cv),GWindow pixmap,int x, int y, char *fo
 }
 
 static void CVDrawVNum(CharView *cv,GWindow pixmap,int x, int y, char *format,real val, int align) {
-    char buffer[40], *pt;
+	char buffer[40];
+	char *pt;
     int len;
 
-    if ( val==0 ) val=0;		/* avoid -0 */
-    sprintf(buffer,format,(double)val); /* formats are given as for doubles */
+	if (val == 0)
+	{
+		val = 0;		/* avoid -0 */
+	}
+
+	snprintf(buffer, sizeof(buffer), format, (double)val); /* formats are given as for doubles */
+
     if ( align!=0 ) {
 	len = strlen(buffer)*cv->sfh;
 	if ( align==1 )
@@ -7080,11 +7157,13 @@ static void CVMenuShowAlmostHVCurves(GWindow gw, struct gmenuitem *UNUSED(mi), G
 
 static void CVMenuDefineAlmost(GWindow gw, struct gmenuitem *UNUSED(mi), GEvent *UNUSED(e)) {
     CharView *cv = (CharView *) GDrawGetUserData(gw);
-    char buf[20], *end;
+    
+	char buf[20];
+	char *end;
     int val;
     char *ret;
 
-    sprintf(buf,"%d",cv->hvoffset );
+	snprintf(buf, sizeof(buf), "%d", cv->hvoffset);
 
     ret = gwwv_ask_string(_("Define \"Almost Horizontal\""),buf,
 	    _("A line is \"almost\" horizontal (or vertical)\nif the coordinates are within this many em-units"));

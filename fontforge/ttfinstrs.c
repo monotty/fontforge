@@ -534,30 +534,52 @@ int instr_typify(struct instrdata *id) {
 return( lh );
 }
 
-char *__IVUnParseInstrs(InstrBase *iv) {
-    char *ubuf, *pt;
-    int i,l;
+char* __IVUnParseInstrs(InstrBase* iv)
+{
+    char* ubuf, * pt;
+    int i, l;
 
-    pt = ubuf = iv->offset = iv->scroll = malloc((iv->instrdata->instr_cnt*20+1));
-    for ( i=l=0; i<iv->instrdata->instr_cnt; ++i ) {
-	if ( iv->lpos == l )
-	    iv->scroll = pt;
-	if ( iv->isel_pos == l )
-	    iv->offset = pt;
-	if ( iv->instrdata->bts[i]==bt_wordhi ) {
-	    sprintf( pt, " %d", (short) ((iv->instrdata->instrs[i]<<8) | iv->instrdata->instrs[i+1]) );
-	    ++i;
-	} else if ( iv->instrdata->bts[i]==bt_cnt || iv->instrdata->bts[i]==bt_byte ) {
-	    sprintf( pt, " %d", iv->instrdata->instrs[i]);
-	} else {
-	    strcpy(pt, ff_ttf_instrnames[iv->instrdata->instrs[i]]);
-	}
-	pt += strlen(pt);
-	*pt++ = '\n';
-	++l;
+    int buf_size = iv->instrdata->instr_cnt * 20 + 1;
+    pt = ubuf = iv->offset = iv->scroll = malloc(buf_size);
+
+    for (i = l = 0; i < iv->instrdata->instr_cnt; ++i)
+    {
+        if (iv->lpos == l)
+        {
+            iv->scroll = pt;
+        }
+
+        if (iv->isel_pos == l)
+        {
+            iv->offset = pt;
+        }
+
+        if (iv->instrdata->bts[i] == bt_wordhi)
+        {
+            snprintf(pt, buf_size, " %d", (short)((iv->instrdata->instrs[i] << 8) | iv->instrdata->instrs[i + 1]));
+            ++i;
+        }
+        else if (iv->instrdata->bts[i] == bt_cnt || iv->instrdata->bts[i] == bt_byte)
+        {
+            snprintf(pt, buf_size, " %d", iv->instrdata->instrs[i]);
+        }
+        else
+        {
+            strncpy(pt, ff_ttf_instrnames[iv->instrdata->instrs[i]], buf_size);
+        }
+
+        int str_size = strlen(pt);
+        pt += str_size;
+        buf_size -= str_size;
+
+        *pt++ = '\n';
+        buf_size--;
+
+        ++l;
     }
+
     *pt = '\0';
-return( ubuf );
+    return(ubuf);
 }
 
 char *_IVUnParseInstrs(uint8 *instrs,int instr_cnt) {

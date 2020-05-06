@@ -360,7 +360,7 @@ struct cidmap *AskUserForCIDMap(void) {
 
     memset(&block,'\0',sizeof(block));
     for ( map = cidmaps; map!=NULL; map = map->next ) {
-	sprintf(buffer,"%s-%s-%d", map->registry, map->ordering, map->supplement);
+	snprintf(buffer, sizeof(buffer), "%s-%s-%d", map->registry, map->ordering, map->supplement);
 	AddToBlock(&block,buffer,NULL);
     }
     FindMapsInDir(&block,".");

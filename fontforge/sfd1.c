@@ -462,8 +462,10 @@ static void ACDisassociateLigatures(SplineFont1 *sf,AnchorClass1 *ac) {
   /* GT:  base letters, and one for ligatures. So create a new AnchorClass */
   /* GT:  name for the ligature version */
     format = _("Ligature %s");
-    lac->ac.name = malloc(strlen(ac->ac.name)+strlen(format)+1);
-    sprintf( lac->ac.name, format, ac->ac.name );
+
+	int name_size = strlen(ac->ac.name) + strlen(format) + 1;
+    lac->ac.name = malloc(name_size);
+    snprintf( lac->ac.name, name_size, format, ac->ac.name );
 
     k=0;
     do {

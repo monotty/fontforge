@@ -277,7 +277,7 @@ return;
     gcd[k].gd.flags = gg_enabled|gg_visible;
     gcd[k++].creator = GLabelCreate;
 
-    sprintf( dpi_buffer, "%d", delta_dpi );
+    snprintf( dpi_buffer, sizeof(dpi_buffer), "%d", delta_dpi );
     label[k].text = (unichar_t *) dpi_buffer;
     label[k].text_is_1byte = true;
     label[k].text_in_resource = true;
@@ -311,7 +311,7 @@ return;
     gcd[k].gd.flags = gg_enabled|gg_visible;
     gcd[k++].creator = GLabelCreate;
 
-    sprintf( within_buffer, "%g", delta_within );
+    snprintf( within_buffer, sizeof(within_buffer), "%g", delta_within );
     label[k].text = (unichar_t *) within_buffer;
     label[k].text_is_1byte = true;
     label[k].text_in_resource = true;
@@ -635,7 +635,7 @@ static void QGSecondLevel(QGData *qg, struct qgnode *parent) {
 	lstart = 0; size=-1;
 	for ( l=0; l<parent->qg_cnt; ++l ) {
 	    if ( size!=parent->first[l].size && size!=-1 ) {
-		sprintf( buffer, _("Size: %d (%d)"), size, l-lstart );
+		snprintf( buffer, sizeof(buffer), _("Size: %d (%d)"), size, l-lstart );
 		parent->kids[cnt].name = copy(buffer);
 		parent->kids[cnt].parent = parent;
 		parent->kids[cnt].first = &parent->first[lstart];
@@ -647,7 +647,7 @@ static void QGSecondLevel(QGData *qg, struct qgnode *parent) {
 		size = parent->first[l].size;
 	}
 	if ( size!=-1 ) {
-	    sprintf( buffer, _("Size: %d (%d)"), size, l-lstart );
+	    snprintf( buffer, sizeof(buffer), _("Size: %d (%d)"), size, l-lstart );
 	    parent->kids[cnt].name = copy(buffer);
 	    parent->kids[cnt].parent = parent;
 	    parent->kids[cnt].first = &parent->first[lstart];
@@ -669,7 +669,7 @@ static void QGSecondLevel(QGData *qg, struct qgnode *parent) {
 	lstart = 0; pt=-1;
 	for ( l=0; l<parent->qg_cnt; ++l ) {
 	    if ( pt!=parent->first[l].nearestpt && pt!=-1 ) {
-		sprintf( buffer, _("Point: %d (%d)"), pt, l-lstart );
+		snprintf( buffer, sizeof(buffer), _("Point: %d (%d)"), pt, l-lstart );
 		parent->kids[cnt].name = copy(buffer);
 		parent->kids[cnt].parent = parent;
 		parent->kids[cnt].first = &parent->first[lstart];
@@ -681,7 +681,7 @@ static void QGSecondLevel(QGData *qg, struct qgnode *parent) {
 		pt = parent->first[l].nearestpt;
 	}
 	if ( pt!=-1 ) {
-	    sprintf( buffer, _("Point: %d (%d)"), pt, l-lstart );
+	    snprintf( buffer, sizeof(buffer), _("Point: %d (%d)"), pt, l-lstart );
 	    parent->kids[cnt].name = copy(buffer);
 	    parent->kids[cnt].parent = parent;
 	    parent->kids[cnt].first = &parent->first[lstart];
@@ -704,7 +704,7 @@ static void QGSecondLevel(QGData *qg, struct qgnode *parent) {
 	sc = NULL;
 	for ( l=0; l<parent->qg_cnt; ++l ) {
 	    if ( sc!=parent->first[l].sc && sc!=NULL ) {
-		sprintf( buffer, "\"%.40s\" (%d)", sc->name, l-lstart );
+		snprintf( buffer, sizeof(buffer), "\"%.40s\" (%d)", sc->name, l-lstart );
 		parent->kids[cnt].name = copy(buffer);
 		parent->kids[cnt].parent = parent;
 		parent->kids[cnt].first = &parent->first[lstart];
@@ -716,7 +716,7 @@ static void QGSecondLevel(QGData *qg, struct qgnode *parent) {
 		sc = parent->first[l].sc;
 	}
 	if ( sc!=NULL ) {
-	    sprintf( buffer, "\"%.40s\" (%d)", sc->name, l-lstart );
+	    snprintf( buffer, sizeof(buffer), "\"%.40s\" (%d)", sc->name, l-lstart );
 	    parent->kids[cnt].name = copy(buffer);
 	    parent->kids[cnt].parent = parent;
 	    parent->kids[cnt].first = &parent->first[lstart];
@@ -758,7 +758,7 @@ static void QGDoSort(QGData *qg) {
 	lstart = 0; sc=NULL;
 	for ( l=0; l<qg->cur; ++l ) {
 	    if ( sc!=qg->qg[l].sc && sc!=NULL ) {
-		sprintf( buffer, "\"%.40s\" (%d)", sc->name, l-lstart );
+		snprintf( buffer, sizeof(buffer), "\"%.40s\" (%d)", sc->name, l-lstart );
 		qg->list.kids[cnt].name = copy(buffer);
 		qg->list.kids[cnt].parent = &qg->list;
 		qg->list.kids[cnt].first = &qg->qg[lstart];
@@ -770,7 +770,7 @@ static void QGDoSort(QGData *qg) {
 		sc = qg->qg[l].sc;
 	}
 	if ( sc!=NULL ) {
-	    sprintf( buffer, "\"%.40s\" (%d)", sc->name, l-lstart );
+	    snprintf( buffer, sizeof(buffer), "\"%.40s\" (%d)", sc->name, l-lstart );
 	    qg->list.kids[cnt].name = copy(buffer);
 	    qg->list.kids[cnt].parent = &qg->list;
 	    qg->list.kids[cnt].first = &qg->qg[lstart];
@@ -791,7 +791,7 @@ static void QGDoSort(QGData *qg) {
 	lstart = 0; size=-1;
 	for ( l=0; l<qg->cur; ++l ) {
 	    if ( size!=qg->qg[l].size && size!=-1 ) {
-		sprintf( buffer, _("Size: %d (%d)"), size, l-lstart );
+		snprintf( buffer, sizeof(buffer), _("Size: %d (%d)"), size, l-lstart );
 		qg->list.kids[cnt].name = copy(buffer);
 		qg->list.kids[cnt].parent = &qg->list;
 		qg->list.kids[cnt].first = &qg->qg[lstart];
@@ -803,7 +803,7 @@ static void QGDoSort(QGData *qg) {
 		size = qg->qg[l].size;
 	}
 	if ( size!=-1 ) {
-	    sprintf( buffer, _("Size: %d (%d)"), size, l-lstart );
+	    snprintf( buffer, sizeof(buffer), _("Size: %d (%d)"), size, l-lstart );
 	    qg->list.kids[cnt].name = copy(buffer);
 	    qg->list.kids[cnt].parent = &qg->list;
 	    qg->list.kids[cnt].first = &qg->qg[lstart];
@@ -852,7 +852,7 @@ static void QGDrawWindow(GWindow pixmap, QGData *qg, GEvent *e) {
 	    GDrawDrawText8(pixmap,r.x+qg->fh,y,where.parent->name,-1, 0x000000);
 	} else {
 	    QuestionableGrid *q = &where.parent->first[where.offset];
-	    sprintf( buffer, _("\"%.40s\" size=%d point=%d (%d,%d) distance=%g"),
+	    snprintf( buffer, sizeof(buffer), _("\"%.40s\" size=%d point=%d (%d,%d) distance=%g"),
 		    q->sc->name, q->size, q->nearestpt, q->x, q->y, q->distance );
 	    GDrawDrawText8(pixmap,2+(depth+1)*qg->fh,y,buffer,-1, 0x000000);
 	}

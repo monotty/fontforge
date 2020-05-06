@@ -1355,67 +1355,105 @@ static void LK_FinishEdit(GGadget *g,int row, int col, int wasnew) {
     }
 }
 
-static void LK_NewFeature(GGadget *g,int row) {
-    int rows;
-    struct matrix_data *strings = GMatrixEditGet(g, &rows);
-    struct lookup_dlg *ld = GDrawGetUserData(GGadgetGetWindow(g));
-    SplineFont *sf, *_sf = ld->sf;
-    SplineChar *sc;
-    /* What's a good default script / lang list for a new feature? */
-    /*  well it depends on what the feature is, and on what's inside the lookup */
-    /*  Neither of those has been set yet. */
-    /* So... give them everything we can think of. They can remove stuff */
-    /*  which is inappropriate */
-    uint32 scripts[20], script, *langs;
-    int scnt = 0, i, l;
-    int gid, k;
-    char *buf;
-    int bmax, bpos;
+static void LK_NewFeature(GGadget* g, int row)
+{
+	int rows;
+	struct matrix_data* strings = GMatrixEditGet(g, &rows);
+	struct lookup_dlg* ld = GDrawGetUserData(GGadgetGetWindow(g));
+	SplineFont* sf, * _sf = ld->sf;
+	SplineChar* sc;
+	/* What's a good default script / lang list for a new feature? */
+	/*  well it depends on what the feature is, and on what's inside the lookup */
+	/*  Neither of those has been set yet. */
+	/* So... give them everything we can think of. They can remove stuff */
+	/*  which is inappropriate */
+	uint32 scripts[20], script, * langs;
+	int scnt = 0, i, l;
+	int gid, k;
+	char* buf;
+	int bmax, bpos;
 
-    k=0;
-    do {
-	sf = k<_sf->subfontcnt ? _sf->subfonts[k] : _sf;
-	for ( gid=0; gid<sf->glyphcnt; ++gid ) if ( (sc = sf->glyphs[gid])!=NULL ) {
-	    script = SCScriptFromUnicode(sc);
-	    for ( i=0; i<scnt; ++i )
-		if ( script == scripts[i] )
-	    break;
-	    if ( i==scnt ) {
-		scripts[scnt++] = script;
-		if ( scnt>=20 )	/* If they've got lots of scripts, enumerating them all won't be much use... */
-	break;
-	    }
+	k = 0;
+	do
+	{
+		sf = k < _sf->subfontcnt ? _sf->subfonts[k] : _sf;
+		for (gid = 0; gid < sf->glyphcnt; ++gid) if ((sc = sf->glyphs[gid]) != NULL)
+		{
+			script = SCScriptFromUnicode(sc);
+			for (i = 0; i < scnt; ++i)
+			{
+				if (script == scripts[i])
+				{
+					break;
+				}
+			}
+
+			if (i == scnt)
+			{
+				scripts[scnt++] = script;
+				if (scnt >= 20)	/* If they've got lots of scripts, enumerating them all won't be much use... */
+				{
+					break;
+				}
+			}
+		}
+		++k;
 	}
-	++k;
-    } while ( k<_sf->subfontcnt && scnt<20 );
+	while (k < _sf->subfontcnt && scnt < 20);
 
-    if ( scnt==0 )
-	scripts[scnt++] = DEFAULT_SCRIPT;
-
-    buf = malloc(bmax = 100);
-    bpos = 0;
-    for ( i=0; i<scnt; ++i ) {
-	langs = SFLangsInScript(sf,-1,scripts[i]);
-	for ( l=0; langs[l]!=0; ++l );
-	if ( bpos + 5+5*l+4 > bmax )
-	    buf = realloc( buf, bmax += 5+5*l+100 );
-	sprintf( buf+bpos, "%c%c%c%c{", scripts[i]>>24, scripts[i]>>16, scripts[i]>>8, scripts[i] );
-	bpos+=5;
-	for ( l=0; langs[l]!=0; ++l ) {
-	    sprintf( buf+bpos, "%c%c%c%c,", langs[l]>>24, langs[l]>>16, langs[l]>>8, langs[l] );
-	    bpos += 5;
+	if (scnt == 0)
+	{
+		scripts[scnt++] = DEFAULT_SCRIPT;
 	}
-	if ( l>0 )
-	    --bpos;
-	strcpy(buf+bpos,"} ");
-	bpos += 2;
-	free(langs);
-    }
-    if ( bpos>0 )
-	buf[bpos-1] = '\0';
 
-    strings[2*row+1].u.md_str = copy(buf);
-    free(buf);
+	buf = malloc(bmax = 100);
+	bpos = 0;
+	for (i = 0; i < scnt; ++i)
+	{
+		langs = SFLangsInScript(sf, -1, scripts[i]);
+		for (l = 0; langs[l] != 0; ++l)
+		{
+			;
+		}
+
+		if (bpos + 5 + 5 * l + 4 > bmax)
+		{
+			buf = realloc(buf, bmax += 5 + 5 * l + 100);
+		}
+
+		snprintf(buf + bpos, bmax - bpos, "%c%c%c%c{", scripts[i] >> 24, scripts[i] >> 16, scripts[i] >> 8, scripts[i]);
+		
+		bpos += 5;
+		
+		for (l = 0; langs[l] != 0; ++l)
+		{
+			snprintf(buf + bpos, bmax - bpos, "%c%c%c%c,", langs[l] >> 24, langs[l] >> 16, langs[l] >> 8, langs[l]);
+			bpos += 5;
+		}
+		
+		if (l > 0)
+		{
+			--bpos;
+		}
+
+		if (bmax - bpos >= 2)
+		{
+			strcpy(buf + bpos, "} ");
+			bpos += 2;
+		}
+		free(langs);
+	}
+
+	if (bpos > 0)
+	{
+		if (bpos - 1 < bmax)
+		{
+			buf[bpos - 1] = '\0';
+		}
+	}
+
+	strings[2 * row + 1].u.md_str = copy(buf);
+	free(buf);
 }
 
 static void LKMatrixInit(struct matrixinit *mi,OTLookup *otl) {
@@ -1436,21 +1474,21 @@ static void LKMatrixInit(struct matrixinit *mi,OTLookup *otl) {
 	for ( fl=otl->features; fl!=NULL; fl=fl->next ) {
 	    if ( k ) {
 		if ( fl->ismac )
-		    sprintf( featbuf, "<%d,%d>", fl->featuretag>>16, fl->featuretag&0xffff );
+		    snprintf( featbuf, sizeof(featbuf), "<%d,%d>", fl->featuretag>>16, fl->featuretag&0xffff );
 		else
-		    sprintf( featbuf, "%c%c%c%c", fl->featuretag>>24, fl->featuretag>>16,
+		    snprintf( featbuf, sizeof(featbuf), "%c%c%c%c", fl->featuretag>>24, fl->featuretag>>16,
 			    fl->featuretag>>8, fl->featuretag );
 		md[2*cnt+0].u.md_str = copy(featbuf);
 		bpos=0;
 		for ( sl=fl->scripts; sl!=NULL; sl=sl->next ) {
 		    if ( bpos+4/*script*/+1/*open brace*/+5*sl->lang_cnt+1+2 > blen )
 			buf = realloc(buf,blen+=5+5*sl->lang_cnt+3+200);
-		    sprintf( buf+bpos, "%c%c%c%c{", sl->script>>24, sl->script>>16,
+		    snprintf( buf+bpos, blen - bpos, "%c%c%c%c{", sl->script>>24, sl->script>>16,
 			    sl->script>>8, sl->script );
 		    bpos+=5;
 		    for ( j=0; j<sl->lang_cnt; ++j ) {
 			uint32 tag = j<MAX_LANG ? sl->langs[j] : sl->morelangs[j-MAX_LANG];
-			sprintf( buf+bpos, "%c%c%c%c,", tag>>24, tag>>16,
+			snprintf( buf+bpos, blen - bpos, "%c%c%c%c,", tag>>24, tag>>16,
 				tag>>8, tag );
 			bpos+=5;
 		    }
@@ -3246,7 +3284,7 @@ return;		/* No kerning pair is active */
     } else if ( pstkd->down ) {
 	diff = rint(diff/scale);
 	if ( col==c && tf!=NULL ) {
-	    sprintf( buffer, "%d", pstkd->orig_value + diff);
+	    snprintf( buffer, sizeof(buffer), "%d", pstkd->orig_value + diff);
 	    GGadgetSetTitle8(tf,buffer);
 	    GGadgetRedraw(tf);
 	} else {
@@ -3255,7 +3293,7 @@ return;		/* No kerning pair is active */
 	}
 	if ( r2l ) {
 	    if ( col2==c && tf!=NULL ) {
-		sprintf( buffer, "%d", pstkd->orig_value + diff);
+		snprintf( buffer, sizeof(buffer), "%d", pstkd->orig_value + diff);
 		GGadgetSetTitle8(tf,buffer);
 		GGadgetRedraw(tf);
 	    } else {
@@ -4810,7 +4848,7 @@ static void PSTKernD(SplineFont *sf, struct lookup_subtable *sub, int def_layer)
 	gcd[i].creator = GLabelCreate;
 	h4array[0] = &gcd[i++];
 
-	sprintf( sepbuf, "%d", sub->separation );
+	snprintf( sepbuf, sizeof(sepbuf), "%d", sub->separation );
 	label[i].text = (unichar_t *) sepbuf;
 	label[i].text_is_1byte = true;
 	label[i].text_in_resource = true;
@@ -4834,7 +4872,7 @@ static void PSTKernD(SplineFont *sf, struct lookup_subtable *sub, int def_layer)
 	gcd[i].creator = GLabelCreate;
 	h4array[2] = &gcd[i++];
 
-	sprintf( mkbuf, "%d", sub->minkern );
+	snprintf( mkbuf, sizeof(mkbuf), "%d", sub->minkern );
 	label[i].text = (unichar_t *) mkbuf;
 	label[i].text_is_1byte = true;
 	label[i].text_in_resource = true;
@@ -5073,13 +5111,17 @@ int EditSubtable(struct lookup_subtable *sub,int isgpos,SplineFont *sf,
     char *freeme = NULL;
     int name_search;
 
-    if ( new ) {
-	def = freeme = malloc(strlen(sub->lookup->lookup_name)+10);
-	name_search = 1;
-	do {
-	    sprintf( def, "%s-%d", sub->lookup->lookup_name, name_search++ );
-	} while ( SubtableNameInUse(def,sf,sub));
-    }
+	if (new)
+	{
+		int def_size = strlen(sub->lookup->lookup_name) + 10;
+		def = freeme = malloc(def_size);
+		name_search = 1;
+		do
+		{
+			snprintf(def, def_size, "%s-%d", sub->lookup->lookup_name, name_search++);
+		}
+		while (SubtableNameInUse(def, sf, sub));
+	}
     for (;;) {
 	def = gwwv_ask_string(_("Please name this subtable"),def,_("Please name this subtable"));
 	free(freeme);
@@ -5463,7 +5505,7 @@ static int KF_FormatChange(GGadget *g, GEvent *e) {
 	kf = GDrawGetUserData(GGadgetGetWindow(g));
 	if ( GGadgetIsChecked(GWidgetGetControl(kf->gw,CID_KPairs)) ) {
 	    GGadgetSetEnabled(GWidgetGetControl(kf->gw,CID_KCBuild),0);
-	    sprintf(mkbuf,"%d",15*(kf->sf->ascent+kf->sf->descent)/1000 );
+	    snprintf(mkbuf, sizeof(mkbuf), "%d",15*(kf->sf->ascent+kf->sf->descent)/1000 );
 	    GGadgetSetTitle8(GWidgetGetControl(kf->gw,CID_MinKern),mkbuf);
 	} else {
 	    GGadgetSetEnabled(GWidgetGetControl(kf->gw,CID_KCBuild),1);
@@ -5707,7 +5749,7 @@ static int kern_format_dlg( SplineFont *sf, int def_layer,
     gcd[i].creator = GLabelCreate;
     h3array[0] = GCD_HPad10; h3array[1] = &gcd[i++];
 
-    sprintf( distancebuf, "%g", (sf->ascent+sf->descent)/100. );
+    snprintf( distancebuf, sizeof(distancebuf), "%g", (sf->ascent+sf->descent)/100. );
     label[i].text = (unichar_t *) distancebuf;
     label[i].text_is_1byte = true;
     label[i].text_in_resource = true;
@@ -5738,7 +5780,7 @@ static int kern_format_dlg( SplineFont *sf, int def_layer,
 	gcd[i].creator = GLabelCreate;
 	h4array[0] = &gcd[i++];
 
-	sprintf( sepbuf, "%d", sub->separation );
+	snprintf( sepbuf, sizeof(sepbuf), "%d", sub->separation );
 	label[i].text = (unichar_t *) sepbuf;
 	label[i].text_is_1byte = true;
 	label[i].text_in_resource = true;
@@ -5762,7 +5804,7 @@ static int kern_format_dlg( SplineFont *sf, int def_layer,
 	gcd[i].creator = GLabelCreate;
 	h4array[3] = &gcd[i++];
 
-	sprintf( mkbuf, "%d", sub->minkern );
+	snprintf( mkbuf, sizeof(mkbuf), "%d", sub->minkern );
 	label[i].text = (unichar_t *) mkbuf;
 	label[i].text_is_1byte = true;
 	label[i].text_in_resource = true;

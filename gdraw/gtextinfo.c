@@ -367,46 +367,53 @@ return( true );
 return( false );
 }
 
-static void ImageCacheReload(void) {
-    int i,k;
-    struct image_bucket *bucket;
-    char *path=NULL;
+static void ImageCacheReload(void)
+{
+    int i, k;
+    struct image_bucket* bucket;
+    char* path = NULL;
     size_t pathlen;
-    GImage *temp, hold;
+    GImage* temp, hold;
 
     ImagePathDefault();
 
     /* Try to reload the cache from the new directory */
     /* If a file doesn't exist in the new dir when it did in the old then */
     /*  retain the old copy (people may hold pointers to it) */
-    pathlen = imagepathlenmax+270; path = malloc(pathlen);
-    for ( i=0; i<IC_SIZE; ++i ) {
-	for ( bucket = imagecache[i]; bucket!=NULL; bucket=bucket->next ) {
-	    if ( strlen(bucket->filename)+imagepathlenmax+3 > pathlen ) {
-		pathlen = strlen(bucket->filename)+imagepathlenmax+20;
-		path = realloc(path,pathlen);
-	    }
-	    for ( k=0; imagepath[k]!=NULL; ++k ) {
-		sprintf( path,"%s/%s", imagepath[k], bucket->filename );
-		temp = GImageRead(path);
-		if ( temp!=NULL )
-	    break;
-	    }
-	    if ( temp!=NULL ) {
-		if ( bucket->image==NULL )
-		    bucket->image = temp;
-		else {
-		    /* Need to retain the GImage point, but update its */
-		    /*  contents, and free the old stuff */
-		    hold = *(bucket->image);
-		    *bucket->image = *temp;
-		    *temp = hold;
-		    GImageDestroy(temp);
-		}
-		free( bucket->absname );
-		bucket->absname = copy( path );
-	    }
-	}
+    pathlen = imagepathlenmax + 270; path = malloc(pathlen);
+    for (i = 0; i < IC_SIZE; ++i)
+    {
+        for (bucket = imagecache[i]; bucket != NULL; bucket = bucket->next)
+        {
+            if (strlen(bucket->filename) + imagepathlenmax + 3 > pathlen)
+            {
+                pathlen = strlen(bucket->filename) + imagepathlenmax + 20;
+                path = realloc(path, pathlen);
+            }
+            for (k = 0; imagepath[k] != NULL; ++k)
+            {
+                snprintf(path, pathlen, "%s/%s", imagepath[k], bucket->filename);
+                temp = GImageRead(path);
+                if (temp != NULL)
+                    break;
+            }
+            if (temp != NULL)
+            {
+                if (bucket->image == NULL)
+                    bucket->image = temp;
+                else
+                {
+                    /* Need to retain the GImage point, but update its */
+                    /*  contents, and free the old stuff */
+                    hold = *(bucket->image);
+                    *bucket->image = *temp;
+                    *temp = hold;
+                    GImageDestroy(temp);
+                }
+                free(bucket->absname);
+                bucket->absname = copy(path);
+            }
+        }
     }
     free(path);
 }
@@ -493,53 +500,64 @@ return;
     _GGadget_ImagePath = copy(path);
 }
 
-static GImage *_GGadgetImageCache(const char *filename, char **foundname) {
+static GImage* _GGadgetImageCache(const char* filename, char** foundname)
+{
     int index = hash_filename(filename);
-    struct image_bucket *bucket;
-    char *path;
+    struct image_bucket* bucket;
+    char* path;
     int k;
 
-    for ( bucket = imagecache[index]; bucket!=NULL; bucket = bucket->next ) {
-	if ( strcmp(bucket->filename,filename)==0 ) {
-	    if ( foundname!=NULL ) *foundname = copy( bucket->absname );
-return( bucket->image );
-	}
+    for (bucket = imagecache[index]; bucket != NULL; bucket = bucket->next)
+    {
+        if (strcmp(bucket->filename, filename) == 0)
+        {
+            if (foundname != NULL) *foundname = copy(bucket->absname);
+            return(bucket->image);
+        }
     }
-    bucket = calloc(1,sizeof(struct image_bucket));
+    bucket = calloc(1, sizeof(struct image_bucket));
     bucket->next = imagecache[index];
     imagecache[index] = bucket;
     bucket->filename = copy(filename);
 
     ImagePathDefault();
 
-    path = malloc(strlen(filename)+imagepathlenmax+10 );
-    for ( k=0; imagepath[k]!=NULL; ++k ) {
-	sprintf( path,"%s/%s", imagepath[k], filename );
-	bucket->image = GImageRead(path);
-	if ( bucket->image!=NULL ) {
-	    bucket->absname = copy(path);
-    break;
-	}
+    int path_size = strlen(filename) + imagepathlenmax + 10;
+    path = malloc(path_size);
+
+    for (k = 0; imagepath[k] != NULL; ++k)
+    {
+        snprintf(path, path_size, "%s/%s", imagepath[k], filename);
+        bucket->image = GImageRead(path);
+        if (bucket->image != NULL)
+        {
+            bucket->absname = copy(path);
+            break;
+        }
     }
     free(path);
-    if ( bucket->image!=NULL ) {
-	/* Play with the clut to make white be transparent */
-	struct _GImage *base = bucket->image->u.image;
-	if ( base->image_type==it_mono && base->clut==NULL )
-	    base->trans = 1;
-	else if ( base->image_type!=it_true && base->clut!=NULL && base->trans==0xffffffff ) {
-	    int i;
-	    for ( i=0 ; i<base->clut->clut_len; ++i ) {
-		if ( base->clut->clut[i]==0xffffff ) {
-		    base->trans = i;
-	    break;
-		}
-	    }
-	}
+    if (bucket->image != NULL)
+    {
+        /* Play with the clut to make white be transparent */
+        struct _GImage* base = bucket->image->u.image;
+        if (base->image_type == it_mono && base->clut == NULL)
+            base->trans = 1;
+        else if (base->image_type != it_true && base->clut != NULL && base->trans == 0xffffffff)
+        {
+            int i;
+            for (i = 0; i < base->clut->clut_len; ++i)
+            {
+                if (base->clut->clut[i] == 0xffffff)
+                {
+                    base->trans = i;
+                    break;
+                }
+            }
+        }
     }
-    if ( foundname!=NULL && bucket->image!=NULL )
-	*foundname = copy( bucket->absname );
-return(bucket->image);
+    if (foundname != NULL && bucket->image != NULL)
+        *foundname = copy(bucket->absname);
+    return(bucket->image);
 }
 
 GImage *GGadgetImageCache(const char *filename) {

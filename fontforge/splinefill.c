@@ -1558,43 +1558,49 @@ BDFChar *SplineCharRasterize(SplineChar *sc, int layer, bigreal pixelsize)
 	return( _SplineCharRasterize(sc,layer,pixelsize,false));
 }
 
-BDFFont *SplineFontToBDFHeader(SplineFont *_sf, int pixelsize, int indicate) {
-    BDFFont *bdf = calloc(1,sizeof(BDFFont));
-    int i;
-    real scale;
-    char size[40];
-    char aa[200];
-    int max;
-    SplineFont *sf;	/* The complexity here is to pick the appropriate subfont of a CID font */
+BDFFont* SplineFontToBDFHeader(SplineFont* _sf, int pixelsize, int indicate)
+{
+	BDFFont* bdf = calloc(1, sizeof(BDFFont));
+	int i;
+	real scale;
+	char size[40];
+	char aa[200];
+	int max;
+	SplineFont* sf;	/* The complexity here is to pick the appropriate subfont of a CID font */
 
-    sf = _sf;
-    max = sf->glyphcnt;
-    for ( i=0; i<_sf->subfontcnt; ++i ) {
-	sf = _sf->subfonts[i];
-	if ( sf->glyphcnt>max ) max = sf->glyphcnt;
-    }
-    scale = pixelsize / (real) (sf->ascent+sf->descent);
-
-    if ( indicate ) {
-	sprintf(size,_("%d pixels"), pixelsize );
-	strcpy(aa,_("Generating bitmap font"));
-	if ( sf->fontname!=NULL ) {
-	    strcat(aa,": ");
-	    strncat(aa,sf->fontname,sizeof(aa)-strlen(aa)-1);
-	    aa[sizeof(aa)-1] = '\0';
+	sf = _sf;
+	max = sf->glyphcnt;
+	for (i = 0; i < _sf->subfontcnt; ++i)
+	{
+		sf = _sf->subfonts[i];
+		if (sf->glyphcnt > max) max = sf->glyphcnt;
 	}
-	ff_progress_start_indicator(10,_("Rasterizing..."),
-		aa,size,sf->glyphcnt,1);
-	ff_progress_enable_stop(0);
-    }
-    bdf->sf = _sf;
-    bdf->glyphcnt = bdf->glyphmax = max;
-    bdf->pixelsize = pixelsize;
-    bdf->glyphs = malloc(max*sizeof(BDFChar *));
-    bdf->ascent = rint(sf->ascent*scale);
-    bdf->descent = pixelsize-bdf->ascent;
-    bdf->res = -1;
-return( bdf );
+	scale = pixelsize / (real)(sf->ascent + sf->descent);
+
+	if (indicate)
+	{
+
+		snprintf(size, sizeof(size), _("%d pixels"), pixelsize);
+		strncpy(aa, _("Generating bitmap font"), sizeof(aa));
+
+		if (sf->fontname != NULL)
+		{
+			strcat(aa, ": ");
+			strncat(aa, sf->fontname, sizeof(aa) - strlen(aa) - 1);
+			aa[sizeof(aa) - 1] = '\0';
+		}
+		ff_progress_start_indicator(10, _("Rasterizing..."),
+			aa, size, sf->glyphcnt, 1);
+		ff_progress_enable_stop(0);
+	}
+	bdf->sf = _sf;
+	bdf->glyphcnt = bdf->glyphmax = max;
+	bdf->pixelsize = pixelsize;
+	bdf->glyphs = malloc(max * sizeof(BDFChar*));
+	bdf->ascent = rint(sf->ascent * scale);
+	bdf->descent = pixelsize - bdf->ascent;
+	bdf->res = -1;
+	return(bdf);
 }
 
 BDFFont *SplineFontRasterize(SplineFont *_sf, int layer, int pixelsize, int indicate) {
@@ -1735,9 +1741,10 @@ return( SplineFontRasterize(_sf,layer,pixelsize,true));
     }
     scale = pixelsize / (real) (sf->ascent+sf->descent);
 
-    sprintf(size,_("%d pixels"), pixelsize );
-    strcpy(aa,_("Generating anti-alias font"));
-    if ( sf->fontname!=NULL ) {
+    snprintf(size, sizeof(size), _("%d pixels"), pixelsize );
+    strncpy(aa,_("Generating anti-alias font"), sizeof(aa));
+    
+	if ( sf->fontname!=NULL ) {
 	strcat(aa,": ");
 	strncat(aa,sf->fontname,sizeof(aa)-strlen(aa)-1);
 	aa[sizeof(aa)-1] = '\0';

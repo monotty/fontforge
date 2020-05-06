@@ -1286,7 +1286,7 @@ return( copy(""));
     }
 
     sp = cur->u.state.splines->first;
-    sprintf(buffer,"(%g%s%g)", (double) sp->me.x, coord_sep, (double) sp->me.y );
+    snprintf(buffer, sizeof(buffer), "(%g%s%g)", (double) sp->me.x, coord_sep, (double) sp->me.y );
     *len = strlen(buffer);
 return( copy(buffer));
 }
@@ -2077,7 +2077,7 @@ static void PasteNonExistantRefCheck(SplineChar *sc,Undoes *paster,RefChar *ref,
 	    if ( ref->unicode_enc==-1 )
 		name = "<Unknown>";
 	    else
-		name = StdGlyphName(buf,ref->unicode_enc,ui_none,(NameList *) -1);
+		name = StdGlyphName(buf, sizeof(buf), ref->unicode_enc,ui_none,(NameList *) -1);
 	    buts[0] = _("Don't Warn Again"); buts[1] = _("_OK"); buts[2] = NULL;
 	    yes = ff_ask(_("Bad Reference"),(const char **) buts,1,1,_("You are attempting to paste a reference to %1$s into %2$s.\nBut %1$s does not exist in this font, nor can I find the original character referred to.\nIt will not be copied."),name,sc->name);
 	    if ( yes==0 )
@@ -2878,8 +2878,9 @@ static OTLookup **GetLookupsToCopy(SplineFont *sf,OTLookup ***backpairlist) {
 /* GT:  is the second glyph in the kerning pair, and that's what this line */
 /* GT:  refers to. The "%s" will be filled in with the lookup name */
 			    char *format = _("Second glyph of %s");
-			    char *space = malloc(strlen(format)+strlen(otl->lookup_name)+1);
-			    sprintf(space, format, otl->lookup_name );
+				int str_size = strlen(format) + strlen(otl->lookup_name) + 1;
+			    char *space = malloc(str_size);
+			    snprintf(space, str_size, format, otl->lookup_name );
 			    list2[bcnt] = otl;
 			    choices[ftot+1+bcnt++] = space;
 			}
@@ -3557,9 +3558,9 @@ static BDFFont *BitmapCreateCheck(FontViewBase *fv,int *yestoall, int first, int
 	char *buts[5];
 	char buf[20];
 	if ( depth!=1 )
-	    sprintf( buf, "%d@%d", pixelsize, depth );
+	    snprintf( buf, sizeof(buf), "%d@%d", pixelsize, depth );
 	else
-	    sprintf( buf, "%d", pixelsize );
+	    snprintf( buf, sizeof(buf), "%d", pixelsize );
 	buts[0] = _("_Yes");
 	buts[1] = _("Yes to _All");
 	buts[2] = _("No _to All");

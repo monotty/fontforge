@@ -2899,12 +2899,14 @@ void SplineCharAddExtrema(SplineChar *sc, SplineSet *head,enum ae_type between_s
 	    SplineSetAddExtrema(sc,ss,between_selected,emsize);
 }
 
-char *GetNextUntitledName(void) {
-    static int untitled_cnt=1;
-    char buffer[80];
+char* GetNextUntitledName(void)
+{
+	static int untitled_cnt = 1;
+	char buffer[80];
 
-    sprintf( buffer, "Untitled%d", untitled_cnt++ );
-return( copy(buffer));
+	snprintf(buffer, sizeof(buffer), "Untitled%d", untitled_cnt++);
+
+	return(copy(buffer));
 }
 
 SplineFont *SplineFontEmpty(void) {
@@ -2945,47 +2947,64 @@ SplineFont *SplineFontEmpty(void) {
 return( sf );
 }
 
-SplineFont *SplineFontBlank(int charcnt) {
-    SplineFont *sf;
-    char buffer[200];
-    time_t now;
-    struct tm *tm;
-    const char *author = GetAuthor();
+SplineFont* SplineFontBlank(int charcnt)
+{
+	SplineFont* sf;
+	char buffer[200];
+	time_t now;
+	struct tm* tm;
+	const char* author = GetAuthor();
 
-    sf = SplineFontEmpty();
-    sf->fontname = GetNextUntitledName();
-    sf->fullname = copy(sf->fontname);
-    sf->familyname = copy(sf->fontname);
-    sprintf( buffer, "%s.sfd", sf->fontname);
-    sf->origname = ToAbsolute(buffer);
-    sf->weight = copy("Regular");
-    now = GetTime();
-    if (!getenv("SOURCE_DATE_EPOCH")) {
-	tm = localtime(&now);
-    } else {
-	tm = gmtime(&now);
-    }
-    if ( author!=NULL )
-	sprintf( buffer, "Copyright (c) %d, %.50s", tm->tm_year+1900, author );
-    else
-	sprintf( buffer, "Copyright (c) %d, Anonymous", tm->tm_year+1900 );
-    sf->copyright = copy(buffer);
-    if ( xuid!=NULL ) {
-	sf->xuid = malloc(strlen(xuid)+20);
-	sprintf(sf->xuid,"[%s %d]", xuid, (rand()&0xffffff));
-    }
-    sprintf( buffer, "%d-%d-%d: Created with FontForge (http://fontforge.org)", tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday );
-    sf->comments = copy(buffer);
-    sf->version = copy("001.000");
-    sf->ascent = rint(new_em_size*.8); sf->descent = new_em_size-sf->ascent;
-    sf->upos = -rint(new_em_size*.1); sf->uwidth = rint(new_em_size*.05);		/* defaults for cff */
-    sf->glyphcnt = 0;
-    sf->glyphmax = charcnt;
-    sf->glyphs = calloc(charcnt,sizeof(SplineChar *));
-    sf->pfminfo.fstype = -1;
-    sf->pfminfo.stylemap = -1;
-    sf->use_typo_metrics = true;
-return( sf );
+	sf = SplineFontEmpty();
+	sf->fontname = GetNextUntitledName();
+	sf->fullname = copy(sf->fontname);
+	sf->familyname = copy(sf->fontname);
+	
+	snprintf(buffer, sizeof(buffer), "%s.sfd", sf->fontname);
+	
+	sf->origname = ToAbsolute(buffer);
+	sf->weight = copy("Regular");
+	now = GetTime();
+	if (!getenv("SOURCE_DATE_EPOCH"))
+	{
+		tm = localtime(&now);
+	}
+	else
+	{
+		tm = gmtime(&now);
+	}
+
+	if (author != NULL)
+	{
+		snprintf(buffer, sizeof(buffer), "Copyright (c) %d, %.50s", tm->tm_year + 1900, author);
+	}
+	else
+	{
+		snprintf(buffer, sizeof(buffer), "Copyright (c) %d, Anonymous", tm->tm_year + 1900);
+	}
+
+	sf->copyright = copy(buffer);
+	if (xuid != NULL)
+	{
+		int buff_size = strlen(xuid) + 20;
+		sf->xuid = malloc(buff_size);
+		snprintf(sf->xuid, buff_size, "[%s %d]", xuid, (rand() & 0xffffff));
+	}
+	
+	snprintf(buffer, sizeof(buffer), "%d-%d-%d: Created with FontForge (http://fontforge.org)",
+		tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
+
+	sf->comments = copy(buffer);
+	sf->version = copy("001.000");
+	sf->ascent = rint(new_em_size * .8); sf->descent = new_em_size - sf->ascent;
+	sf->upos = -rint(new_em_size * .1); sf->uwidth = rint(new_em_size * .05);		/* defaults for cff */
+	sf->glyphcnt = 0;
+	sf->glyphmax = charcnt;
+	sf->glyphs = calloc(charcnt, sizeof(SplineChar*));
+	sf->pfminfo.fstype = -1;
+	sf->pfminfo.stylemap = -1;
+	sf->use_typo_metrics = true;
+	return(sf);
 }
 
 SplineFont *SplineFontNew(void) {
@@ -3003,34 +3022,60 @@ SplineFont *SplineFontNew(void) {
 return( sf );
 }
 
-static void SFChangeXUID(SplineFont *sf, int random) {
-    char *pt, *new, *npt;
-    int val;
+static void SFChangeXUID(SplineFont* sf, int random)
+{
+	char* pt, * new, * npt;
+	int val;
 
-    if ( sf->xuid==NULL )
-return;
-    pt = strrchr(sf->xuid,' ');
-    if ( pt==NULL )
-	pt = strchr(sf->xuid,'[');
-    if ( pt==NULL )
-	pt = sf->xuid;
-    else
-	++pt;
-    if ( random )
-	val = rand()&0xffffff;
-    else {
-	val = strtol(pt,NULL,10);
-	val = (val+1)&0xffffff;
-    }
+	if (sf->xuid == NULL)
+	{
+		return;
+	}
 
-    new = malloc(pt-sf->xuid+12);
-    strncpy(new,sf->xuid,pt-sf->xuid);
-    npt = new + (pt-sf->xuid);
-    if ( npt==new ) *npt++ = '[';
-    sprintf(npt, "%d]", val );
-    free(sf->xuid); sf->xuid = new;
-    sf->changed = true;
-    sf->changed_since_xuidchanged = false;
+	pt = strrchr(sf->xuid, ' ');
+	
+	if (pt == NULL)
+	{
+		pt = strchr(sf->xuid, '[');
+	}
+
+	if (pt == NULL)
+	{
+		pt = sf->xuid;
+	}
+	else
+	{
+		++pt;
+	}
+
+	if (random)
+	{
+		val = rand() & 0xffffff;
+	}
+	else
+	{
+		val = strtol(pt, NULL, 10);
+		val = (val + 1) & 0xffffff;
+	}
+
+	int buff_size = pt - sf->xuid + 12;
+	new = malloc(buff_size);
+	
+	strncpy(new, sf->xuid, pt - sf->xuid);
+	npt = new + (pt - sf->xuid);
+	buff_size -= (pt - sf->xuid);
+
+	if (npt == new)
+	{
+		*npt++ = '[';
+		buff_size--;
+	}
+
+	snprintf(npt, buff_size, "%d]", val);
+
+	free(sf->xuid); sf->xuid = new;
+	sf->changed = true;
+	sf->changed_since_xuidchanged = false;
 }
 
 void SFIncrementXUID(SplineFont *sf) {

@@ -343,10 +343,18 @@ void SFReplaceEncodingBDFProps(SplineFont* sf, EncMap* map)
 		{
 			strncpy(buffer, bpt, sizeof(buffer)); buffer[sizeof(buffer) - 1] = '\0';
 			pt = strrchr(buffer, '-');
-			if (pt != NULL) for (--pt; pt > buffer && *pt != '-'; --pt);
+			if (pt != NULL)
+			{
+				for (--pt; pt > buffer && *pt != '-'; --pt)
+				{
+					;
+				}
+			}
+
 			if (pt > buffer)
 			{
-				sprintf(pt + 1, "%s-%s", reg, enc);
+				int str_size = pt - buffer - 1;
+				snprintf(pt + 1, str_size, "%s-%s", reg, enc);
 				BDFPropReplace(bdf, "FONT", buffer);
 			}
 		}

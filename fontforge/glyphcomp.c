@@ -1452,7 +1452,7 @@ static void TtfNameCompare(struct font_diff *fd,char *name1,char *name2,
     if (!name1) name1=""; if (!name2) name2="";
     if ( strcmp(name1,name2)==0 )
 return;
-    sprintf( strnamebuf, "%.90s %.90s", TTFNameIds(strid), MSLangString(lang));
+    snprintf( strnamebuf, sizeof(strnamebuf), "%.90s %.90s", TTFNameIds(strid), MSLangString(lang));
     NameCompare(fd,name1, name2, strnamebuf);
 }
 
@@ -1460,7 +1460,7 @@ static void TtfMissingName(struct font_diff *fd,char *fontname_present,
 	char *fontname_missing, char *name, int lang,int strid) {
     char strnamebuf[200];
 
-    sprintf( strnamebuf, "%.90s %.90s", TTFNameIds(strid), MSLangString(lang));
+    snprintf( strnamebuf, sizeof(strnamebuf), "%.90s %.90s", TTFNameIds(strid), MSLangString(lang));
     if ( !fd->top_diff )
 	fprintf( fd->diffs, "Names\n" );
     fd->top_diff = fd->diff = true;

@@ -565,7 +565,7 @@ static  OSErr install_apple_event_handlers(void) {
  /* some debugging code, for now */
  if ( getenv("HOME")!=NULL ) {
   char buffer[1024];
-  sprintf( buffer, "%s/.FontForge-LogFile.txt", getenv("HOME"));
+  snprintf( buffer, sizeof(buffer), "%s/.FontForge-LogFile.txt", getenv("HOME"));
   logfile = fopen("/tmp/LogFile.txt","w");
  }
  if ( logfile==NULL )
@@ -724,7 +724,7 @@ static int ReopenLastFonts(void) {
 
     if ( ffdir==NULL ) return false;
 
-    sprintf( buffer, "%s/FontsOpenAtLastQuit", ffdir );
+    snprintf( buffer, sizeof(buffer), "%s/FontsOpenAtLastQuit", ffdir );
     old = fopen(buffer,"r");
     if ( old==NULL ) {
         free(ffdir);

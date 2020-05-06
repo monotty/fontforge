@@ -200,7 +200,7 @@ void CondenseExtendDlg(FontView *fv, CharView *cv) {
     gcd[k++].creator = GLabelCreate;
     hvarray[5] = &gcd[k-1];
 
-    sprintf( c_factor, "%g", last_ci.c_factor );
+    snprintf( c_factor, sizeof(c_factor), "%g", last_ci.c_factor );
     label[k].text = (unichar_t *) c_factor;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -218,7 +218,7 @@ void CondenseExtendDlg(FontView *fv, CharView *cv) {
     gcd[k++].creator = GLabelCreate;
     hvarray[7] = &gcd[k-1];
 
-    sprintf( c_add, "%g", last_ci.c_add );
+    snprintf( c_add, sizeof(c_add), "%g", last_ci.c_add );
     label[k].text = (unichar_t *) c_add;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -237,7 +237,7 @@ void CondenseExtendDlg(FontView *fv, CharView *cv) {
     gcd[k++].creator = GLabelCreate;
     hvarray[10] = &gcd[k-1];
 
-    sprintf( sb_factor, "%g", last_ci.sb_factor );
+    snprintf( sb_factor, sizeof(sb_factor), "%g", last_ci.sb_factor );
     label[k].text = (unichar_t *) sb_factor;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -255,7 +255,7 @@ void CondenseExtendDlg(FontView *fv, CharView *cv) {
     gcd[k++].creator = GLabelCreate;
     hvarray[12] = &gcd[k-1];
 
-    sprintf( sb_add, "%g", last_ci.sb_add );
+    snprintf( sb_add, sizeof(sb_add), "%g", last_ci.sb_add );
     label[k].text = (unichar_t *) sb_add;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -439,7 +439,7 @@ static int SS_Feature_Changed(GGadget *g, GEvent *e) {
 	GGadgetSetTitle8(g,tagbuf);
 	GGadgetSetTitle8(GWidgetGetControl(ew,CID_Extension), ss_extensions[index]);
 
-	sprintf( offset, "%g", rint( ed->small->xheight*ss_percent_xh_up[index]/100.0 ));
+	snprintf( offset, sizeof(offset), "%g", rint( ed->small->xheight*ss_percent_xh_up[index]/100.0 ));
 	GGadgetSetTitle8(GWidgetGetControl(ew,CID_VerticalOff), offset);
     }
 return( true );
@@ -891,8 +891,8 @@ static int GlyphChange_Default(GGadget *g, GEvent *e) {
 		stem_scale  = ed->small->lc_stem_width/ed->small->uc_stem_width;
 	}
 	ed->scale = glyph_scale;
-	sprintf( glyph_factor, "%.2f", (double) (100*glyph_scale) );
-	sprintf( stem_factor , "%.2f", (double) (100* stem_scale) );
+	snprintf( glyph_factor,  sizeof(glyph_factor), "%.2f", (double) (100*glyph_scale) );
+	snprintf( stem_factor ,  sizeof(stem_factor), "%.2f", (double) (100* stem_scale) );
 
 	GGadgetSetChecked(GWidgetGetControl(ew,CID_StemsUniform),true);
 	GGadgetSetTitle8(GWidgetGetControl(ew,CID_StemHeight),stem_factor);
@@ -1212,8 +1212,8 @@ void GlyphChangeDlg(FontView *fv,CharView *cv, enum glyphchange_type gc) {
 	l = 0;
 
 	ed.scale = glyph_scale;
-	sprintf( glyph_factor, "%.2f", (double) (100*glyph_scale) );
-	sprintf( stem_factor , "%.2f", (double) (100* stem_scale) );
+	snprintf( glyph_factor, sizeof(glyph_factor), "%.2f", (double)(100 * glyph_scale));
+	snprintf(stem_factor, sizeof(stem_factor), "%.2f", (double) (100* stem_scale) );
 
 	label[k].text = (unichar_t *) _("Uniform scaling for stems of any width and direction");
 	label[k].text_is_1byte = true;
@@ -1246,7 +1246,7 @@ void GlyphChangeDlg(FontView *fv,CharView *cv, enum glyphchange_type gc) {
 	gcd[k++].creator = GLabelCreate;
 	stemtarray[s++] = &gcd[k-1];
 
-	sprintf(stem_threshold,"%.0f",GuessStemThreshold(sf));
+	snprintf(stem_threshold, sizeof(stem_threshold), "%.0f",GuessStemThreshold(sf));
 	label[k].text = (unichar_t *) stem_threshold;
 	label[k].text_is_1byte = true;
 	gcd[k].gd.label = &label[k];
@@ -1949,7 +1949,7 @@ void EmboldenDlg(FontView *fv, CharView *cv) {
     gcd[k++].creator = GLabelCreate;
     hvarray[0][0] = &gcd[k-1];
 
-    sprintf( emb_width, "%d", sf==lastsf ? last_width : (sf->ascent+sf->descent)/20 );
+    snprintf( emb_width, sizeof(emb_width), "%d", sf==lastsf ? last_width : (sf->ascent+sf->descent)/20 );
     label[k].text = (unichar_t *) emb_width;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -2032,7 +2032,7 @@ void EmboldenDlg(FontView *fv, CharView *cv) {
     gcd[k++].creator = GLabelCreate;
     hvarray[2][0] = &gcd[k-1];
 
-    sprintf( tophint, "%d", lastsf==sf && last_type==embolden_custom ? last_zones.top_bound :
+    snprintf( tophint, sizeof(tophint), "%d", lastsf==sf && last_type==embolden_custom ? last_zones.top_bound :
 			(int) rint(bd.xheight>0 ? bd.xheight : bd.caph>0 ? 2*bd.caph/3 :
 			    sf->ascent/2 ));
     label[k].text = (unichar_t *) tophint;
@@ -2054,7 +2054,7 @@ void EmboldenDlg(FontView *fv, CharView *cv) {
     gcd[k++].creator = GLabelCreate;
     hvarray[2][2] = &gcd[k-1];
 
-    sprintf( topzone, "%d", lastsf==sf && last_type==embolden_custom ? last_zones.top_zone :
+    snprintf( topzone, sizeof(topzone), "%d", lastsf==sf && last_type==embolden_custom ? last_zones.top_zone :
 			(int) rint(bd.xheight>0 ? 2*bd.xheight/3 :
 			bd.caph>0 ? 2*bd.caph/3 :
 			(sf->ascent/3)) );
@@ -2077,7 +2077,7 @@ void EmboldenDlg(FontView *fv, CharView *cv) {
     gcd[k++].creator = GLabelCreate;
     hvarray[3][0] = &gcd[k-1];
 
-    sprintf( bothint, "%d", lastsf==sf && last_type==embolden_custom ? last_zones.bottom_bound :
+    snprintf( bothint, sizeof(bothint), "%d", lastsf==sf && last_type==embolden_custom ? last_zones.bottom_bound :
 			0 );
     label[k].text = (unichar_t *) bothint;
     label[k].text_is_1byte = true;
@@ -2098,7 +2098,7 @@ void EmboldenDlg(FontView *fv, CharView *cv) {
     gcd[k++].creator = GLabelCreate;
     hvarray[3][2] = &gcd[k-1];
 
-    sprintf( botzone, "%d", lastsf==sf && last_type==embolden_custom ? last_zones.bottom_zone :
+    snprintf( botzone, sizeof(botzone), "%d", lastsf==sf && last_type==embolden_custom ? last_zones.bottom_zone :
 			(int) rint(bd.xheight>0 ? bd.xheight/3 :
 			bd.caph>0 ? bd.caph/3 :
 			(sf->ascent/4)) );
@@ -2121,7 +2121,7 @@ void EmboldenDlg(FontView *fv, CharView *cv) {
     gcd[k++].creator = GLabelCreate;
     hvarray[4][0] = &gcd[k-1];
 
-    sprintf( serifh, "%g", SFSerifHeight(sf));
+    snprintf( serifh, sizeof(serifh), "%g", SFSerifHeight(sf));
     label[k].text = (unichar_t *) serifh;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -2299,7 +2299,7 @@ void ObliqueDlg(FontView *fv, CharView *cv) {
     char def[40], *ret, *end;
     real transform[6];
 
-    sprintf( def, "%g", last_ii.italic_angle );
+    snprintf( def, sizeof(def), "%g", last_ii.italic_angle );
     ret = gwwv_ask_string(_("Oblique Slant..."),def,_("By what angle (in degrees) do you want to slant the font?"));
     if ( ret==NULL )
 return;
@@ -2714,7 +2714,7 @@ void ItalicDlg(FontView *fv, CharView *cv) {
 	gcd[k++].creator = GLabelCreate;
 	compress[i+1][0] = &gcd[k-1];
 
-	sprintf( lsb[i], "%g", 100.0* hs->lsb_percent );
+	snprintf( lsb[i], sizeof(lsb[0]), "%g", 100.0* hs->lsb_percent );
 	label[k].text = (unichar_t *) lsb[i];
 	label[k].text_is_1byte = true;
 	gcd[k].gd.label = &label[k];
@@ -2724,7 +2724,7 @@ void ItalicDlg(FontView *fv, CharView *cv) {
 	gcd[k++].creator = GTextFieldCreate;
 	compress[i+1][1] = &gcd[k-1];
 
-	sprintf( stems[i], "%g", 100.0* hs->stem_percent );
+	snprintf( stems[i], sizeof(stems[0]), "%g", 100.0* hs->stem_percent );
 	label[k].text = (unichar_t *) stems[i];
 	label[k].text_is_1byte = true;
 	gcd[k].gd.label = &label[k];
@@ -2734,7 +2734,7 @@ void ItalicDlg(FontView *fv, CharView *cv) {
 	gcd[k++].creator = GTextFieldCreate;
 	compress[i+1][2] = &gcd[k-1];
 
-	sprintf( counters[i], "%g", 100.0* hs->counter_percent );
+	snprintf( counters[i], sizeof(counters[0]), "%g", 100.0* hs->counter_percent );
 	label[k].text = (unichar_t *) counters[i];
 	label[k].text_is_1byte = true;
 	gcd[k].gd.label = &label[k];
@@ -2744,7 +2744,7 @@ void ItalicDlg(FontView *fv, CharView *cv) {
 	gcd[k++].creator = GTextFieldCreate;
 	compress[i+1][3] = &gcd[k-1];
 
-	sprintf( rsb[i], "%g", 100.0* hs->rsb_percent );
+	snprintf( rsb[i], sizeof(rsb[0]), "%g", 100.0* hs->rsb_percent );
 	label[k].text = (unichar_t *) rsb[i];
 	label[k].text_is_1byte = true;
 	gcd[k].gd.label = &label[k];
@@ -2773,7 +2773,7 @@ void ItalicDlg(FontView *fv, CharView *cv) {
     gcd[k++].creator = GLabelCreate;
     iaarray[0][0] = &gcd[k-1];
 
-    sprintf( xp, "%g", rint(last_ii.xheight_percent*100) );
+    snprintf( xp, sizeof(xp), "%g", rint(last_ii.xheight_percent*100) );
     label[k].text = (unichar_t *) xp;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -2791,7 +2791,7 @@ void ItalicDlg(FontView *fv, CharView *cv) {
     gcd[k++].creator = GLabelCreate;
     iaarray[1][0] = &gcd[k-1];
 
-    sprintf( ia, "%g", last_ii.italic_angle );
+    snprintf( ia, sizeof(ia), "%g", last_ii.italic_angle );
     label[k].text = (unichar_t *) ia;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -2954,7 +2954,7 @@ void ChangeXHeightDlg(FontView *fv,CharView *cv) {
     gcd[k].gd.flags = gg_visible | gg_enabled ;
     gcd[k++].creator = GLabelCreate;
 
-    sprintf( xh_c, "%g", rint( xi.xheight_current ));
+    snprintf( xh_c, sizeof(xh_c), "%g", rint( xi.xheight_current ));
     label[k].text = (unichar_t *) xh_c;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -2971,7 +2971,7 @@ void ChangeXHeightDlg(FontView *fv,CharView *cv) {
     gcd[k].gd.flags = gg_visible  | gg_enabled;
     gcd[k++].creator = GLabelCreate;
 
-    sprintf( xh_d, "%g", rint( xi.xheight_current ));
+    snprintf( xh_d, sizeof(xh_d), "%g", rint( xi.xheight_current ));
     label[k].text = (unichar_t *) xh_d;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -2988,7 +2988,7 @@ void ChangeXHeightDlg(FontView *fv,CharView *cv) {
     gcd[k].gd.flags = gg_visible  | gg_enabled;
     gcd[k++].creator = GLabelCreate;
 
-    sprintf( sh, "%g", rint( xi.xheight_desired ));
+    snprintf( sh, sizeof(sh), "%g", rint( xi.xheight_desired ));
     label[k].text = (unichar_t *) sh;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];

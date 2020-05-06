@@ -174,7 +174,7 @@ int UniFromName(const char *name,enum uni_interp interp,Encoding *encname) {
 return( i );
 }
 
-const char *StdGlyphName(char *buffer, int uni,enum uni_interp interp,NameList *for_this_font) {
+const char *StdGlyphName(char *buffer, size_t buffer_size, int uni,enum uni_interp interp,NameList *for_this_font) {
     const char *name = NULL;
     NameList *nl;
     int up, ub, uc;
@@ -207,18 +207,22 @@ const char *StdGlyphName(char *buffer, int uni,enum uni_interp interp,NameList *
     }
     if ( name==NULL ) {
 	if ( uni>=0x10000 || uni < 0 )
-	    sprintf( buffer, "u%04X", uni);
+	    snprintf( buffer, buffer_size, "u%04X", uni);
 	else
-	    sprintf( buffer, "uni%04X", uni);
+	    snprintf( buffer, buffer_size, "uni%04X", uni);
 	name = buffer;
     }
 return( name );
 }
 
-const char *StdGlyphNameBoundsCheck(char *buffer, int uni,enum uni_interp interp,NameList *for_this_font) {
-    if ( uni<0 || uni > 0x10ffff )
-	return NULL;
-    return StdGlyphName(buffer, uni, interp, for_this_font);
+const char* StdGlyphNameBoundsCheck(char* buffer, size_t buffer_size, int uni, enum uni_interp interp, NameList* for_this_font)
+{
+	if (uni < 0 || uni > 0x10ffff)
+	{
+		return NULL;
+	}
+
+	return StdGlyphName(buffer, buffer_size, uni, interp, for_this_font);
 }
 
 #define RefMax	40
@@ -338,130 +342,185 @@ return( rcnt );
 }
 
 /* Return a list of all alternate or standard glyph names for this encoding */
-char **AllGlyphNames(int uni, NameList *for_this_font, SplineChar *sc) {
-    int cnt, k, j, i, len;
-    NameList *nl, *nl2, *nl3;
-    char **names = NULL;
-    const char *name;
-    int up, ub, uc;
-    char buffer[40], *pt;
-    SplineChar *refs[RefMax];
-    int rcnt, alluni;
+char** AllGlyphNames(int uni, NameList* for_this_font, SplineChar* sc)
+{
+	int cnt, k, j, i, len;
+	NameList* nl, * nl2, * nl3;
+	char** names = NULL;
+	const char* name;
+	int up, ub, uc;
+	char buffer[40], * pt;
+	SplineChar* refs[RefMax];
+	int rcnt, alluni;
 
-    rcnt = FindAllRefs(sc,refs,&alluni);
+	rcnt = FindAllRefs(sc, refs, &alluni);
 
-    up = uni>>16;
-    ub = (uni&0xff00)>>8;
-    uc = (uni&0xff);
+	up = uni >> 16;
+	ub = (uni & 0xff00) >> 8;
+	uc = (uni & 0xff);
 
-    for ( k=0; k<2; ++k ) {
-	cnt = 0;
-	/* try the default namelist first to put that at the head of the list */
-	name = NULL;
-	nl = nl3 = NULL;
-	if ( uni>=0 && up<17 ) {
-	    if ( for_this_font!=NULL ) {
-		for ( nl3=for_this_font; nl3!=NULL; nl3=nl3->basedon ) {
-		    if ( nl3->unicode[up]!=NULL && nl3->unicode[up][ub]!=NULL &&
-			    (name = nl3->unicode[up][ub][uc])!=NULL )
-		break;
+	for (k = 0; k < 2; ++k)
+	{
+		cnt = 0;
+		/* try the default namelist first to put that at the head of the list */
+		name = NULL;
+		nl = nl3 = NULL;
+		if (uni >= 0 && up < 17)
+		{
+			if (for_this_font != NULL)
+			{
+				for (nl3 = for_this_font; nl3 != NULL; nl3 = nl3->basedon)
+				{
+					if (nl3->unicode[up] != NULL && nl3->unicode[up][ub] != NULL &&
+						(name = nl3->unicode[up][ub][uc]) != NULL)
+						break;
+				}
+				if (name != NULL)
+				{
+					if (names)
+						names[cnt] = copy(name);
+					++cnt;
+				}
+			}
+			if (for_this_font != namelist_for_new_fonts)
+			{
+				for (nl = namelist_for_new_fonts; nl != NULL; nl = nl->basedon) if (nl != nl3)
+				{
+					if (nl->unicode[up] != NULL && nl->unicode[up][ub] != NULL &&
+						(name = nl->unicode[up][ub][uc]) != NULL)
+						break;
+				}
+				if (name != NULL)
+				{
+					if (names)
+						names[cnt] = copy(name);
+					++cnt;
+				}
+			}
+			for (nl2 = &agl; nl2 != NULL; nl2 = nl2->next) if (nl2 != nl && nl2 != nl3)
+			{
+				if (nl2->unicode[up] != NULL && nl2->unicode[up][ub] != NULL &&
+					(name = nl2->unicode[up][ub][uc]) != NULL)
+				{
+					if (names)
+						names[cnt] = copy(name);
+					++cnt;
+				}
+			}
+			for (i = 0; psaltnames[i].name != NULL; ++i)
+			{
+				if (psaltnames[i].unicode == uni)
+				{
+					if (names)
+						names[cnt] = copy(psaltnames[i].name);
+					++cnt;
+				}
+			}
+			if (uni < 0x10000)
+			{
+				if (names)
+				{
+					snprintf(buffer, sizeof(buffer), "uni%04X", uni);
+					names[cnt] = copy(buffer);
+				}
+				++cnt;
+			}
+			if (names)
+			{
+				snprintf(buffer, sizeof(buffer), "u%04X", uni);
+				names[cnt] = copy(buffer);
+			}
+			++cnt;
 		}
-		if ( name!=NULL ) {
-		    if ( names )
-			names[cnt] = copy(name);
-		    ++cnt;
+		if (rcnt > 1 && alluni && (uni < 0 || (uni >= 0xe000 && uni < 0xf900) || uni >= 0xf0000))
+		{
+			if (names)
+			{
+				int buf_size = 4 + 4 * rcnt;
+				names[cnt] = malloc(buf_size);
+
+				strncpy(names[cnt], "uni", buf_size);
+
+				pt = names[cnt] + 3;
+				buf_size -= 3;
+
+				for (i = 0; i < rcnt; ++i)
+				{
+					if (refs[i]->unicodeenc == 0x131 || refs[i]->unicodeenc == 0x237 ||
+						refs[i]->unicodeenc == 0xf6be)
+					{
+						snprintf(pt, buf_size, "%04X", refs[i]->unicodeenc == 0x131 ? 'i' : 'j');
+					}
+					else
+					{
+						snprintf(pt, buf_size, "%04X", CanonicalCombiner(refs[i]->unicodeenc));
+					}
+					pt += 4;
+					buf_size -= 4;
+				}
+			}
+			++cnt;
 		}
-	    }
-	    if ( for_this_font!=namelist_for_new_fonts ) {
-		for ( nl=namelist_for_new_fonts; nl!=NULL; nl=nl->basedon ) if ( nl!=nl3 ) {
-		    if ( nl->unicode[up]!=NULL && nl->unicode[up][ub]!=NULL &&
-			    (name = nl->unicode[up][ub][uc])!=NULL )
-		break;
+		if (rcnt > 1)
+		{
+			if (names)
+			{
+				for (i = len = 0; i < rcnt; ++i)
+				{
+					len += strlen(refs[i]->name) + 1;
+				}
+
+				int buf_size = len;
+				names[cnt] = pt = malloc(buf_size);
+
+				for (i = len = 0; i < rcnt; ++i)
+				{
+					strncpy(pt, refs[i]->name, buf_size);
+					int str_size = strlen(pt);
+					pt += str_size;
+					buf_size -= str_size;
+
+					*pt++ = '_';
+					buf_size--;
+				}
+				pt[-1] = '\0';
+			}
+			++cnt;
 		}
-		if ( name!=NULL ) {
-		    if ( names )
-			names[cnt] = copy(name);
-		    ++cnt;
+		if (uni < 0 || up >= 17)
+		{
+			if (names)
+			{
+				names[cnt] = copy(".notdef");
+			}
+
+			++cnt;
 		}
-	    }
-	    for ( nl2 = &agl; nl2!=NULL; nl2=nl2->next ) if ( nl2!=nl && nl2!=nl3) {
-		if ( nl2->unicode[up]!=NULL && nl2->unicode[up][ub]!=NULL &&
-			(name = nl2->unicode[up][ub][uc])!=NULL ) {
-		    if ( names )
-			names[cnt] = copy(name);
-		    ++cnt;
+		if (k == 0)
+		{
+			names = malloc((cnt + 1) * sizeof(char*));
+			names[cnt] = NULL;
 		}
-	    }
-	    for ( i=0; psaltnames[i].name!=NULL ; ++i ) {
-		if ( psaltnames[i].unicode==uni ) {
-		    if ( names )
-			names[cnt] = copy(psaltnames[i].name);
-		    ++cnt;
-		}
-	    }
-	    if ( uni<0x10000 ) {
-		if ( names ) {
-		    sprintf( buffer, "uni%04X", uni);
-		    names[cnt] = copy(buffer);
-		}
-		++cnt;
-	    }
-	    if ( names ) {
-		sprintf( buffer, "u%04X", uni);
-		names[cnt] = copy(buffer);
-	    }
-	    ++cnt;
 	}
-	if ( rcnt>1 && alluni && (uni<0 || (uni>=0xe000 && uni<0xf900) || uni>=0xf0000 ) ) {
-	    if ( names ) {
-		names[cnt] = malloc(4+4*rcnt);
-		strcpy(names[cnt],"uni");
-		pt = names[cnt]+3;
-		for ( i=0; i<rcnt; ++i ) {
-		    if ( refs[i]->unicodeenc==0x131 || refs[i]->unicodeenc==0x237 ||
-			    refs[i]->unicodeenc==0xf6be )
-			sprintf( pt,"%04X", refs[i]->unicodeenc==0x131?'i':'j' );
-		    else
-			sprintf( pt,"%04X", CanonicalCombiner(refs[i]->unicodeenc));
-		    pt += 4;
+	/* Remove any names from multiiple namelists */
+	for (i = 0; i < cnt; ++i)
+	{
+		for (j = i + 1; j < cnt; ++j)
+		{
+			if (strcmp(names[i], names[j]) == 0)
+			{
+				for (k = j + 1; k < cnt; ++k)
+				{
+					names[k - 1] = names[k];
+				}
+
+				names[--cnt] = NULL;
+				--j;
+			}
 		}
-	    }
-	    ++cnt;
 	}
-	if ( rcnt>1 ) {
-	    if ( names ) {
-		for ( i=len=0; i<rcnt; ++i )
-		    len += strlen( refs[i]->name )+1;
-		names[cnt] = pt = malloc(len);
-		for ( i=len=0; i<rcnt; ++i ) {
-		    strcpy(pt,refs[i]->name);
-		    pt += strlen(pt);
-		    *pt++ = '_';
-		}
-		pt[-1] = '\0';
-	    }
-	    ++cnt;
-	}
-	if ( uni<0 || up>=17 ) {
-	    if ( names )
-		names[cnt] = copy(".notdef");
-	    ++cnt;
-	}
-	if ( k==0 ) {
-	    names = malloc((cnt+1)*sizeof(char *));
-	    names[cnt] = NULL;
-	}
-    }
-    /* Remove any names from multiiple namelists */
-    for ( i=0; i<cnt; ++i ) for ( j=i+1; j<cnt; ++j ) {
-	if ( strcmp(names[i],names[j])==0 ) {
-	    for ( k=j+1; k<cnt; ++k )
-		names[k-1] = names[k];
-	    names[--cnt] = NULL;
-	    --j;
-	}
-    }
-return( names );
+
+	return(names);
 }
 
 char **AllNamelistNames(void) {
@@ -711,7 +770,7 @@ void LoadNamelistDir(char *dir) {
     if ( diro!=NULL ) {         /* It's ok not to have any */
         while ( (ent = readdir(diro))!=NULL ) {
             if ( isnamelist(ent->d_name) ) {
-                sprintf( buffer, "%s/%s", dir, ent->d_name );
+                snprintf( buffer, sizeof(buffer), "%s/%s", dir, ent->d_name );
                 LoadNamelist(buffer);
             }
         }
@@ -724,88 +783,105 @@ void LoadNamelistDir(char *dir) {
     return;
 }
 /* ************************************************************************** */
-const char *RenameGlyphToNamelist(char *buffer, SplineChar *sc,NameList *old,
-	NameList *new, char **sofar) {
-    int i, up, ub, uc, ch, gid;
-    char space[80];		/* glyph names are supposed to be less<=31 chars */
-    char tempbuf[32];
-    char *pt, *start, *opt, *oend; const char *newsubname;
-    SplineChar *tempsc;
-    NameList *nl;
+const char* RenameGlyphToNamelist(char* buffer, size_t buf_size, SplineChar* sc, NameList* old,
+	NameList* new, char** sofar)
+{
+	int i, up, ub, uc, ch, gid;
+	char space[80];		/* glyph names are supposed to be less<=31 chars */
+	char tempbuf[32];
+	char* pt, * start, * opt, * oend; const char* newsubname;
+	SplineChar* tempsc;
+	NameList* nl;
 
-    if ( sc->unicodeenc!=-1 ) {
-	up = sc->unicodeenc>>16;
-	ub = (sc->unicodeenc>>8)&0xff;
-	uc = (sc->unicodeenc&0xff);
-	for ( nl=new; nl!=NULL; nl=nl->basedon )
-	    if ( nl->unicode[up]!=NULL && nl->unicode[up][ub]!=NULL && nl->unicode[up][ub][uc]!=NULL )
-return( nl->unicode[up][ub][uc] );
-	if ( up==0 )
-	    sprintf( buffer, "uni%04X", sc->unicodeenc );
+	if (sc->unicodeenc != -1)
+	{
+		up = sc->unicodeenc >> 16;
+		ub = (sc->unicodeenc >> 8) & 0xff;
+		uc = (sc->unicodeenc & 0xff);
+		for (nl = new; nl != NULL; nl = nl->basedon)
+			if (nl->unicode[up] != NULL && nl->unicode[up][ub] != NULL && nl->unicode[up][ub][uc] != NULL)
+				return(nl->unicode[up][ub][uc]);
+		if (up == 0)
+			snprintf(buffer, buf_size, "uni%04X", sc->unicodeenc);
+		else
+			snprintf(buffer, buf_size, "u%04X", sc->unicodeenc);
+		return(buffer);
+	}
 	else
-	    sprintf( buffer, "u%04X", sc->unicodeenc );
-return( buffer );
-    } else {
-	if ( old!=NULL && old->renames!=NULL ) {
-	    for ( i=0; old->renames[i].from!=NULL; ++i )
-		if ( strcmp(sc->name,old->renames[i].from)==0 )
-return( old->renames[i].to );
-	}
-	if ( new->renames!=NULL ) {
-	    for ( i=0; new->renames[i].from!=NULL; ++i )
-		if ( strcmp(sc->name,new->renames[i].to)==0 )
-return( new->renames[i].from );
-	}
-	if ( strlen(sc->name)>sizeof(space)-1 )
-return( sc->name );
-	strcpy(space,sc->name);
-	opt = buffer; oend = buffer+31;
-	start = space;
-	/* Check for composite names f_i, A.small */
-	while ( *start ) {
-	    for ( pt=start; *pt!='\0' && *pt!='.' && *pt!='_'; ++pt );
-	    if ( *pt=='\0' && start==space )
-return( sc->name );
-	    ch = *pt;
-	    *pt = '\0';
-	    tempsc = SFGetChar(sc->parent,-1,start);
-	    newsubname = NULL;
-	    if ( tempsc!=NULL )
-		newsubname = RenameGlyphToNamelist(tempbuf,tempsc,old,new,sofar);
-	    else if ( sofar!=NULL ) {
-		for ( gid=sc->parent->glyphcnt-1; gid>=0; --gid ) if ( sofar[gid]!=NULL ) {
-		    if ( strcmp(sofar[gid],start)==0 )
-		break;
+	{
+		if (old != NULL && old->renames != NULL)
+		{
+			for (i = 0; old->renames[i].from != NULL; ++i)
+				if (strcmp(sc->name, old->renames[i].from) == 0)
+					return(old->renames[i].to);
 		}
-		if ( gid!=-1 )
-		    newsubname = sc->parent->glyphs[gid]->name;
-	    }
-	    if ( newsubname==NULL )
-return( sc->name );
-	    while ( opt<oend && *newsubname )
-		*opt++ = *newsubname++;
-	    if ( *newsubname )
-return( sc->name );
-	    if ( ch=='\0' ) {
+		if (new->renames != NULL)
+		{
+			for (i = 0; new->renames[i].from != NULL; ++i)
+				if (strcmp(sc->name, new->renames[i].to) == 0)
+					return(new->renames[i].from);
+		}
+		if (strlen(sc->name) > sizeof(space) - 1)
+		{
+			return(sc->name);
+		}
+
+		strncpy(space, sc->name, sizeof(space));
+		opt = buffer; oend = buffer + 31;
+		start = space;
+		/* Check for composite names f_i, A.small */
+		while (*start)
+		{
+			for (pt = start; *pt != '\0' && *pt != '.' && *pt != '_'; ++pt);
+			if (*pt == '\0' && start == space)
+				return(sc->name);
+			ch = *pt;
+			*pt = '\0';
+			tempsc = SFGetChar(sc->parent, -1, start);
+			newsubname = NULL;
+			if (tempsc != NULL)
+				newsubname = RenameGlyphToNamelist(tempbuf, sizeof(tempbuf), tempsc, old, new, sofar);
+			else if (sofar != NULL)
+			{
+				for (gid = sc->parent->glyphcnt - 1; gid >= 0; --gid) if (sofar[gid] != NULL)
+				{
+					if (strcmp(sofar[gid], start) == 0)
+						break;
+				}
+				if (gid != -1)
+					newsubname = sc->parent->glyphs[gid]->name;
+			}
+			if (newsubname == NULL)
+				return(sc->name);
+			while (opt < oend && *newsubname)
+				*opt++ = *newsubname++;
+			if (*newsubname)
+				return(sc->name);
+			if (ch == '\0')
+			{
+				*opt = '\0';
+				return(buffer);
+			}
+			else if (ch == '.')
+			{
+				/* don't attempt to translate anything after a '.' just copy that litterally */
+				*pt = ch;
+				while (opt < oend && *pt)
+					*opt++ = *pt++;
+				if (*pt)
+					return(sc->name);
+				*opt = '\0';
+				return(buffer);
+			}
+			else
+			{		/* _ */
+				*opt++ = '_';
+				start = pt + 1;
+			}
+		}
 		*opt = '\0';
-return( buffer );
-	    } else if ( ch=='.' ) {
-		/* don't attempt to translate anything after a '.' just copy that litterally */
-		*pt = ch;
-		while ( opt<oend && *pt )
-		    *opt++ = *pt++;
-		if ( *pt )
-return( sc->name );
-		*opt = '\0';
-return( buffer );
-	    } else {		/* _ */
-		*opt++ = '_';
-		start = pt+1;
-	    }
+		return(buffer);
 	}
-	*opt = '\0';
-return( buffer );
-    }
 }
 
 static void BuildHash(struct glyphnamehash *hash,SplineFont *sf, char **oldnames) {
@@ -1024,7 +1100,7 @@ return( NULL );
 
     ret = calloc(sf->glyphcnt,sizeof(char *));
     for ( gid = 0; gid<sf->glyphcnt; ++gid ) if ( (sc=sf->glyphs[gid])!=NULL ) {
-	name = RenameGlyphToNamelist(buffer,sc,sf->for_new_glyphs,new,ret);
+	name = RenameGlyphToNamelist(buffer, sizeof(buffer), sc,sf->for_new_glyphs,new,ret);
 	if ( name!=sc->name ) {
 	    ret[gid] = sc->name;
 	    sc->name = copy(name);

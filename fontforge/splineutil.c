@@ -2708,23 +2708,33 @@ return( str );
 return(ret);
 }
 
-char *XUIDFromFD(int xuid[20]) {
-    int i;
-    char *ret=NULL;
+char* XUIDFromFD(int xuid[20])
+{
+	int i;
+	char* ret = NULL;
 
-    for ( i=19; i>=0 && xuid[i]==0; --i );
-    if ( i>=0 ) {
-	int j; char *pt;
-	ret = malloc(2+20*(i+1));
-	pt = ret;
-	*pt++ = '[';
-	for ( j=0; j<=i; ++j ) {
-	    sprintf(pt,"%d ", xuid[j]);
-	    pt += strlen(pt);
+	for (i = 19; i >= 0 && xuid[i] == 0; --i);
+	if (i >= 0)
+	{
+		int j; char* pt;
+
+		int buf_size = 2 + 20 * (i + 1);
+		ret = malloc(buf_size);
+		pt = ret;
+		
+		*pt++ = '[';
+		buf_size--;
+
+		for (j = 0; j <= i; ++j)
+		{
+			snprintf(pt, buf_size, "%d ", xuid[j]);
+			int str_size = strlen(pt);
+			pt += str_size;
+			buf_size -= str_size;
+		}
+		pt[-1] = ']';
 	}
-	pt[-1] = ']';
-    }
-return( ret );
+	return(ret);
 }
 
 static void SplineFontMetaData(SplineFont *sf,struct fontdict *fd) {

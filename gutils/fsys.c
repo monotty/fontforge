@@ -522,7 +522,7 @@ char *_GFile_find_program_dir(char *prog) {
 	for(;;){
 	    pt1 = strchr(path, ';');
 	    if(pt1) *pt1 = '\0';
-	    sprintf(filename,"%s/%s", path, prog);
+	    snprintf(filename, sizeof(filename), "%s/%s", path, prog);
 	    if ( access(filename,1)!= -1 ) {
 		program_dir = copy(path);
 		break;
@@ -537,7 +537,7 @@ char *_GFile_find_program_dir(char *prog) {
 	program_dir = copyn(prog,pt-prog);
     else if ( (path = getenv("PATH"))!=NULL ) {
 	while ((pt = strchr(path,':'))!=NULL ) {
-	  sprintf(filename,"%.*s/%s", (int)(pt-path), path, prog);
+	  snprintf(filename, sizeof(filename), "%.*s/%s", (int)(pt-path), path, prog);
 	    /* Under cygwin, applying access to "potrace" will find "potrace.exe" */
 	    /*  no need for special check to add ".exe" */
 	    if ( access(filename,1)!= -1 ) {
@@ -547,7 +547,7 @@ char *_GFile_find_program_dir(char *prog) {
 	    path = pt+1;
 	}
 	if ( program_dir==NULL ) {
-	    sprintf(filename,"%s/%s", path, prog);
+	    snprintf(filename, sizeof(filename), "%s/%s", path, prog);
 	    if ( access(filename,1)!= -1 )
 		program_dir = copy(path);
 	}

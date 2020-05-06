@@ -63,7 +63,7 @@ static char *cleancopy(const char *name) {
     /*  a good postscript name, so do something reasonable here */
     if ( !isalpha(*(unsigned char *) fpt) && fpt[0]>=' ' && /* fpt[0]<=0x7f &&*/
 	    fpt[1]=='\0' )
-return( copy( StdGlyphName(buf,*(unsigned char *) fpt,ui_none,(NameList *) -1)) );
+return( copy( StdGlyphName(buf, sizeof(buf), *(unsigned char *) fpt,ui_none,(NameList *) -1)) );
     tpt = temp = malloc(strlen(name)+2);
     if ( isdigit(*fpt))
 	*tpt++ = '$';
@@ -86,7 +86,7 @@ return( copy( StdGlyphName(buf,*(unsigned char *) fpt,ui_none,(NameList *) -1)) 
     if ( *name=='\0' ) {
 	char buffer[20];
 	static int unique = 0;
-	sprintf( buffer, "$u%d", ++unique );
+	snprintf( buffer, sizeof(buffer), "$u%d", ++unique );
 	free(temp);
 return( copy( buffer ));
     }
@@ -431,7 +431,7 @@ static Encoding *BDFParseEnc(char *encname, int encoff) {
 	    strmatch(encname,"Unicode")==0 )
 	enc = FindOrMakeEncoding("Unicode");
     if ( enc==NULL ) {
-	sprintf( buffer, "%.150s-%d", encname, encoff );
+	snprintf( buffer, sizeof(buffer), "%.150s-%d", encname, encoff );
 	enc = FindOrMakeEncoding(buffer);
     }
     if ( enc==NULL && strmatch(encname,"ISOLatin1Encoding")==0 )
@@ -668,13 +668,15 @@ static int slurp_header(FILE *bdf, int *_as, int *_ds, Encoding **_enc,
     *_enc = BDFParseEnc(encname,enc);
 
     if ( strmatch(italic,"I")==0 )
-	strcpy(italic,"Italic");
+	strncpy(italic,"Italic", sizeof(italic));
     else if ( strmatch(italic,"O")==0 )
-	strcpy(italic,"Oblique");
+	strncpy(italic,"Oblique", sizeof(italic));
     else if ( strmatch(italic,"R")==0 )
-	strcpy(italic,"");		/* Ignore roman */
-    sprintf(mods,"%s%s", weight, italic );
-    if ( comments[0]!='\0' && comments[strlen(comments)-1]=='\n' )
+	strncpy(italic,"", sizeof(italic));		/* Ignore roman */
+    
+	snprintf(mods, 200, "%s%s", weight, italic );
+    
+	if ( comments[0]!='\0' && comments[strlen(comments)-1]=='\n' )
 	comments[strlen(comments)-1] = '\0';
 
     if ( *depth!=1 && *depth!=2 && *depth!=4 && *depth!=8 && *depth!=16 && *depth!=32 )
@@ -735,7 +737,9 @@ static BDFChar *SFGrowTo(SplineFont *sf,BDFFont *b, int cc, EncMap *map) {
 	gid = SFMakeChar(sf,map,cc)->orig_pos;
     if ( sf->onlybitmaps && ((sf->bitmaps==b && b->next==NULL) || sf->bitmaps==NULL) ) {
 	free(sf->glyphs[gid]->name);
-	sprintf( buf, "enc-%d", cc);
+	
+	snprintf( buf, sizeof(buf), "enc-%d", cc);
+	
 	sf->glyphs[gid]->name = cleancopy( buf );
 	sf->glyphs[gid]->unicodeenc = -1;
     }
@@ -1549,17 +1553,17 @@ return(-2);
     *_enc = BDFParseEnc(encname,enc);
 
     if ( strmatch(italic,"I")==0 )
-	strcpy(italic,"Italic");
+	strncpy(italic,"Italic", sizeof(italic));
     else if ( strmatch(italic,"O")==0 )
-	strcpy(italic,"Oblique");
+	strncpy(italic,"Oblique", sizeof(italic));
     else if ( strmatch(italic,"R")==0 )
-	strcpy(italic,"");		/* Ignore roman */
-    sprintf(mods,"%s%s", weight, italic );
+	strncpy(italic,"", sizeof(italic));		/* Ignore roman */
+    snprintf(mods, 200, "%s%s", weight, italic );
     if ( full[0]=='\0' ) {
 	if ( *mods )
-	    sprintf(full,"%s-%s", family, mods );
+	    snprintf(full, 300, "%s-%s", family, mods );
 	else
-	    strcpy(full,family);
+	    strncpy(full,family, 300);
     }
 
     free(strs);
@@ -1870,7 +1874,7 @@ static int askusersize(char *filename) {
     for ( pt=filename; *pt && !isdigit(*pt); ++pt );
     guess = strtol(pt,NULL,10);
     if ( guess!=0 )
-	sprintf(def,"%d",guess);
+	snprintf(def, sizeof(def), "%d",guess);
     else
 	*def = '\0';
   retry:
@@ -2028,6 +2032,8 @@ static BDFFont *SFImportBDF(SplineFont *sf, char *filename,int ispk, int toback,
     int pixelsize, ascent, descent;
     Encoding *enc;
     BDFFont *b;
+
+	// check sn[rintfs if you decide to change buffer's size
     char family[100], mods[200], full[300], foundry[100], comments[1000], fontname[300];
     struct toc *toc=NULL;
     int depth=1;
@@ -2085,8 +2091,15 @@ return( NULL );
 return( NULL );
 	}
 	while ( (ch=getc(bdf))!='\n' && ch!='\r' && ch!=EOF );
-	pixelsize = slurp_header(bdf,&ascent,&descent,&enc,family,mods,full,
-		&depth,foundry,fontname,comments,&defs,&upos,&uwidth,&dummy,filename);
+	pixelsize = slurp_header(bdf,&ascent,&descent,&enc,
+		family,
+		mods,
+		full,
+		&depth,
+		foundry,
+		fontname,
+		comments,
+		&defs,&upos,&uwidth,&dummy,filename);
 	if ( defs.dwidth == 0 ) defs.dwidth = pixelsize;
 	if ( defs.dwidth1 == 0 ) defs.dwidth1 = pixelsize;
     }
@@ -2202,7 +2215,7 @@ static BDFFont *_SFImportBDF(SplineFont *sf, char *filename,int ispk, int toback
     break;
     if ( i==-1 || compressors[i].ext==NULL ) i=-1;
     else {
-	sprintf( buf, "%s %s", compressors[i].decomp, filename );
+	snprintf( buf, sizeof(buf), "%s %s", compressors[i].decomp, filename );
 	if ( system(buf)==0 )
 	    *pt='\0';
 	else {
@@ -2214,7 +2227,7 @@ static BDFFont *_SFImportBDF(SplineFont *sf, char *filename,int ispk, int toback
 	    strcat(temp,"/");
 	    strcat(temp,GFileNameTail(filename));
 	    *strrchr(temp,'.') = '\0';
-	    sprintf( buf, "%s -c %s > %s", compressors[i].decomp, filename, temp );
+	    snprintf( buf, sizeof(buf), "%s -c %s > %s", compressors[i].decomp, filename, temp );
 	    if ( system(buf)==0 )
 		filename = temp;
 	    else {
@@ -2229,7 +2242,7 @@ return( NULL );
 	unlink(temp);
 	free(temp);
     } else if ( i!=-1 ) {
-	sprintf( buf, "%s %s", compressors[i].recomp, filename );
+	snprintf( buf, sizeof(buf), "%s %s", compressors[i].recomp, filename );
 	system(buf);
     }
 return( ret );

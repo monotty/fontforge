@@ -347,61 +347,90 @@ return( false );
 return( true );
 }
 
-static int WriteBitmaps(char *filename,SplineFont *sf, int32 *sizes,int res,
-	int bf, EncMap *map) {
-    char *buf = malloc(strlen(filename)+30), *pt, *pt2;
-    int i;
-    BDFFont *bdf;
-    const char *ext;
+static int WriteBitmaps(char* filename, SplineFont* sf, int32* sizes, int res,
+	int bf, EncMap* map)
+{
+	int buf_size = strlen(filename) + 30;
+	char* buf = malloc(buf_size), * pt, * pt2;
+	int i;
+	BDFFont* bdf;
+	const char* ext;
 
-    if ( sf->cidmaster!=NULL ) sf = sf->cidmaster;
+	if (sf->cidmaster != NULL) sf = sf->cidmaster;
 
-    for ( i=0; sizes[i]!=0; ++i );
-    ff_progress_change_stages(i);
-    for ( i=0; sizes[i]!=0; ++i ) {
-	for ( bdf=sf->bitmaps; bdf!=NULL &&
-		(bdf->pixelsize!=(sizes[i]&0xffff) || BDFDepth(bdf)!=(sizes[i]>>16));
-		bdf=bdf->next );
-	if ( bdf==NULL ) {
-	    ff_post_notice(_("Missing Bitmap"),_("Attempt to save a pixel size that has not been created (%d@%d)"),
-		    sizes[i]&0xffff, sizes[i]>>16);
-	    free(buf);
-return( false );
+	for (i = 0; sizes[i] != 0; ++i);
+	ff_progress_change_stages(i);
+	for (i = 0; sizes[i] != 0; ++i)
+	{
+		for (bdf = sf->bitmaps; bdf != NULL &&
+			(bdf->pixelsize != (sizes[i] & 0xffff) || BDFDepth(bdf) != (sizes[i] >> 16));
+			bdf = bdf->next);
+		if (bdf == NULL)
+		{
+			ff_post_notice(_("Missing Bitmap"), _("Attempt to save a pixel size that has not been created (%d@%d)"),
+				sizes[i] & 0xffff, sizes[i] >> 16);
+			free(buf);
+			return(false);
+		}
+
+		if (bf == bf_ptype3 && bdf->clut != NULL)
+		{
+			ff_post_notice(_("Missing Bitmap"), _("Currently, FontForge only supports bitmap (not bytemap) type3 output"));
+			return(false);
+		}
+
+		strncpy(buf, filename, buf_size);
+		pt = strrchr(buf, '.');
+		int pt_size = buf_size - (pt - buf);
+
+		if (pt != NULL && (pt2 = strrchr(buf, '/')) != NULL && pt < pt2)
+		{
+			pt = NULL;
+			pt_size = 0;
+		}
+
+		if (pt == NULL)
+		{
+			int str_size = strlen(buf);
+			pt = buf + str_size;
+			pt_size = buf_size - str_size;
+		}
+
+		if (strcmp(pt - 4, ".otf.dfont") == 0 || strcmp(pt - 4, ".ttf.bin") == 0)
+		{
+			pt -= 4;
+			pt_size += 4;
+		}
+
+		if (pt - 2 > buf && pt[-2] == '-' && pt[-1] == '*')
+		{
+			pt -= 2;
+			pt_size += 2;
+		}
+		ext = bf == bf_bdf ? ".bdf" : bf == bf_ptype3 ? ".pt3" : ".fnt";
+
+		if (bdf->clut == NULL)
+		{
+			snprintf(pt, pt_size, "-%d%s", bdf->pixelsize, ext);
+		}
+		else
+		{
+			snprintf(pt, pt_size, "-%d@%d%s", bdf->pixelsize, BDFDepth(bdf), ext);
+		}
+
+		ff_progress_change_line2(buf);
+		if (bf == bf_bdf)
+			BDFFontDump(buf, bdf, map, res);
+		else if (bf == bf_ptype3)
+			PSBitmapDump(buf, bdf, map);
+		else if (bf == bf_fnt)
+			FNTFontDump(buf, bdf, map, res);
+		else
+			IError("Unexpected font type");
+		ff_progress_next_stage();
 	}
-
-	if ( bf==bf_ptype3 && bdf->clut!=NULL ) {
-	    ff_post_notice(_("Missing Bitmap"),_("Currently, FontForge only supports bitmap (not bytemap) type3 output") );
-return( false );
-	}
-
-	strcpy(buf,filename);
-	pt = strrchr(buf,'.');
-	if ( pt!=NULL && (pt2=strrchr(buf,'/'))!=NULL && pt<pt2 )
-	    pt = NULL;
-	if ( pt==NULL )
-	    pt = buf+strlen(buf);
-	if ( strcmp(pt-4,".otf.dfont")==0 || strcmp(pt-4,".ttf.bin")==0 ) pt-=4;
-	if ( pt-2>buf && pt[-2]=='-' && pt[-1]=='*' )
-	    pt -= 2;
-	ext = bf==bf_bdf ? ".bdf" : bf==bf_ptype3 ? ".pt3" : ".fnt";
-	if ( bdf->clut==NULL )
-	    sprintf( pt, "-%d%s", bdf->pixelsize, ext );
-	else
-	    sprintf( pt, "-%d@%d%s", bdf->pixelsize, BDFDepth(bdf), ext );
-
-	ff_progress_change_line2(buf);
-	if ( bf==bf_bdf ) 
-	    BDFFontDump(buf,bdf,map,res);
-	else if ( bf==bf_ptype3 )
-	    PSBitmapDump(buf,bdf,map);
-	else if ( bf==bf_fnt )
-	    FNTFontDump(buf,bdf,map,res);
-	else
-	    IError( "Unexpected font type" );
-	ff_progress_next_stage();
-    }
-    free(buf);
-return( true );
+	free(buf);
+	return(true);
 }
 
 static int32 *ParseWernerSFDFile(char *wernerfilename,SplineFont *sf,int *max,
@@ -658,24 +687,45 @@ return( 0 );
 	memcpy(pt,names[subfont],len);
     }
     temp.fontname = copy(spt);
-    temp.fullname = malloc(strlen(temp.fullname)+strlen(names[subfont])+3);
-    strcpy(temp.fullname,sf->fullname);
+
+	int str_size = strlen(temp.fullname) + strlen(names[subfont]) + 3;
+    temp.fullname = malloc(str_size);
+	strncpy(temp.fullname, sf->fullname, str_size);
+
     strcat(temp.fullname," ");
     strcat(temp.fullname,names[subfont]);
     strcat(spt,subtype==ff_pfb ? ".pfb" : ".pfa" );
     ff_progress_change_line2(filename);
 
-    if ( sf->xuid!=NULL ) {
-	sprintf( buf, "%d", subfont );
-	temp.xuid = malloc(strlen(sf->xuid)+strlen(buf)+5);
-	strcpy(temp.xuid,sf->xuid);
-	pt = temp.xuid + strlen( temp.xuid )-1;
-	while ( pt>temp.xuid && *pt==' ' ) --pt;
-	if ( *pt==']' ) --pt;
-	*pt = ' ';
-	strcpy(pt+1,buf);
-	strcat(pt,"]");
-    }
+	if (sf->xuid != NULL)
+	{
+		snprintf(buf, sizeof(buf), "%d", subfont);
+
+		int xuid_size = strlen(sf->xuid) + strlen(buf) + 5;
+		temp.xuid = malloc(xuid_size);
+
+		strncpy(temp.xuid, sf->xuid, xuid_size);
+
+		int str_size = strlen(temp.xuid) - 1;
+		pt = temp.xuid + str_size;
+		xuid_size -= str_size;
+
+		while (pt > temp.xuid && *pt == ' ')
+		{
+			--pt;
+			xuid_size++;
+		}
+
+		if (*pt == ']')
+		{
+			--pt;
+			xuid_size++;
+		}
+
+		*pt = ' ';
+		strncpy(pt + 1, buf, xuid_size - 1);
+		strcat(pt, "]");
+	}
 
     err = !WritePSFont(filename,&temp,subtype,old_ps_flags,&encmap,sf,layer);
     if ( err )

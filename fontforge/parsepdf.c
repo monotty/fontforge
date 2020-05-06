@@ -1693,10 +1693,10 @@ static void add_mapping(SplineFont *basesf, long *mappings, int *uvals, int nuni
     struct altuni *altuni, *prev;
     SplineChar *sc;
 
-    name = copy(StdGlyphName(buffer,uvals[0],sf->uni_interp,sf->for_new_glyphs));
+    name = copy(StdGlyphName(buffer, sizeof(buffer), uvals[0],sf->uni_interp,sf->for_new_glyphs));
     name = realloc(name,strlen(name)+8);
     for (i = 1; i<nuni; i++) {
-	nname = copy(StdGlyphName(buffer,uvals[i],sf->uni_interp,sf->for_new_glyphs));
+	nname = copy(StdGlyphName(buffer, sizeof(buffer), uvals[i],sf->uni_interp,sf->for_new_glyphs));
 	name = realloc(name,strlen(name)+strlen(nname)+10);
 	strcat(name, "_");
 	strcat(name, nname);
@@ -1707,7 +1707,7 @@ static void add_mapping(SplineFont *basesf, long *mappings, int *uvals, int nuni
 	if (mappings[i] == mappings[cur]) ndups++;
     }
     if (ndups) {
-	sprintf(suffix, ".alt%d", ndups);
+	snprintf(suffix, sizeof(suffix), ".alt%d", ndups);
 	strcat(name, suffix);
     }
 

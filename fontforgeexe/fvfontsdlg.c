@@ -192,7 +192,7 @@ void FVMergeFonts(FontView *fv) {
 	memset(&gcd,0,sizeof(gcd));
 	memset(&boxes,0,sizeof(boxes));
 
-	sprintf( buffer, _("Font to merge into %.20s"), fv->b.sf->fontname );
+	snprintf( buffer, sizeof(buffer), _("Font to merge into %.20s"), fv->b.sf->fontname );
 	label[0].text = (unichar_t *) buffer;
 	label[0].text_is_1byte = true;
 	gcd[0].gd.label = &label[0];
@@ -347,7 +347,7 @@ void FVInterpolateFonts(FontView *fv) {
     memset(&label,0,sizeof(label));
     memset(&gcd,0,sizeof(gcd));
 
-    sprintf( buffer, _("Interpolating between %.20s and:"), fv->b.sf->fontname );
+    snprintf( buffer, sizeof(buffer), _("Interpolating between %.20s and:"), fv->b.sf->fontname );
     label[0].text = (unichar_t *) buffer;
     label[0].text_is_1byte = true;
     gcd[0].gd.label = &label[0];
@@ -369,7 +369,7 @@ void FVInterpolateFonts(FontView *fv) {
     }
     gcd[1].creator = GListButtonCreate;
 
-    sprintf( buf2, "%g", last_amount );
+    snprintf( buf2, sizeof(buf2), "%g", last_amount );
     label[2].text = (unichar_t *) buf2;
     label[2].text_is_1byte = true;
     gcd[2].gd.pos.x = 20; gcd[2].gd.pos.y = 51;

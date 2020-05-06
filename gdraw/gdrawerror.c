@@ -220,7 +220,7 @@ void GDrawError(const char *fmt,...) {
     va_list ap;
 
     va_start(ap, fmt);
-    vsprintf(buf, fmt, ap);
+    vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
     _GDraw_InitError(NULL);
     if ( error==NULL )
@@ -237,7 +237,7 @@ void GDrawFatalError(const char *fmt,...) {
 
     strcpy(buf,"Fatal Error:\n");
     va_start(ap, fmt);
-    vsprintf(buf+strlen(buf), fmt, ap);
+    vsnprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), fmt, ap);
     va_end(ap);
 	fprintf( stderr, "%s\n", buf );
     if ( error!=NULL ) {

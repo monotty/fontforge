@@ -917,7 +917,7 @@ SplineChar *SFGetOrMakeChar(SplineFont *sf, int unienc, const char *name ) {
 	    sc->name = copy(name);
 	else {
 	    char buffer[40];
-	    sprintf(buffer,"glyph%d", sf->glyphcnt);
+	    snprintf(buffer, sizeof(buffer), "glyph%d", sf->glyphcnt);
 	    sc->name = copy(buffer);
 	}
 	SFAddGlyphAndEncode(sf,sc,NULL,-1);

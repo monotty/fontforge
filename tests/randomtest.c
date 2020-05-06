@@ -374,7 +374,8 @@ static void do_test(void) {
     static int test_num=0;
     char buffer[1024];
 
-    sprintf( buffer, "%s/test%d", results_dir, test_num++ );
+    snprintf( buffer, sizeof(buffer), "%s/test%d", results_dir, test_num++ );
+
     if ( copyfont(&fontlist[i],buffer) ) {
 	signal(SIGALRM,abort_test);
 	alarm(60*60);		/* Anything that takes more than an hour to parse is an error */

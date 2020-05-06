@@ -2188,7 +2188,7 @@ static void SFDFpstClassNamesOut(FILE *sfd,int class_cnt,char **classnames,const
 	fprintf( sfd, "  %s: ", keyword );
 	for ( i=0; i<class_cnt; ++i ) {
 	    if ( classnames[i]==NULL ) {
-		sprintf( buffer,"%d", i );
+		snprintf( buffer, sizeof(buffer), "%d", i );
 		SFDDumpUTF7Str(sfd,buffer);
 	    } else
 		SFDDumpUTF7Str(sfd,classnames[i]);
@@ -2798,227 +2798,290 @@ return( err );
 }
 
 
-static int SFD_Dump( FILE *sfd, SplineFont *sf, EncMap *map, EncMap *normal,
-		     int todir, char *dirname)
+static int SFD_Dump(FILE* sfd, SplineFont* sf, EncMap* map, EncMap* normal,
+	int todir, char* dirname)
 {
-    int i, realcnt;
-    BDFFont *bdf;
-    int *newgids = NULL;
-    int err = false;
+	int i, realcnt;
+	BDFFont* bdf;
+	int* newgids = NULL;
+	int err = false;
 
-    if ( normal!=NULL )
-	map = normal;
+	if (normal != NULL)
+		map = normal;
 
-    SFD_DumpSplineFontMetadata( sfd, sf ); //, map, normal, todir, dirname );
+	SFD_DumpSplineFontMetadata(sfd, sf); //, map, normal, todir, dirname );
 
-    if ( sf->MATH!=NULL ) {
-	struct MATH *math = sf->MATH;
-	for ( i=0; math_constants_descriptor[i].script_name!=NULL; ++i ) {
-	    fprintf( sfd, "MATH:%s: %d", math_constants_descriptor[i].script_name,
-		    *((int16 *) (((char *) (math)) + math_constants_descriptor[i].offset)) );
-	    if ( math_constants_descriptor[i].devtab_offset>=0 ) {
-		DeviceTable **devtab = (DeviceTable **) (((char *) (math)) + math_constants_descriptor[i].devtab_offset );
-		putc(' ',sfd);
-		SFDDumpDeviceTable(sfd,*devtab);
-	    }
-	    putc('\n',sfd);
-	}
-    }
-    if ( sf->python_persistent!=NULL )
-	SFDPickleMe(sfd,sf->python_persistent, sf->python_persistent_has_lists);
-    if ( sf->subfontcnt!=0 ) {
-	/* CID fonts have no encodings, they have registry info instead */
-	fprintf(sfd, "Registry: %s\n", sf->cidregistry );
-	fprintf(sfd, "Ordering: %s\n", sf->ordering );
-	fprintf(sfd, "Supplement: %d\n", sf->supplement );
-	fprintf(sfd, "CIDVersion: %g\n", (double) sf->cidversion );	/* This is a number whereas "version" is a string */
-    } else
-	SFDDumpEncoding(sfd,map->enc,"Encoding");
-    if ( normal!=NULL )
-	fprintf(sfd, "Compacted: 1\n" );
-    fprintf( sfd, "UnicodeInterp: %s\n", unicode_interp_names[sf->uni_interp]);
-    fprintf( sfd, "NameList: %s\n", sf->for_new_glyphs->title );
-
-    if ( map->remap!=NULL ) {
-	struct remap *remap;
-	int n;
-	for ( n=0,remap = map->remap; remap->infont!=-1; ++n, ++remap );
-	fprintf( sfd, "RemapN: %d\n", n );
-	for ( remap = map->remap; remap->infont!=-1; ++remap )
-	    fprintf(sfd, "Remap: %x %x %d\n", (int) remap->firstenc, (int) remap->lastenc, (int) remap->infont );
-    }
-    if ( sf->display_size!=0 )
-	fprintf( sfd, "DisplaySize: %d\n", sf->display_size );
-    if ( sf->display_layer!=ly_fore )
-	fprintf( sfd, "DisplayLayer: %d\n", sf->display_layer );
-    fprintf( sfd, "AntiAlias: %d\n", sf->display_antialias );
-    fprintf( sfd, "FitToEm: %d\n", sf->display_bbsized );
-    if ( sf->extrema_bound!=0 )
-	fprintf( sfd, "ExtremaBound: %d\n", sf->extrema_bound );
-    if ( sf->width_separation!=0 )
-	fprintf( sfd, "WidthSeparation: %d\n", sf->width_separation );
-    {
-	int rc, cc, te;
-	if ( (te = FVWinInfo(sf->fv,&cc,&rc))!= -1 )
-	    fprintf( sfd, "WinInfo: %d %d %d\n", te, cc, rc );
-	else if ( sf->top_enc!=-1 )
-	    fprintf( sfd, "WinInfo: %d %d %d\n", sf->top_enc, sf->desired_col_cnt,
-		sf->desired_row_cnt);
-    }
-    if ( sf->onlybitmaps!=0 )
-	fprintf( sfd, "OnlyBitmaps: %d\n", sf->onlybitmaps );
-    if ( sf->private!=NULL )
-	SFDDumpPrivate(sfd,sf->private);
-#if HANYANG
-    if ( sf->rules!=NULL )
-	SFDDumpCompositionRules(sfd,sf->rules);
-#endif
-    if ( sf->grid.splines!=NULL ) {
-	if ( sf->grid.order2 )
-	    fprintf(sfd, "GridOrder2: %d\n", sf->grid.order2 );
-	fprintf(sfd, "Grid\n" );
-	SFDDumpSplineSet(sfd,sf->grid.splines,sf->grid.order2);
-    }
-    if ( sf->texdata.type!=tex_unset ) {
-	fprintf(sfd, "TeXData: %d %d", (int) sf->texdata.type, (int) ((sf->design_size<<19)+2)/5 );
-	for ( i=0; i<22; ++i )
-	    fprintf(sfd, " %d", (int) sf->texdata.params[i]);
-	putc('\n',sfd);
-    }
-    if ( sf->anchor!=NULL ) {
-	AnchorClass *an;
-	fprintf(sfd, "AnchorClass2:");
-	for ( an=sf->anchor; an!=NULL; an=an->next ) {
-	    putc(' ',sfd);
-	    SFDDumpUTF7Str(sfd,an->name);
-            if ( an->subtable!=NULL ) {
-	        putc(' ',sfd);
-	        SFDDumpUTF7Str(sfd,an->subtable->subtable_name);
-            }
-            else
-                fprintf(sfd, "\"\" ");
-	}
-	putc('\n',sfd);
-    }
-
-    if ( sf->subfontcnt!=0 ) {
-	if ( todir ) {
-	    for ( i=0; i<sf->subfontcnt; ++i ) {
-		char *subfont = malloc(strlen(dirname)+1+strlen(sf->subfonts[i]->fontname)+20);
-		char *fontprops;
-		FILE *ssfd;
-		sprintf( subfont,"%s/%s" SUBFONT_EXT, dirname, sf->subfonts[i]->fontname );
-		GFileMkDir(subfont, 0755);
-		fontprops = malloc(strlen(subfont)+strlen("/" FONT_PROPS)+1);
-		strcpy(fontprops,subfont); strcat(fontprops,"/" FONT_PROPS);
-		ssfd = fopen( fontprops,"w");
-		if ( ssfd!=NULL ) {
-		    err |= SFD_Dump(ssfd,sf->subfonts[i],map,NULL,todir,subfont);
-		    if ( ferror(ssfd) ) err = true;
-		    if ( fclose(ssfd)) err = true;
-		} else
-		    err = true;
-		free(fontprops);
-		free(subfont);
-	    }
-	} else {
-	    int max;
-	    for ( i=max=0; i<sf->subfontcnt; ++i )
-		if ( max<sf->subfonts[i]->glyphcnt )
-		    max = sf->subfonts[i]->glyphcnt;
-	    fprintf(sfd, "BeginSubFonts: %d %d\n", sf->subfontcnt, max );
-	    for ( i=0; i<sf->subfontcnt; ++i )
-		SFD_Dump(sfd,sf->subfonts[i],map,NULL,false, NULL);
-	    fprintf(sfd, "EndSubFonts\n" );
-	}
-    } else {
-	int enccount = map->enccount;
-	if ( sf->cidmaster!=NULL ) {
-	    realcnt = -1;
-	    enccount = sf->glyphcnt;
-	} else {
-	    realcnt = 0;
-	    for ( i=0; i<sf->glyphcnt; ++i ) if ( !SFDOmit(sf->glyphs[i]) )
-		++realcnt;
-	    if ( realcnt!=sf->glyphcnt ) {
-		newgids = malloc(sf->glyphcnt*sizeof(int));
-		realcnt = 0;
-		for ( i=0; i<sf->glyphcnt; ++i )
-		    if ( SFDOmit(sf->glyphs[i]) )
-			newgids[i] = -1;
-		    else
-			newgids[i] = realcnt++;
-	    }
-	}
-	if ( !todir )
-	    fprintf(sfd, "BeginChars: %d %d\n",
-	        enccount<map->enc->char_cnt? map->enc->char_cnt : enccount,
-	        realcnt );
-	for ( i=0; i<sf->glyphcnt; ++i ) {
-	    if ( !SFDOmit(sf->glyphs[i]) ) {
-		if ( !todir )
-		SFDDumpChar(sfd,sf->glyphs[i],map,newgids,todir,1);
-		else {
-		    char *glyphfile = malloc(strlen(dirname)+2*strlen(sf->glyphs[i]->name)+20);
-		    FILE *gsfd;
-		    appendnames(glyphfile,dirname,"/",sf->glyphs[i]->name,GLYPH_EXT );
-		    gsfd = fopen(glyphfile,"w");
-		    if ( gsfd!=NULL ) {
-			SFDDumpChar(gsfd,sf->glyphs[i],map,newgids,todir,1);
-			if ( ferror(gsfd)) err = true;
-			if ( fclose(gsfd)) err = true;
-		    } else
-			err = true;
-		    free(glyphfile);
+	if (sf->MATH != NULL)
+	{
+		struct MATH* math = sf->MATH;
+		for (i = 0; math_constants_descriptor[i].script_name != NULL; ++i)
+		{
+			fprintf(sfd, "MATH:%s: %d", math_constants_descriptor[i].script_name,
+				*((int16*)(((char*)(math)) + math_constants_descriptor[i].offset)));
+			if (math_constants_descriptor[i].devtab_offset >= 0)
+			{
+				DeviceTable** devtab = (DeviceTable**)(((char*)(math)) + math_constants_descriptor[i].devtab_offset);
+				putc(' ', sfd);
+				SFDDumpDeviceTable(sfd, *devtab);
+			}
+			putc('\n', sfd);
 		}
-	    }
-	    ff_progress_next();
 	}
-	if ( !todir )
-	    fprintf(sfd, "EndChars\n" );
-    }
+	if (sf->python_persistent != NULL)
+		SFDPickleMe(sfd, sf->python_persistent, sf->python_persistent_has_lists);
+	if (sf->subfontcnt != 0)
+	{
+		/* CID fonts have no encodings, they have registry info instead */
+		fprintf(sfd, "Registry: %s\n", sf->cidregistry);
+		fprintf(sfd, "Ordering: %s\n", sf->ordering);
+		fprintf(sfd, "Supplement: %d\n", sf->supplement);
+		fprintf(sfd, "CIDVersion: %g\n", (double)sf->cidversion);	/* This is a number whereas "version" is a string */
+	}
+	else
+		SFDDumpEncoding(sfd, map->enc, "Encoding");
+	if (normal != NULL)
+		fprintf(sfd, "Compacted: 1\n");
+	fprintf(sfd, "UnicodeInterp: %s\n", unicode_interp_names[sf->uni_interp]);
+	fprintf(sfd, "NameList: %s\n", sf->for_new_glyphs->title);
 
-    if ( sf->bitmaps!=NULL )
-	ff_progress_change_line2(_("Saving Bitmaps"));
-    for ( bdf = sf->bitmaps; bdf!=NULL; bdf=bdf->next ) {
-	if ( todir ) {
-	    char *strike = malloc(strlen(dirname)+1+20+20);
-	    char *strikeprops;
-	    FILE *ssfd;
-	    sprintf( strike,"%s/%d" STRIKE_EXT, dirname, bdf->pixelsize );
-	    GFileMkDir(strike, 0755);
-	    strikeprops = malloc(strlen(strike)+strlen("/" STRIKE_PROPS)+1);
-	    strcpy(strikeprops,strike); strcat(strikeprops,"/" STRIKE_PROPS);
-	    ssfd = fopen( strikeprops,"w");
-	    if ( ssfd!=NULL ) {
-		err |= SFDDumpBitmapFont(ssfd,bdf,map,newgids,todir,strike);
-		if ( ferror(ssfd) ) err = true;
-		if ( fclose(ssfd)) err = true;
-	    } else
-		err = true;
-	    free(strikeprops);
-	    free(strike);
-	} else
-	    SFDDumpBitmapFont(sfd,bdf,map,newgids,todir,dirname);
-    }
-    fprintf(sfd, sf->cidmaster==NULL?"EndSplineFont\n":"EndSubSplineFont\n" );
-    free(newgids);
-return( err );
+	if (map->remap != NULL)
+	{
+		struct remap* remap;
+		int n;
+		for (n = 0, remap = map->remap; remap->infont != -1; ++n, ++remap);
+		fprintf(sfd, "RemapN: %d\n", n);
+		for (remap = map->remap; remap->infont != -1; ++remap)
+			fprintf(sfd, "Remap: %x %x %d\n", (int)remap->firstenc, (int)remap->lastenc, (int)remap->infont);
+	}
+	if (sf->display_size != 0)
+		fprintf(sfd, "DisplaySize: %d\n", sf->display_size);
+	if (sf->display_layer != ly_fore)
+		fprintf(sfd, "DisplayLayer: %d\n", sf->display_layer);
+	fprintf(sfd, "AntiAlias: %d\n", sf->display_antialias);
+	fprintf(sfd, "FitToEm: %d\n", sf->display_bbsized);
+	if (sf->extrema_bound != 0)
+		fprintf(sfd, "ExtremaBound: %d\n", sf->extrema_bound);
+	if (sf->width_separation != 0)
+		fprintf(sfd, "WidthSeparation: %d\n", sf->width_separation);
+	{
+		int rc, cc, te;
+		if ((te = FVWinInfo(sf->fv, &cc, &rc)) != -1)
+			fprintf(sfd, "WinInfo: %d %d %d\n", te, cc, rc);
+		else if (sf->top_enc != -1)
+			fprintf(sfd, "WinInfo: %d %d %d\n", sf->top_enc, sf->desired_col_cnt,
+				sf->desired_row_cnt);
+	}
+	if (sf->onlybitmaps != 0)
+		fprintf(sfd, "OnlyBitmaps: %d\n", sf->onlybitmaps);
+	if (sf->private != NULL)
+		SFDDumpPrivate(sfd, sf->private);
+#if HANYANG
+	if (sf->rules != NULL)
+		SFDDumpCompositionRules(sfd, sf->rules);
+#endif
+	if (sf->grid.splines != NULL)
+	{
+		if (sf->grid.order2)
+			fprintf(sfd, "GridOrder2: %d\n", sf->grid.order2);
+		fprintf(sfd, "Grid\n");
+		SFDDumpSplineSet(sfd, sf->grid.splines, sf->grid.order2);
+	}
+	if (sf->texdata.type != tex_unset)
+	{
+		fprintf(sfd, "TeXData: %d %d", (int)sf->texdata.type, (int)((sf->design_size << 19) + 2) / 5);
+		for (i = 0; i < 22; ++i)
+			fprintf(sfd, " %d", (int)sf->texdata.params[i]);
+		putc('\n', sfd);
+	}
+	if (sf->anchor != NULL)
+	{
+		AnchorClass* an;
+		fprintf(sfd, "AnchorClass2:");
+		for (an = sf->anchor; an != NULL; an = an->next)
+		{
+			putc(' ', sfd);
+			SFDDumpUTF7Str(sfd, an->name);
+			if (an->subtable != NULL)
+			{
+				putc(' ', sfd);
+				SFDDumpUTF7Str(sfd, an->subtable->subtable_name);
+			}
+			else
+				fprintf(sfd, "\"\" ");
+		}
+		putc('\n', sfd);
+	}
+
+	if (sf->subfontcnt != 0)
+	{
+		if (todir)
+		{
+			for (i = 0; i < sf->subfontcnt; ++i)
+			{
+				int subfont_size = strlen(dirname) + 1 + strlen(sf->subfonts[i]->fontname) + 20;
+				char* subfont = malloc(subfont_size);
+				char* fontprops;
+				FILE* ssfd;
+				
+				snprintf(subfont, subfont_size, "%s/%s" SUBFONT_EXT, dirname, sf->subfonts[i]->fontname);
+
+				GFileMkDir(subfont, 0755);
+
+				int fontprops_size = strlen(subfont) + strlen("/" FONT_PROPS) + 1;
+				fontprops = malloc(fontprops_size);
+				
+				strncpy(fontprops, subfont, fontprops_size);
+				
+				strcat(fontprops, "/" FONT_PROPS);
+
+				ssfd = fopen(fontprops, "w");
+				if (ssfd != NULL)
+				{
+					err |= SFD_Dump(ssfd, sf->subfonts[i], map, NULL, todir, subfont);
+					if (ferror(ssfd)) err = true;
+					if (fclose(ssfd)) err = true;
+				}
+				else
+					err = true;
+				free(fontprops);
+				free(subfont);
+			}
+		}
+		else
+		{
+			int max;
+			for (i = max = 0; i < sf->subfontcnt; ++i)
+				if (max < sf->subfonts[i]->glyphcnt)
+					max = sf->subfonts[i]->glyphcnt;
+			fprintf(sfd, "BeginSubFonts: %d %d\n", sf->subfontcnt, max);
+			for (i = 0; i < sf->subfontcnt; ++i)
+				SFD_Dump(sfd, sf->subfonts[i], map, NULL, false, NULL);
+			fprintf(sfd, "EndSubFonts\n");
+		}
+	}
+	else
+	{
+		int enccount = map->enccount;
+		if (sf->cidmaster != NULL)
+		{
+			realcnt = -1;
+			enccount = sf->glyphcnt;
+		}
+		else
+		{
+			realcnt = 0;
+			for (i = 0; i < sf->glyphcnt; ++i) if (!SFDOmit(sf->glyphs[i]))
+				++realcnt;
+			if (realcnt != sf->glyphcnt)
+			{
+				newgids = malloc(sf->glyphcnt * sizeof(int));
+				realcnt = 0;
+				for (i = 0; i < sf->glyphcnt; ++i)
+					if (SFDOmit(sf->glyphs[i]))
+						newgids[i] = -1;
+					else
+						newgids[i] = realcnt++;
+			}
+		}
+		if (!todir)
+			fprintf(sfd, "BeginChars: %d %d\n",
+				enccount < map->enc->char_cnt ? map->enc->char_cnt : enccount,
+				realcnt);
+		for (i = 0; i < sf->glyphcnt; ++i)
+		{
+			if (!SFDOmit(sf->glyphs[i]))
+			{
+				if (!todir)
+					SFDDumpChar(sfd, sf->glyphs[i], map, newgids, todir, 1);
+				else
+				{
+					char* glyphfile = malloc(strlen(dirname) + 2 * strlen(sf->glyphs[i]->name) + 20);
+					FILE* gsfd;
+					appendnames(glyphfile, dirname, "/", sf->glyphs[i]->name, GLYPH_EXT);
+					gsfd = fopen(glyphfile, "w");
+					if (gsfd != NULL)
+					{
+						SFDDumpChar(gsfd, sf->glyphs[i], map, newgids, todir, 1);
+						if (ferror(gsfd)) err = true;
+						if (fclose(gsfd)) err = true;
+					}
+					else
+						err = true;
+					free(glyphfile);
+				}
+			}
+			ff_progress_next();
+		}
+		if (!todir)
+			fprintf(sfd, "EndChars\n");
+	}
+
+	if (sf->bitmaps != NULL)
+		ff_progress_change_line2(_("Saving Bitmaps"));
+	for (bdf = sf->bitmaps; bdf != NULL; bdf = bdf->next)
+	{
+		if (todir)
+		{
+			int strike_size = strlen(dirname) + 1 + 20 + 20;
+			char* strike = malloc(strike_size);
+
+			char* strikeprops;
+			FILE* ssfd;
+			
+			snprintf(strike, strike_size, "%s/%d" STRIKE_EXT, dirname, bdf->pixelsize);
+
+			GFileMkDir(strike, 0755);
+
+			int strikeprops_size = strlen(strike) + strlen("/" STRIKE_PROPS) + 1;
+			strikeprops = malloc(strikeprops_size);
+			
+			strncpy(strikeprops, strike, strikeprops_size);
+
+			strcat(strikeprops, "/" STRIKE_PROPS);
+			
+			ssfd = fopen(strikeprops, "w");
+			if (ssfd != NULL)
+			{
+				err |= SFDDumpBitmapFont(ssfd, bdf, map, newgids, todir, strike);
+				if (ferror(ssfd)) err = true;
+				if (fclose(ssfd)) err = true;
+			}
+			else
+				err = true;
+			free(strikeprops);
+			free(strike);
+		}
+		else
+			SFDDumpBitmapFont(sfd, bdf, map, newgids, todir, dirname);
+	}
+	fprintf(sfd, sf->cidmaster == NULL ? "EndSplineFont\n" : "EndSubSplineFont\n");
+	free(newgids);
+	return(err);
 }
 
 static int SFD_MIDump(SplineFont *sf,EncMap *map,char *dirname,	int mm_pos) {
-    char *instance = malloc(strlen(dirname)+1+10+20);
+
+	int instance_size = strlen(dirname) + 1 + 10 + 20;
+    char *instance = malloc(instance_size);
+
     char *fontprops;
     FILE *ssfd;
     int err = false;
 
     /* I'd like to use the font name, but the order of the instances is */
     /*  crucial and I must enforce an ordering on them */
-    sprintf( instance,"%s/mm%d" INSTANCE_EXT, dirname, mm_pos );
+    snprintf( instance, instance_size, "%s/mm%d" INSTANCE_EXT, dirname, mm_pos );
+
     GFileMkDir(instance, 0755);
-    fontprops = malloc(strlen(instance)+strlen("/" FONT_PROPS)+1);
-    strcpy(fontprops,instance); strcat(fontprops,"/" FONT_PROPS);
-    ssfd = fopen( fontprops,"w");
+    
+	int fontprops_size = strlen(instance) + strlen("/" FONT_PROPS) + 1;
+	fontprops = malloc(fontprops_size);
+    
+	strncpy(fontprops,instance, fontprops_size);
+	
+	strcat(fontprops,"/" FONT_PROPS);
+    
+	ssfd = fopen( fontprops,"w");
     if ( ssfd!=NULL ) {
 	err |= SFD_Dump(ssfd,sf,map,NULL,true,instance);
 	if ( ferror(ssfd) ) err = true;
@@ -3129,74 +3192,120 @@ static int SFDDump(FILE* sfd, SplineFont* sf, EncMap* map, EncMap* normal,
 	return(err);
 }
 
-static void SFDirClean(char *filename) {
-    DIR *dir;
-    struct dirent *ent;
-    char *buffer, *pt;
+static void SFDirClean(char* filename)
+{
+	DIR* dir;
+	struct dirent* ent;
+	char* buffer, * pt;
 
-    unlink(filename);		/* Just in case it's a normal file, it shouldn't be, but just in case... */
-    dir = opendir(filename);
-    if ( dir==NULL )
-return;
-    buffer = malloc(strlen(filename)+1+NAME_MAX+1);
-    while ( (ent = readdir(dir))!=NULL ) {
-	if ( strcmp(ent->d_name,".")==0 || strcmp(ent->d_name,"..")==0 )
-    continue;
-	pt = strrchr(ent->d_name,EXT_CHAR);
-	if ( pt==NULL )
-    continue;
-	sprintf( buffer,"%s/%s", filename, ent->d_name );
-	if ( strcmp(pt,".props")==0 ||
-		strcmp(pt,GLYPH_EXT)==0 ||
-		strcmp(pt,BITMAP_EXT)==0 )
-	    unlink( buffer );
-	else if ( strcmp(pt,STRIKE_EXT)==0 ||
-		strcmp(pt,SUBFONT_EXT)==0 ||
-		strcmp(pt,INSTANCE_EXT)==0 )
-	    SFDirClean(buffer);
-	/* If there are filenames we don't recognize, leave them. They might contain version control info */
-    }
-    free(buffer);
-    closedir(dir);
+	unlink(filename);		/* Just in case it's a normal file, it shouldn't be, but just in case... */
+	dir = opendir(filename);
+	
+	if (dir == NULL)
+	{
+		return;
+	}
+
+	int buffer_size = strlen(filename) + 1 + NAME_MAX + 1;
+	buffer = malloc(buffer_size);
+
+	while ((ent = readdir(dir)) != NULL)
+	{
+		if (strcmp(ent->d_name, ".") == 0 || 
+			strcmp(ent->d_name, "..") == 0)
+		{
+			continue;
+		}
+
+		pt = strrchr(ent->d_name, EXT_CHAR);
+		if (pt == NULL)
+		{
+			continue;
+		}
+
+		snprintf(buffer, buffer_size, "%s/%s", filename, ent->d_name);
+
+		if (strcmp(pt, ".props") == 0 ||
+			strcmp(pt, GLYPH_EXT) == 0 ||
+			strcmp(pt, BITMAP_EXT) == 0)
+		{
+			unlink(buffer);
+		}
+		else if (strcmp(pt, STRIKE_EXT) == 0 ||
+				 strcmp(pt, SUBFONT_EXT) == 0 ||
+				 strcmp(pt, INSTANCE_EXT) == 0)
+		{
+			SFDirClean(buffer);
+		}
+		/* If there are filenames we don't recognize, leave them. They might contain version control info */
+	}
+
+	free(buffer);
+	closedir(dir);
 }
 
-static void SFFinalDirClean(char *filename) {
-    DIR *dir;
-    struct dirent *ent;
-    char *buffer, *markerfile, *pt;
+static void SFFinalDirClean(char* filename)
+{
+	DIR* dir;
+	struct dirent* ent;
+	char* buffer, * markerfile, * pt;
 
-    /* we did not unlink sub-directories in case they contained version control */
-    /*  files. We did remove all our files from them, however.  If the user */
-    /*  removed a bitmap strike or a cid-subfont those sub-dirs will now be */
-    /*  empty. If the user didn't remove them then they will contain our marker */
-    /*  files. So if we find a subdir with no marker files in it, remove it */
-    dir = opendir(filename);
-    if ( dir==NULL )
-return;
-    buffer = malloc(strlen(filename)+1+NAME_MAX+1);
-    markerfile = malloc(strlen(filename)+2+2*NAME_MAX+1);
-    while ( (ent = readdir(dir))!=NULL ) {
-	if ( strcmp(ent->d_name,".")==0 || strcmp(ent->d_name,"..")==0 )
-    continue;
-	pt = strrchr(ent->d_name,EXT_CHAR);
-	if ( pt==NULL )
-    continue;
-	sprintf( buffer,"%s/%s", filename, ent->d_name );
-	if ( strcmp(pt,".strike")==0 ||
-		strcmp(pt,SUBFONT_EXT)==0 ||
-		strcmp(pt,INSTANCE_EXT)==0 ) {
-	    if ( strcmp(pt,".strike")==0 )
-		sprintf( markerfile,"%s/" STRIKE_PROPS, buffer );
-	    else
-		sprintf( markerfile,"%s/" FONT_PROPS, buffer );
-	    if ( !GFileExists(markerfile)) {
-		GFileRemove(buffer, false);
-	    }
+	/* we did not unlink sub-directories in case they contained version control */
+	/*  files. We did remove all our files from them, however.  If the user */
+	/*  removed a bitmap strike or a cid-subfont those sub-dirs will now be */
+	/*  empty. If the user didn't remove them then they will contain our marker */
+	/*  files. So if we find a subdir with no marker files in it, remove it */
+	dir = opendir(filename);
+	
+	if (dir == NULL)
+	{
+		return;
 	}
-    }
-    free(buffer);
-    free(markerfile);
-    closedir(dir);
+	
+	int buffer_size = strlen(filename) + 1 + NAME_MAX + 1;
+	buffer = malloc(buffer_size);
+
+	int markerfile_size = strlen(filename) + 2 + 2 * NAME_MAX + 1;
+	markerfile = malloc(markerfile_size);
+
+	while ((ent = readdir(dir)) != NULL)
+	{
+		if (strcmp(ent->d_name, ".") == 0 ||
+			strcmp(ent->d_name, "..") == 0)
+		{
+			continue;
+		}
+
+		pt = strrchr(ent->d_name, EXT_CHAR);
+		
+		if (pt == NULL)
+		{
+			continue;
+		}
+
+		snprintf(buffer, buffer_size, "%s/%s", filename, ent->d_name);
+
+		if (strcmp(pt, ".strike") == 0 ||
+			strcmp(pt, SUBFONT_EXT) == 0 ||
+			strcmp(pt, INSTANCE_EXT) == 0)
+		{
+			if (strcmp(pt, ".strike") == 0)
+			{
+				snprintf(markerfile, markerfile_size, "%s/" STRIKE_PROPS, buffer);
+			}
+			else
+			{
+				snprintf(markerfile, markerfile_size, "%s/" FONT_PROPS, buffer);
+			}
+			if (!GFileExists(markerfile))
+			{
+				GFileRemove(buffer, false);
+			}
+		}
+	}
+	free(buffer);
+	free(markerfile);
+	closedir(dir);
 }
 
 int SFDWrite(char* filename, SplineFont* sf, EncMap* map, EncMap* normal, int todir)
@@ -3210,8 +3319,12 @@ int SFDWrite(char* filename, SplineFont* sf, EncMap* map, EncMap* normal, int to
 	{
 		SFDirClean(filename);
 		GFileMkDir(filename, 0755);		/* this will fail if directory already exists. That's ok */
-		tempfilename = malloc(strlen(filename) + strlen("/" FONT_PROPS) + 1);
-		strcpy(tempfilename, filename); strcat(tempfilename, "/" FONT_PROPS);
+		
+		int tempfilename_size = strlen(filename) + strlen("/" FONT_PROPS) + 1;
+		tempfilename = malloc(tempfilename_size);
+
+		strncpy(tempfilename, filename, tempfilename_size); 
+		strcat(tempfilename, "/" FONT_PROPS);
 	}
 
 	sfd = fopen(tempfilename, "w");
@@ -3304,71 +3417,80 @@ int SFDWriteBakExtended(char* locfilename,
 }
 
 
-int SFDWriteBak(char *filename,SplineFont *sf,EncMap *map,EncMap *normal) {
-    char *buf=0, *buf2=NULL;
-    int ret;
+int SFDWriteBak(char* filename, SplineFont* sf, EncMap* map, EncMap* normal)
+{
+	char* buf = 0, * buf2 = NULL;
+	int ret;
 
-    if ( sf->save_to_dir )
-    {
-	ret = SFDWrite(filename,sf,map,normal,true);
-	return(ret);
-    }
-
-    if ( sf->cidmaster!=NULL )
-	sf=sf->cidmaster;
-    buf = malloc(strlen(filename)+10);
-    if ( sf->compression!=0 )
-    {
-	buf2 = malloc(strlen(filename)+10);
-	strcpy(buf2,filename);
-	strcat(buf2,compressors[sf->compression-1].ext);
-	strcpy(buf,buf2);
-	strcat(buf,"~");
-	if ( rename(buf2,buf)==0 )
-	    sf->backedup = bs_backedup;
-    }
-    else
-    {
-	sf->backedup = bs_dontknow;
-
-	if( prefRevisionsToRetain )
+	if (sf->save_to_dir)
 	{
-	    char path[PATH_MAX];
-	    char pathnew[PATH_MAX];
-	    int idx = 0;
-
-	    snprintf( path,    PATH_MAX, "%s", filename );
-	    snprintf( pathnew, PATH_MAX, "%s-%02d", filename, idx );
-	    (void)rename( path, pathnew );
-
-	    for( idx=prefRevisionsToRetain; idx > 0; idx-- )
-	    {
-		snprintf( path, PATH_MAX, "%s-%02d", filename, idx-1 );
-		snprintf( pathnew, PATH_MAX, "%s-%02d", filename, idx );
-
-		int rc = rename( path, pathnew );
-		if( !idx && !rc )
-		    sf->backedup = bs_backedup;
-	    }
-	    idx = prefRevisionsToRetain+1;
-	    snprintf( path, PATH_MAX, "%s-%02d", filename, idx );
-	    unlink(path);
+		ret = SFDWrite(filename, sf, map, normal, true);
+		return(ret);
 	}
 
-    }
-    free(buf);
+	if (sf->cidmaster != NULL)
+		sf = sf->cidmaster;
+	buf = malloc(strlen(filename) + 10);
+	if (sf->compression != 0)
+	{
+		buf2 = malloc(strlen(filename) + 10);
+		strcpy(buf2, filename);
+		strcat(buf2, compressors[sf->compression - 1].ext);
+		strcpy(buf, buf2);
+		strcat(buf, "~");
+		if (rename(buf2, buf) == 0)
+			sf->backedup = bs_backedup;
+	}
+	else
+	{
+		sf->backedup = bs_dontknow;
 
-    ret = SFDWrite(filename,sf,map,normal,false);
-    if ( ret && sf->compression!=0 ) {
-	unlink(buf2);
-	buf = malloc(strlen(filename)+40);
-	sprintf( buf, "%s %s", compressors[sf->compression-1].recomp, filename );
-	if ( system( buf )!=0 )
-	    sf->compression = 0;
+		if (prefRevisionsToRetain)
+		{
+			char path[PATH_MAX];
+			char pathnew[PATH_MAX];
+			int idx = 0;
+
+			snprintf(path, PATH_MAX, "%s", filename);
+			snprintf(pathnew, PATH_MAX, "%s-%02d", filename, idx);
+			(void)rename(path, pathnew);
+
+			for (idx = prefRevisionsToRetain; idx > 0; idx--)
+			{
+				snprintf(path, PATH_MAX, "%s-%02d", filename, idx - 1);
+				snprintf(pathnew, PATH_MAX, "%s-%02d", filename, idx);
+
+				int rc = rename(path, pathnew);
+				if (!idx && !rc)
+					sf->backedup = bs_backedup;
+			}
+			idx = prefRevisionsToRetain + 1;
+			snprintf(path, PATH_MAX, "%s-%02d", filename, idx);
+			unlink(path);
+		}
+
+	}
 	free(buf);
-    }
-    free(buf2);
-    return( ret );
+
+	ret = SFDWrite(filename, sf, map, normal, false);
+	if (ret && sf->compression != 0)
+	{
+		unlink(buf2);
+
+		int buf_size = strlen(filename) + 40;
+		buf = malloc(buf_size);
+
+		snprintf(buf, buf_size, "%s %s", compressors[sf->compression - 1].recomp, filename);
+
+		if (system(buf) != 0)
+		{
+			sf->compression = 0;
+		}
+
+		free(buf);
+	}
+	free(buf2);
+	return(ret);
 }
 
 /* ********************************* INPUT ********************************** */
@@ -6238,96 +6360,116 @@ static void SFDFixupBitmapRefs( BDFFont *bdf ) {
 
 }
 
-static int SFDGetBitmapFont(FILE *sfd,SplineFont *sf,int fromdir,char *dirname) {
-    BDFFont *bdf, *prev;
-    char tok[2000];
-    int pixelsize, ascent, descent, depth=1;
-    int ch, enccount;
+static int SFDGetBitmapFont(FILE* sfd, SplineFont* sf, int fromdir, char* dirname)
+{
+	BDFFont* bdf, * prev;
+	char tok[2000];
+	int pixelsize, ascent, descent, depth = 1;
+	int ch, enccount;
 
-    if ( getint(sfd,&pixelsize)!=1 || pixelsize<=0 )
-return( 0 );
-    if ( getint(sfd,&enccount)!=1 || enccount<0 )
-return( 0 );
-    if ( getint(sfd,&ascent)!=1 || ascent<0 )
-return( 0 );
-    if ( getint(sfd,&descent)!=1 || descent<0 )
-return( 0 );
-    if ( getint(sfd,&depth)!=1 )
-	depth = 1;	/* old sfds don't have a depth here */
-    else if ( depth!=1 && depth!=2 && depth!=4 && depth!=8 )
-return( 0 );
-    while ( (ch = nlgetc(sfd))==' ' );
-    ungetc(ch,sfd);		/* old sfds don't have a foundry */
+	if (getint(sfd, &pixelsize) != 1 || pixelsize <= 0)
+		return(0);
+	if (getint(sfd, &enccount) != 1 || enccount < 0)
+		return(0);
+	if (getint(sfd, &ascent) != 1 || ascent < 0)
+		return(0);
+	if (getint(sfd, &descent) != 1 || descent < 0)
+		return(0);
+	if (getint(sfd, &depth) != 1)
+		depth = 1;	/* old sfds don't have a depth here */
+	else if (depth != 1 && depth != 2 && depth != 4 && depth != 8)
+		return(0);
+	while ((ch = nlgetc(sfd)) == ' ');
+	ungetc(ch, sfd);		/* old sfds don't have a foundry */
 
-    bdf = calloc(1,sizeof(BDFFont));
-    if (bdf == NULL)
-        return 0;
+	bdf = calloc(1, sizeof(BDFFont));
+	if (bdf == NULL)
+		return 0;
 
-    if ( ch!='\n' && ch!='\r' ) {
-	getname(sfd,tok);
-	bdf->foundry = copy(tok);
-    }
-    bdf->pixelsize = pixelsize;
-    bdf->ascent = ascent;
-    bdf->descent = descent;
-    if ( depth!=1 )
-	BDFClut(bdf,(1<<(depth/2)));
-
-    if ( sf->bitmaps==NULL )
-	sf->bitmaps = bdf;
-    else {
-	for ( prev=sf->bitmaps; prev->next!=NULL; prev=prev->next );
-	prev->next = bdf;
-    }
-    bdf->sf = sf;
-    bdf->glyphcnt = bdf->glyphmax = sf->glyphcnt;
-    bdf->glyphs = calloc(bdf->glyphcnt,sizeof(BDFChar *));
-
-    while ( getname(sfd,tok)==1 ) {
-	if ( strcmp(tok,"BDFStartProperties:")==0 )
-	    SFDGetBitmapProps(sfd,bdf,tok);
-	else if ( strcmp(tok,"BDFEndProperties")==0 )
-	    /* Do Nothing */;
-	else if ( strcmp(tok,"Resolution:")==0 )
-	    getint(sfd,&bdf->res);
-	else if ( strcmp(tok,"BDFChar:")==0 )
-	    SFDGetBitmapChar(sfd,bdf);
-	else if ( strcmp(tok,"BDFRefChar:")==0 )
-	    SFDGetBitmapReference(sfd,bdf);
-	else if ( strcmp(tok,"EndBitmapFont")==0 )
-    break;
-    }
-    if ( fromdir ) {
-	DIR *dir;
-	struct dirent *ent;
-	char *name;
-
-	dir = opendir(dirname);
-	if ( dir==NULL )
-return( 0 );
-	name = malloc(strlen(dirname)+NAME_MAX+3);
-
-	while ( (ent=readdir(dir))!=NULL ) {
-	    char *pt = strrchr(ent->d_name,EXT_CHAR);
-	    if ( pt==NULL )
-		/* Nothing interesting */;
-	    else if ( strcmp(pt,BITMAP_EXT)==0 ) {
-		FILE *gsfd;
-		sprintf(name,"%s/%s", dirname, ent->d_name);
-		gsfd = fopen(name,"r");
-		if ( gsfd!=NULL ) {
-		    if ( getname(gsfd,tok) && strcmp(tok,"BDFChar:")==0)
-			SFDGetBitmapChar(gsfd,bdf);
-		    fclose(gsfd);
-		    ff_progress_next();
-		}
-	    }
+	if (ch != '\n' && ch != '\r')
+	{
+		getname(sfd, tok);
+		bdf->foundry = copy(tok);
 	}
-	free(name);
-	closedir(dir);
-    }
-    SFDFixupBitmapRefs( bdf );
-return( 1 );
+	bdf->pixelsize = pixelsize;
+	bdf->ascent = ascent;
+	bdf->descent = descent;
+	if (depth != 1)
+		BDFClut(bdf, (1 << (depth / 2)));
+
+	if (sf->bitmaps == NULL)
+		sf->bitmaps = bdf;
+	else
+	{
+		for (prev = sf->bitmaps; prev->next != NULL; prev = prev->next);
+		prev->next = bdf;
+	}
+	bdf->sf = sf;
+	bdf->glyphcnt = bdf->glyphmax = sf->glyphcnt;
+	bdf->glyphs = calloc(bdf->glyphcnt, sizeof(BDFChar*));
+
+	while (getname(sfd, tok) == 1)
+	{
+		if (strcmp(tok, "BDFStartProperties:") == 0)
+			SFDGetBitmapProps(sfd, bdf, tok);
+		else if (strcmp(tok, "BDFEndProperties") == 0)
+			/* Do Nothing */;
+		else if (strcmp(tok, "Resolution:") == 0)
+			getint(sfd, &bdf->res);
+		else if (strcmp(tok, "BDFChar:") == 0)
+			SFDGetBitmapChar(sfd, bdf);
+		else if (strcmp(tok, "BDFRefChar:") == 0)
+			SFDGetBitmapReference(sfd, bdf);
+		else if (strcmp(tok, "EndBitmapFont") == 0)
+			break;
+	}
+	if (fromdir)
+	{
+		DIR* dir;
+		struct dirent* ent;
+		char* name;
+
+		dir = opendir(dirname);
+		if (dir == NULL)
+		{
+			return(0);
+		}
+
+		int name_size = strlen(dirname) + NAME_MAX + 3;
+		name = malloc(name_size);
+
+		while ((ent = readdir(dir)) != NULL)
+		{
+			char* pt = strrchr(ent->d_name, EXT_CHAR);
+			
+			if (pt == NULL)
+			{
+				/* Nothing interesting */;
+			}
+			else if (strcmp(pt, BITMAP_EXT) == 0)
+			{
+				FILE* gsfd;
+				
+				snprintf(name, name_size, "%s/%s", dirname, ent->d_name);
+
+				gsfd = fopen(name, "r");
+				if (gsfd != NULL)
+				{
+					if (getname(gsfd, tok) && strcmp(tok, "BDFChar:") == 0)
+					{
+						SFDGetBitmapChar(gsfd, bdf);
+					}
+
+					fclose(gsfd);
+					ff_progress_next();
+				}
+			}
+		}
+		free(name);
+		closedir(dir);
+	}
+	SFDFixupBitmapRefs(bdf);
+	return(1);
 }
 
 static void SFDFixupRef(SplineChar *sc,RefChar *ref,int layer) {
@@ -7144,161 +7286,201 @@ static void SFDSizeMap(EncMap *map,int glyphcnt,int enccnt) {
 static SplineFont *SFD_GetFont(FILE *sfd,SplineFont *cidmaster,char *tok,
 	int fromdir, char *dirname, float sfdversion);
 
-static SplineFont *SFD_FigureDirType(SplineFont *sf,char *tok, char *dirname,
-	Encoding *enc, struct remap *remap,int had_layer_cnt) {
-    /* In a sfdir a directory will either contain glyph files */
-    /*                                            subfont dirs */
-    /*                                            instance dirs */
-    /* (or bitmap files, but we don't care about them here */
-    /* It will not contain some glyph and some subfont nor instance files */
-    int gc=0, sc=0, ic=0, bc=0;
-    DIR *dir;
-    struct dirent *ent;
-    char *name, *props, *pt;
+static SplineFont* SFD_FigureDirType(SplineFont* sf, char* tok, char* dirname,
+	Encoding* enc, struct remap* remap, int had_layer_cnt)
+{
+	/* In a sfdir a directory will either contain glyph files */
+	/*                                            subfont dirs */
+	/*                                            instance dirs */
+	/* (or bitmap files, but we don't care about them here */
+	/* It will not contain some glyph and some subfont nor instance files */
+	int gc = 0, sc = 0, ic = 0, bc = 0;
+	DIR* dir;
+	struct dirent* ent;
+	char* name, * props, * pt;
 
-    dir = opendir(dirname);
-    if ( dir==NULL )
-return( sf );
-    sf->save_to_dir = true;
-    while ( (ent=readdir(dir))!=NULL ) {
-	pt = strrchr(ent->d_name,EXT_CHAR);
-	if ( pt==NULL )
-	    /* Nothing interesting */;
-	else if ( strcmp(pt,GLYPH_EXT)==0 )
-	    ++gc;
-	else if ( strcmp(pt,SUBFONT_EXT)==0 )
-	    ++sc;
-	else if ( strcmp(pt,INSTANCE_EXT)==0 )
-	    ++ic;
-	else if ( strcmp(pt,STRIKE_EXT)==0 )
-	    ++bc;
-    }
-    rewinddir(dir);
-    name = malloc(strlen(dirname)+NAME_MAX+3);
-    props = malloc(strlen(dirname)+2*NAME_MAX+4);
-    if ( gc!=0 ) {
-	sf->glyphcnt = 0;
-	sf->glyphmax = gc;
-	sf->glyphs = calloc(gc,sizeof(SplineChar *));
-	ff_progress_change_total(gc);
-	if ( sf->cidmaster!=NULL ) {
-	    sf->map = sf->cidmaster->map;
-	} else {
-	    sf->map = EncMapNew(enc->char_cnt>gc?enc->char_cnt:gc,gc,enc);
-	    sf->map->remap = remap;
+	dir = opendir(dirname);
+	if (dir == NULL)
+		return(sf);
+	sf->save_to_dir = true;
+	while ((ent = readdir(dir)) != NULL)
+	{
+		pt = strrchr(ent->d_name, EXT_CHAR);
+		if (pt == NULL)
+			/* Nothing interesting */;
+		else if (strcmp(pt, GLYPH_EXT) == 0)
+			++gc;
+		else if (strcmp(pt, SUBFONT_EXT) == 0)
+			++sc;
+		else if (strcmp(pt, INSTANCE_EXT) == 0)
+			++ic;
+		else if (strcmp(pt, STRIKE_EXT) == 0)
+			++bc;
 	}
-	SFDSizeMap(sf->map,sf->glyphcnt,enc->char_cnt>gc?enc->char_cnt:gc);
-
-	while ( (ent=readdir(dir))!=NULL ) {
-	    pt = strrchr(ent->d_name,EXT_CHAR);
-	    if ( pt==NULL )
-		/* Nothing interesting */;
-	    else if ( strcmp(pt,GLYPH_EXT)==0 ) {
-		FILE *gsfd;
-		sprintf(name,"%s/%s", dirname, ent->d_name);
-		gsfd = fopen(name,"r");
-		if ( gsfd!=NULL ) {
-		    SFDGetChar(gsfd,sf,had_layer_cnt);
-		    ff_progress_next();
-		    fclose(gsfd);
-		}
-	    }
-	}
-	ff_progress_next_stage();
-    } else if ( sc!=0 ) {
-	int i=0;
-	sf->subfontcnt = sc;
-	sf->subfonts = calloc(sf->subfontcnt,sizeof(SplineFont *));
-	sf->map = EncMap1to1(1000);
-	ff_progress_change_stages(2*sc);
-
-	while ( (ent=readdir(dir))!=NULL ) {
-	    pt = strrchr(ent->d_name,EXT_CHAR);
-	    if ( pt==NULL )
-		/* Nothing interesting */;
-	    else if ( strcmp(pt,SUBFONT_EXT)==0 && i<sc ) {
-		FILE *ssfd;
-		sprintf(name,"%s/%s", dirname, ent->d_name);
-		sprintf(props,"%s/" FONT_PROPS, name);
-		ssfd = fopen(props,"r");
-		if ( ssfd!=NULL ) {
-		    if ( i!=0 )
-			ff_progress_next_stage();
-		    sf->subfonts[i++] = SFD_GetFont(ssfd,sf,tok,true,name,sf->sfd_version);
-		    fclose(ssfd);
-		}
-	    }
-	}
-    } else if ( ic!=0 ) {
-	MMSet *mm = sf->mm;
-	int ipos, i=0;
-
-	MMInferStuff(sf->mm);
-	ff_progress_change_stages(2*(mm->instance_count+1));
-	while ( (ent=readdir(dir))!=NULL ) {
-	    pt = strrchr(ent->d_name,EXT_CHAR);
-	    if ( pt==NULL )
-		/* Nothing interesting */;
-	    else if ( strcmp(pt,INSTANCE_EXT)==0 && sscanf( ent->d_name, "mm%d", &ipos)==1 ) {
-		FILE *ssfd;
-		if ( i!=0 )
-		    ff_progress_next_stage();
-		sprintf(name,"%s/%s", dirname, ent->d_name);
-		sprintf(props,"%s/" FONT_PROPS, name);
-		ssfd = fopen(props,"r");
-		if ( ssfd!=NULL ) {
-		    SplineFont *mmsf;
-		    mmsf = SFD_GetFont(ssfd,NULL,tok,true,name,sf->sfd_version);
-		    if ( ipos!=0 ) {
-			EncMapFree(mmsf->map);
-			mmsf->map=NULL;
-		    }
-		    mmsf->mm = mm;
-		    if ( ipos == 0 )
-			mm->normal = mmsf;
-		    else
-			mm->instances[ipos-1] = mmsf;
-		    fclose(ssfd);
-		}
-	    }
-	}
-	ff_progress_next_stage();
-	sf->mm = NULL;
-	SplineFontFree(sf);
-	sf = mm->normal;
-	if ( sf->map->enc!=&custom ) {
-	    EncMap *map;
-	    MMMatchGlyphs(mm);		/* sfd files from before the encoding change can have mismatched orig pos */
-	    map = EncMapFromEncoding(sf,sf->map->enc);
-	    EncMapFree(sf->map);
-	    sf->map = map;
-	}
-    }
-
-    if ( bc!=0 ) {
 	rewinddir(dir);
-	while ( (ent=readdir(dir))!=NULL ) {
-	    pt = strrchr(ent->d_name,EXT_CHAR);
-	    if ( pt==NULL )
-		/* Nothing interesting */;
-	    else if ( strcmp(pt,STRIKE_EXT)==0 ) {
-		FILE *ssfd;
-		sprintf(name,"%s/%s", dirname, ent->d_name);
-		sprintf(props,"%s/" STRIKE_PROPS, name);
-		ssfd = fopen(props,"r");
-		if ( ssfd!=NULL ) {
-		    if ( getname(ssfd,tok)==1 && strcmp(tok,"BitmapFont:")==0 )
-			SFDGetBitmapFont(ssfd,sf,true,name);
-		    fclose(ssfd);
+
+	int name_size = strlen(dirname) + NAME_MAX + 3;
+	name = malloc(name_size);
+
+	int props_size = strlen(dirname) + 2 * NAME_MAX + 4;
+	props = malloc(props_size);
+
+	if (gc != 0)
+	{
+		sf->glyphcnt = 0;
+		sf->glyphmax = gc;
+		sf->glyphs = calloc(gc, sizeof(SplineChar*));
+		ff_progress_change_total(gc);
+		if (sf->cidmaster != NULL)
+		{
+			sf->map = sf->cidmaster->map;
 		}
-	    }
+		else
+		{
+			sf->map = EncMapNew(enc->char_cnt > gc ? enc->char_cnt : gc, gc, enc);
+			sf->map->remap = remap;
+		}
+		SFDSizeMap(sf->map, sf->glyphcnt, enc->char_cnt > gc ? enc->char_cnt : gc);
+
+		while ((ent = readdir(dir)) != NULL)
+		{
+			pt = strrchr(ent->d_name, EXT_CHAR);
+			if (pt == NULL)
+				/* Nothing interesting */;
+			else if (strcmp(pt, GLYPH_EXT) == 0)
+			{
+				FILE* gsfd;
+
+				snprintf(name, name_size, "%s/%s", dirname, ent->d_name);
+				
+				gsfd = fopen(name, "r");
+				if (gsfd != NULL)
+				{
+					SFDGetChar(gsfd, sf, had_layer_cnt);
+					ff_progress_next();
+					fclose(gsfd);
+				}
+			}
+		}
+		ff_progress_next_stage();
 	}
-	SFOrderBitmapList(sf);
-    }
-    closedir(dir);
-    free(name);
-    free(props);
-return( sf );
+	else if (sc != 0)
+	{
+		int i = 0;
+		sf->subfontcnt = sc;
+		sf->subfonts = calloc(sf->subfontcnt, sizeof(SplineFont*));
+		sf->map = EncMap1to1(1000);
+		ff_progress_change_stages(2 * sc);
+
+		while ((ent = readdir(dir)) != NULL)
+		{
+			pt = strrchr(ent->d_name, EXT_CHAR);
+			if (pt == NULL)
+				/* Nothing interesting */;
+			else if (strcmp(pt, SUBFONT_EXT) == 0 && i < sc)
+			{
+				FILE* ssfd;
+
+				snprintf(name, name_size, "%s/%s", dirname, ent->d_name);
+				snprintf(props, props_size, "%s/" FONT_PROPS, name);
+
+				ssfd = fopen(props, "r");
+				if (ssfd != NULL)
+				{
+					if (i != 0)
+						ff_progress_next_stage();
+					sf->subfonts[i++] = SFD_GetFont(ssfd, sf, tok, true, name, sf->sfd_version);
+					fclose(ssfd);
+				}
+			}
+		}
+	}
+	else if (ic != 0)
+	{
+		MMSet* mm = sf->mm;
+		int ipos, i = 0;
+
+		MMInferStuff(sf->mm);
+		ff_progress_change_stages(2 * (mm->instance_count + 1));
+		while ((ent = readdir(dir)) != NULL)
+		{
+			pt = strrchr(ent->d_name, EXT_CHAR);
+			if (pt == NULL)
+				/* Nothing interesting */;
+			else if (strcmp(pt, INSTANCE_EXT) == 0 && sscanf(ent->d_name, "mm%d", &ipos) == 1)
+			{
+				FILE* ssfd;
+				if (i != 0)
+				{
+					ff_progress_next_stage();
+				}
+
+				snprintf(name, name_size, "%s/%s", dirname, ent->d_name);
+				snprintf(props, props_size, "%s/" FONT_PROPS, name);
+				
+				ssfd = fopen(props, "r");
+				if (ssfd != NULL)
+				{
+					SplineFont* mmsf;
+					mmsf = SFD_GetFont(ssfd, NULL, tok, true, name, sf->sfd_version);
+					if (ipos != 0)
+					{
+						EncMapFree(mmsf->map);
+						mmsf->map = NULL;
+					}
+					mmsf->mm = mm;
+					if (ipos == 0)
+						mm->normal = mmsf;
+					else
+						mm->instances[ipos - 1] = mmsf;
+					fclose(ssfd);
+				}
+			}
+		}
+		ff_progress_next_stage();
+		sf->mm = NULL;
+		SplineFontFree(sf);
+		sf = mm->normal;
+		if (sf->map->enc != &custom)
+		{
+			EncMap* map;
+			MMMatchGlyphs(mm);		/* sfd files from before the encoding change can have mismatched orig pos */
+			map = EncMapFromEncoding(sf, sf->map->enc);
+			EncMapFree(sf->map);
+			sf->map = map;
+		}
+	}
+
+	if (bc != 0)
+	{
+		rewinddir(dir);
+		while ((ent = readdir(dir)) != NULL)
+		{
+			pt = strrchr(ent->d_name, EXT_CHAR);
+			if (pt == NULL)
+				/* Nothing interesting */;
+			else if (strcmp(pt, STRIKE_EXT) == 0)
+			{
+				FILE* ssfd;
+				
+				snprintf(name, name_size, "%s/%s", dirname, ent->d_name);
+				snprintf(props, props_size, "%s/" STRIKE_PROPS, name);
+				
+				ssfd = fopen(props, "r");
+				if (ssfd != NULL)
+				{
+					if (getname(ssfd, tok) == 1 && strcmp(tok, "BitmapFont:") == 0)
+						SFDGetBitmapFont(ssfd, sf, true, name);
+					fclose(ssfd);
+				}
+			}
+		}
+		SFOrderBitmapList(sf);
+	}
+	closedir(dir);
+	free(name);
+	free(props);
+	return(sf);
 }
 
 static void SFD_DoAltUnis(SplineFont *sf) {

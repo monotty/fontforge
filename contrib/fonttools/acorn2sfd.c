@@ -268,7 +268,7 @@ return( NULL );
     sc->changedsincelasthinted = true; /* I don't understand the scaffold lines */
 	/* which I think are the same as hints. So no hints processed. PfaEdit */
 	/* should autohint the char */
-    sc->name = copy( StdGlyphName(buffer,enc,ui_none,NULL));
+    sc->name = copy( StdGlyphName(buffer, sizeof(buffer), enc,ui_none,NULL));
     sc->width = (outline->defxadvance*(sf->ascent + sf->descent))/1000;
     sc->vwidth = (outline->defyadvance*(sf->ascent + sf->descent))/1000;
     sc->widthset = true;
@@ -852,7 +852,7 @@ return( NULL );
     outline.sf->weight = GuessWeight(outline.fontname);
     if ( strcmp(buffer,"Outlines")!=0 )
 	outline.sf->copyright = copy(buffer);
-    strcpy(buffer,outline.fontname);
+    strncpy(buffer,outline.fontname, sizeof(buffer));
     strcat(buffer,".sfd");
     outline.sf->filename = get_font_filename(buffer);
 
