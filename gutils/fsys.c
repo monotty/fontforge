@@ -209,10 +209,10 @@ char *GFileGetAbsoluteName(const char *name, char *result, size_t rsiz) {
 	if ( dirname_[0]=='\0' ) {
 	    getcwd(dirname_,sizeof(dirname_));
 	}
-	strcpy(buffer,dirname_);
+	strncpy(buffer,dirname_, sizeof(buffer));
 	if ( buffer[strlen(buffer)-1]!='/' )
-	    strcat(buffer,"/");
-	strcat(buffer,name);
+	    strncat(buffer,"/", sizeof(buffer));
+	strncat(buffer,name, sizeof(buffer));
 	#if defined(__MINGW32__)
 	GFileNormalizePath(buffer);
 	#endif
@@ -277,7 +277,7 @@ char *GFileBuildName(char *dir,char *fname,char *buffer,size_t size) {
     } else {
 	if ( buffer!=dir ) {
 	    if ( strlen( dir )<size-3 )
-		strcpy(buffer,dir);
+		strncpy(buffer,dir, size);
 	    else {
 		strncpy(buffer,dir,size-3);
 		buffer[size-3]='\0';
@@ -287,7 +287,7 @@ char *GFileBuildName(char *dir,char *fname,char *buffer,size_t size) {
 	if ( buffer[len-1]!='/' )
 	    buffer[len++] = '/';
 	if ( strlen( fname )<size-1 )
-	    strcpy(buffer+len,fname);
+	    strncpy(buffer+len,fname, size - len);
 	else {
 	    strncpy(buffer+len,fname,size-len-1);
 	    buffer[size-1]='\0';
@@ -334,23 +334,36 @@ char *GFileNameTail(const char *oldname) {
     return( (char *)oldname );
 }
 
-char *GFileAppendFile(char *dir,char *name,int isdir) {
-    char *ret, *pt;
+char* GFileAppendFile(char* dir, char* name, int isdir)
+{
+    char* ret, * pt;
 
-    ret = (char *) malloc((strlen(dir)+strlen(name)+3));
-    strcpy(ret,dir);
-    pt = ret+strlen(ret);
-    if ( pt>ret && pt[-1]!='/' )
-	*pt++ = '/';
-    strcpy(pt,name);
-    if ( isdir ) {
-	pt += strlen(pt);
-	if ( pt>ret && pt[-1]!='/' ) {
-	    *pt++ = '/';
-	    *pt = '\0';
-	}
+    int ret_size = (strlen(dir) + strlen(name) + 3);
+    ret = (char*)malloc(ret_size);
+    strncpy(ret, dir, ret_size);
+    pt = ret + strlen(ret);
+    if (pt > ret && pt[-1] != '/')
+    {
+        *pt++ = '/';
     }
-return(ret);
+
+    int pt_size = ret_size - (pt - ret);
+    strncpy(pt, name, pt_size);
+
+    if (isdir)
+    {
+        pt += strlen(pt);
+        if (pt > ret && pt[-1] != '/')
+        {
+            pt_size = ret_size - (pt - ret);
+            if (pt_size > 1)
+            {
+                *pt++ = '/';
+                *pt = '\0';
+            }
+        }
+    }
+    return(ret);
 }
 
 int GFileIsAbsolute(const char *file) {
@@ -562,51 +575,79 @@ return( NULL );
 return( program_dir );
 }
 
-unichar_t *u_GFileGetAbsoluteName(unichar_t *name, unichar_t *result, int rsiz) {
+unichar_t* u_GFileGetAbsoluteName(unichar_t* name, unichar_t* result, int rsiz)
+{
     /* result may be the same as name */
     unichar_t buffer[1000];
 
-    if ( ! u_GFileIsAbsolute(name) ) {
-	unichar_t *pt, *spt, *rpt, *bpt;
+    if (!u_GFileIsAbsolute(name))
+    {
+        unichar_t* pt, * spt, * rpt, * bpt;
 
-	if ( dirname_[0]=='\0' ) {
-	    getcwd(dirname_,sizeof(dirname_));
-	}
-	uc_strcpy(buffer,dirname_);
-	if ( buffer[u_strlen(buffer)-1]!='/' )
-	    uc_strcat(buffer,"/");
-	u_strcat(buffer,name);
-	u_GFileNormalizePath(buffer);
+        if (dirname_[0] == '\0')
+        {
+            getcwd(dirname_, sizeof(dirname_));
+        }
+        
+        uc_strncpy(buffer, dirname_, sizeof(buffer) / sizeof(buffer[0]));
 
-	/* Normalize out any .. */
-	spt = rpt = buffer;
-	while ( *spt!='\0' ) {
-	    if ( *spt=='/' ) ++spt;
-	    for ( pt = spt; *pt!='\0' && *pt!='/'; ++pt );
-	    if ( pt==spt )	/* Found // in a path spec, reduce to / (we've*/
-		u_strcpy(spt,pt); /*  skipped past the :// of the machine name) */
-	    else if ( pt==spt+1 && spt[0]=='.' && *pt=='/' )	/* Noop */
-		u_strcpy(spt,spt+2);
-	    else if ( pt==spt+2 && spt[0]=='.' && spt[1]=='.' ) {
-		for ( bpt=spt-2 ; bpt>rpt && *bpt!='/'; --bpt );
-		if ( bpt>=rpt && *bpt=='/' ) {
-		    u_strcpy(bpt,pt);
-		    spt = bpt;
-		} else {
-		    rpt = pt;
-		    spt = pt;
-		}
-	    } else
-		spt = pt;
-	}
-	name = buffer;
+        if (buffer[u_strlen(buffer) - 1] != '/')
+            uc_strcat(buffer, "/");
+        u_strcat(buffer, name);
+        u_GFileNormalizePath(buffer);
+
+        /* Normalize out any .. */
+        spt = rpt = buffer;
+        while (*spt != '\0')
+        {
+            if (*spt == '/')
+            {
+                ++spt;
+            }
+
+            for (pt = spt; *pt != '\0' && *pt != '/'; ++pt)
+            {
+                ;
+            }
+
+            if (pt == spt)	/* Found // in a path spec, reduce to / (we've*/
+            {
+                u_strcpy(spt, pt); /*  skipped past the :// of the machine name) */
+            }
+            else if (pt == spt + 1 && spt[0] == '.' && *pt == '/')	/* Noop */
+            {
+                u_strcpy(spt, spt + 2);
+            }
+            else if (pt == spt + 2 && spt[0] == '.' && spt[1] == '.')
+            {
+                for (bpt = spt - 2; bpt > rpt && *bpt != '/'; --bpt)
+                {
+                    ;
+                }
+
+                if (bpt >= rpt && *bpt == '/')
+                {
+                    u_strcpy(bpt, pt);
+                    spt = bpt;
+                }
+                else
+                {
+                    rpt = pt;
+                    spt = pt;
+                }
+            }
+            else
+                spt = pt;
+        }
+        name = buffer;
     }
-    if (result!=name) {
-	u_strncpy(result,name,rsiz);
-	result[rsiz-1]='\0';
-	u_GFileNormalizePath(result);
+    if (result != name)
+    {
+        u_strncpy(result, name, rsiz);
+        result[rsiz - 1] = '\0';
+        u_GFileNormalizePath(result);
     }
-return(result);
+    return(result);
 }
 
 unichar_t *u_GFileBuildName(unichar_t *dir,unichar_t *fname,unichar_t *buffer,int size) {
@@ -717,23 +758,46 @@ return( name );
 return( name );
 }
 
-unichar_t *u_GFileAppendFile(unichar_t *dir,unichar_t *name,int isdir) {
-    unichar_t *ret, *pt;
+unichar_t* u_GFileAppendFile(unichar_t* dir, unichar_t* name, int isdir)
+{
+    unichar_t* ret, * pt;
 
-    ret = (unichar_t *) malloc((u_strlen(dir)+u_strlen(name)+3)*sizeof(unichar_t));
-    u_strcpy(ret,dir);
-    pt = ret+u_strlen(ret);
-    if ( pt>ret && pt[-1]!='/' )
-	*pt++ = '/';
-    u_strcpy(pt,name);
-    if ( isdir ) {
-	pt += u_strlen(pt);
-	if ( pt>ret && pt[-1]!='/' ) {
-	    *pt++ = '/';
-	    *pt = '\0';
-	}
+    int ret_size = (u_strlen(dir) + u_strlen(name) + 3);
+    ret = (unichar_t*)malloc(ret_size * sizeof(unichar_t));
+    u_strncpy(ret, dir, ret_size);
+
+    int str_size = u_strlen(ret);
+    pt = ret + str_size;
+    int pt_size = ret_size - str_size;
+
+    if (pt > ret && pt[-1] != '/')
+    {
+        *pt++ = '/';
+        pt_size--;
     }
-return(ret);
+
+    u_strncpy(pt, name, pt_size);
+
+    if (isdir)
+    {
+        str_size = u_strlen(pt);
+        pt += str_size;
+        pt_size -= str_size;
+
+        if (pt > ret && pt[-1] != '/')
+        {
+            if (pt_size > 0)
+            {
+                *pt++ = '/';
+                pt_size--;
+            }
+            if (pt_size > 0)
+            {
+                *pt = '\0';
+            }
+        }
+    }
+    return(ret);
 }
 
 int u_GFileIsAbsolute(const unichar_t *file) {
@@ -850,7 +914,7 @@ char *getShareDir(void) {
     len = (pt-program_dir)+strlen("/share/fontforge")+1;
     sharedir = malloc(len);
     strncpy(sharedir,program_dir,pt-program_dir);
-    strcpy(sharedir+(pt-program_dir),"/share/fontforge");
+    strncpy(sharedir + (pt - program_dir), "/share/fontforge", len - (pt - program_dir));
     return( sharedir );
 }
 
@@ -865,8 +929,8 @@ char *getLocaleDir(void) {
     char* prefix = getShareDir();
     int len = strlen(prefix) + strlen("/../locale") + 2;
     sharedir = malloc(len);
-    strcpy(sharedir,prefix);
-    strcat(sharedir,"/../locale");
+    strncpy(sharedir,prefix, len);
+    strncat(sharedir,"/../locale", len);
     set = true;
     return sharedir;
 }
@@ -881,8 +945,8 @@ char *getPixmapDir(void) {
     char* prefix = getShareDir();
     int len = strlen(prefix) + strlen("/pixmaps") + 2;
     sharedir = malloc(len);
-    strcpy(sharedir,prefix);
-    strcat(sharedir,"/pixmaps");
+    strncpy(sharedir,prefix, len);
+    strncat(sharedir,"/pixmaps", len);
     set = true;
     return sharedir;
 }
@@ -898,8 +962,8 @@ char *getHelpDir(void) {
     const char* postfix = "/../doc/fontforge/";
     int len = strlen(prefix) + strlen(postfix) + 2;
     sharedir = malloc(len);
-    strcpy(sharedir,prefix);
-    strcat(sharedir,postfix);
+    strncpy(sharedir,prefix, len);
+    strncat(sharedir,postfix, len);
     set = true;
     return sharedir;
 }
@@ -1114,7 +1178,7 @@ char *GFileDirNameEx(const char *path, int treat_as_file)
         if (ret != NULL) {
             char *pt;
             
-            strcpy(ret, path);
+            strncpy(ret, path, len + 2);
             GFileNormalizePath(ret);
             if (treat_as_file || !GFileIsDir(ret)) {
                 pt = strrchr(ret, '/');

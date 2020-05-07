@@ -397,12 +397,12 @@ static void instr_expose(struct instrinfo *ii,GWindow pixmap,GRect *rect) {
 	    temp_indent = indent;
 	    snprintf( loc, sizeof(loc), "%d", i );
 	    if ( ii->instrdata->bts[i]==bt_wordhi ) {
-		snprintf( ins, sizeof(ins), " %02x%02x", ii->instrdata->instrs[i], ii->instrdata->instrs[i+1]); uc_strcpy(uins,ins);
+		snprintf( ins, sizeof(ins), " %02x%02x", ii->instrdata->instrs[i], ii->instrdata->instrs[i+1]); uc_strncpy(uins,ins, sizeof(uins)/sizeof(uins[0]));
 		snprintf( val, sizeof(val), " %d", (short) ((ii->instrdata->instrs[i]<<8) | ii->instrdata->instrs[i+1]) );
 		uc_strncpy(uname,val, sizeof(uname) / sizeof(uname[0]));
 		++i;
 	    } else if ( ii->instrdata->bts[i]==bt_cnt || ii->instrdata->bts[i]==bt_byte ) {
-		snprintf( ins, sizeof(ins), " %02x", ii->instrdata->instrs[i] ); uc_strcpy(uins,ins);
+		snprintf( ins, sizeof(ins), " %02x", ii->instrdata->instrs[i] ); uc_strncpy(uins,ins, sizeof(uins) / sizeof(uins[0]));
 		snprintf( val, sizeof(val), " %d", ii->instrdata->instrs[i]);
 		uc_strncpy(uname,val, sizeof(uname) / sizeof(uname[0]));
 	    } else if ( ii->instrdata->bts[i]==bt_impliedreturn ) {
@@ -415,7 +415,7 @@ static void instr_expose(struct instrinfo *ii,GWindow pixmap,GRect *rect) {
 		temp_indent = indent;
 		if ( instr == ttf_else )
 		    --temp_indent;
-		snprintf( ins, sizeof(ins), "%02x", instr ); uc_strcpy(uins,ins);
+		snprintf( ins, sizeof(ins), "%02x", instr ); uc_strncpy(uins,ins, sizeof(uins) / sizeof(uins[0]));
 		uc_strncpy(uname, ff_ttf_instrnames[instr], sizeof(uname) / sizeof(uname[0]));
 		if ( instr == ttf_if || instr==ttf_idef || instr == ttf_fdef )
 		    ++indent;

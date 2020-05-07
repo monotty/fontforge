@@ -2408,14 +2408,9 @@ static Intersection* TurnPreInter2Inter(Monotonic* ms)
 			{
 				m1 = FindMonoContaining(p->m1, p->t1 + 1e-06);
 
-				//possibly bug: m1 == NULL again
 				if (m1 != NULL)
 				{
 					p->t1 = m1->tstart;
-				}
-				else
-				{
-					int y = 0;
 				}
 			}
 

@@ -1061,52 +1061,58 @@ char* c_itostr( int v )
     return ret;
 }
 
-char* str_replace_all( char* s, char* orig, char* replacement, int free_s )
+char* str_replace_all(char* s, char* orig, char* replacement, int free_s)
 {
-    char* p = strstr( s, orig );
-    if( !p )
+    char* p = strstr(s, orig);
+    if (!p)
     {
-	if( free_s )
-	    return s;
-	return copy( s );
+        if (free_s)
+            return s;
+        return copy(s);
     }
 
     int count = 0;
     p = s;
-    while( p )
+    while (p)
     {
-	p = strstr( p, orig );
-	if( !p )
-	    break;
-	p++;
-	count++;
+        p = strstr(p, orig);
+        if (!p)
+            break;
+        p++;
+        count++;
     }
     count++;
 
     // more than strictly needed, but always enough RAM.
-    int retsz = strlen(s) + count*strlen(replacement) + 1;
-    char* ret = (char *) malloc( retsz );
-    memset( ret, '\0', retsz );
+    int retsz = strlen(s) + count * strlen(replacement) + 1;
+    char* ret = (char*)malloc(retsz);
+    memset(ret, '\0', retsz);
     char* output = ret;
+    int outut_size = retsz;
     char* remains = s;
     p = remains;
-    while( p )
+    while (p)
     {
-	p = strstr( remains, orig );
-	if( !p )
-	{
-	    strcpy( output, remains );
-	    break;
-	}
-	if( p > remains )
-	    strncpy( output, remains, p-remains );
-	strcat( output, replacement );
-	output += strlen(output);
-	remains = p + strlen(orig);
+        p = strstr(remains, orig);
+        if (!p)
+        {
+            strncpy(output, remains, outut_size);
+            break;
+        }
+        if (p > remains)
+            strncpy(output, remains, p - remains);
+
+        strncat(output, replacement, outut_size);
+        
+        int str_size = strlen(output);
+        output += str_size;
+        outut_size -= str_size;
+
+        remains = p + strlen(orig);
     }
 
-    if( free_s )
-	free(s);
+    if (free_s)
+        free(s);
     return ret;
 }
 

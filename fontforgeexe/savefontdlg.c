@@ -1165,9 +1165,10 @@ static char *SearchDirForWernerFile(char *dir,char *filename) {
 	 strlen(dir)+strlen(filename)>sizeof(buffer)-2 )
 	return( NULL );
 
-    strcpy(buffer,dir);
-    strcat(buffer,"/");
-    strcat(buffer,filename);
+    strncpy(buffer,dir, sizeof(buffer));
+    strncat(buffer,"/", sizeof(buffer));
+    strncat(buffer,filename, sizeof(buffer));
+
     if ( (file=fopen(buffer,"r"))==NULL )
 	return( NULL );
     if ( fgets(buf2,sizeof(buf2),file)!=NULL && \
@@ -1180,29 +1181,35 @@ static char *SearchDirForWernerFile(char *dir,char *filename) {
     return( NULL );
 }
 
-static enum fchooserret GFileChooserFilterWernerSFDs(GGadget *g,GDirEntry *ent,
-	const unichar_t *dir) {
-    enum fchooserret ret = GFileChooserDefFilter(g,ent,dir);
-    char buf2[200];
-    FILE *file;
+static enum fchooserret GFileChooserFilterWernerSFDs(GGadget* g, GDirEntry* ent,
+	const unichar_t* dir)
+{
+	enum fchooserret ret = GFileChooserDefFilter(g, ent, dir);
+	char buf2[200];
+	FILE* file;
 
-    if ( ret==fc_show && !ent->isdir ) {
-	char *filename = malloc(u_strlen(dir)+u_strlen(ent->name)+5);
-	cu_strcpy(filename,dir);
-	strcat(filename,"/");
-	cu_strcat(filename,ent->name);
-	file = fopen(filename,"r");
-	if ( file==NULL )
-	    ret = fc_hide;
-	else {
-	    if ( fgets(buf2,sizeof(buf2),file)==NULL ||
-		    strncmp(buf2,pfaeditflag,strlen(pfaeditflag))==0 )
-		ret = fc_hide;
-	    fclose(file);
+	if (ret == fc_show && !ent->isdir)
+	{
+
+		int filename_size = u_strlen(dir) + u_strlen(ent->name) + 5;
+		char* filename = malloc(filename_size);
+		cu_strncpy(filename, dir, filename_size);
+		strncat(filename, "/", filename_size);
+		cu_strncat(filename, ent->name, filename_size);
+
+		file = fopen(filename, "r");
+		if (file == NULL)
+			ret = fc_hide;
+		else
+		{
+			if (fgets(buf2, sizeof(buf2), file) == NULL ||
+				strncmp(buf2, pfaeditflag, strlen(pfaeditflag)) == 0)
+				ret = fc_hide;
+			fclose(file);
+		}
+		free(filename);
 	}
-	free(filename);
-    }
-return( ret );
+	return(ret);
 }
 
 static char *GetWernerSFDFile(SplineFont *sf,EncMap *map) {
@@ -1728,32 +1735,62 @@ return( true );
 return( true );
 }
 
-static void BitmapName(struct gfc_data *d) {
-    int bf = GGadgetGetFirstListSelectedItem(d->bmptype);
-    int format = GGadgetGetFirstListSelectedItem(d->pstype);
+static void BitmapName(struct gfc_data* d)
+{
+	int bf = GGadgetGetFirstListSelectedItem(d->bmptype);
+	int format = GGadgetGetFirstListSelectedItem(d->pstype);
 
-    if ( bf<0 || format<0 || format!=ff_none )
-return;
+	if (bf < 0 || format < 0 || format != ff_none)
+		return;
 
-    unichar_t *ret = GGadgetGetTitle(d->gfc);
-    unichar_t *dup, *pt, *tpt;
+	unichar_t* ret = GGadgetGetTitle(d->gfc);
+	unichar_t* dup, * pt, * tpt;
 
-    dup = malloc((u_strlen(ret)+30)*sizeof(unichar_t));
-    u_strcpy(dup,ret);
-    free(ret);
-    pt = u_strrchr(dup,'.');
-    tpt = u_strrchr(dup,'/');
-    if ( pt<tpt )
-	pt = NULL;
-    if ( pt==NULL ) pt = dup+u_strlen(dup);
-    if ( uc_strcmp(pt-5, ".bmap.bin" )==0 ) pt -= 5;
-    if ( uc_strcmp(pt-4, ".ttf.bin" )==0 ) pt -= 4;
-    if ( uc_strcmp(pt-4, ".otf.dfont" )==0 ) pt -= 4;
-    if ( uc_strncmp(pt-2, "%s", 2 )==0 ) pt -= 2;
-    if ( uc_strncmp(pt-2, "-*", 2 )==0 ) pt -= 2;
-    uc_strcpy(pt,bitmapextensions[bf]);
-    GGadgetSetTitle(d->gfc,dup);
-    free(dup);
+	int dup_size = (u_strlen(ret) + 30);
+	dup = malloc(dup_size * sizeof(unichar_t));
+	u_strncpy(dup, ret, dup_size);
+
+	free(ret);
+	pt = u_strrchr(dup, '.');
+
+	tpt = u_strrchr(dup, '/');
+	if (pt < tpt)
+	{
+		pt = NULL;
+	}
+
+	if (pt == NULL)
+	{
+		pt = dup + u_strlen(dup);
+	}
+
+	if (uc_strcmp(pt - 5, ".bmap.bin") == 0)
+	{
+		pt -= 5;
+	}
+	if (uc_strcmp(pt - 4, ".ttf.bin") == 0)
+	{
+		pt -= 4;
+	}
+	if (uc_strcmp(pt - 4, ".otf.dfont") == 0)
+	{
+		pt -= 4;
+	}
+	if (uc_strncmp(pt - 2, "%s", 2) == 0)
+	{
+		pt -= 2;
+	}
+	if (uc_strncmp(pt - 2, "-*", 2) == 0)
+	{
+		pt -= 2;
+	}
+
+	int pt_size = dup_size - (pt - dup);
+
+	uc_strncpy(pt, bitmapextensions[bf], pt_size);
+
+	GGadgetSetTitle(d->gfc, dup);
+	free(dup);
 }
 
 static int GFD_Format(GGadget *g, GEvent *e) {
@@ -1780,8 +1817,11 @@ return( true );
 	}
 
 	ret = GGadgetGetTitle(d->gfc);
-	dup = malloc((u_strlen(ret)+30)*sizeof(unichar_t));
-	u_strcpy(dup,ret);
+	
+	int dup_size = (u_strlen(ret) + 30);
+	dup = malloc(dup_size * sizeof(unichar_t));
+	u_strncpy(dup,ret, dup_size);
+
 	free(ret);
 	pt = u_strrchr(dup,'.');
 	tpt = u_strrchr(dup,'/');
@@ -1794,7 +1834,10 @@ return( true );
 	if ( uc_strcmp(pt-4, ".cid.t42" )==0 ) pt -= 4;
 	if ( uc_strncmp(pt-2, "%s", 2 )==0 ) pt -= 2;
 	if ( uc_strncmp(pt-2, "-*", 2 )==0 ) pt -= 2;
-	uc_strcpy(pt,savefont_extensions[format]);
+	
+	int pt_size = dup_size - (pt - dup);
+	uc_strncpy(pt,savefont_extensions[format], pt_size);
+	
 	GGadgetSetTitle(d->gfc,dup);
 	free(dup);
 
@@ -2682,12 +2725,16 @@ return( 0 );
 	SplineFont *master = sf->cidmaster ? sf->cidmaster : sf;
 	char *fn = master->defbasefilename!=NULL ? master->defbasefilename :
 		master->fontname;
-	unichar_t *temp = malloc(sizeof(unichar_t)*(strlen(fn)+30));
-	uc_strcpy(temp,fn);
+
+	int temp_size = (strlen(fn) + 30);
+	unichar_t *temp = malloc(temp_size * sizeof(unichar_t));
+	uc_strncpy(temp, fn, temp_size);
+
 	if ( ofs==ff_none )
-	    uc_strcat(temp,bitmapextensions[old]);
+	    uc_strncat(temp,bitmapextensions[old], temp_size);
 	else
-	    uc_strcat(temp,savefont_extensions[ofs]);
+	    uc_strncat(temp,savefont_extensions[ofs], temp_size);
+
 	GGadgetSetTitle(gcd[0].ret,temp);
 	free(temp);
     }
