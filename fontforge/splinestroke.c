@@ -2834,7 +2834,7 @@ void UnlinkCopyLayerToLayer(SplineChar* sc, int src, int dst)
     }
 }
 
-SplineChar* TakeNextSelected(FontViewBase* fv, int *i)
+SplineChar* TakeNextSelected(FontViewBase* fv, int *i, bool classified)
 {
     int id;
     SplineChar* sc;
@@ -2843,7 +2843,8 @@ SplineChar* TakeNextSelected(FontViewBase* fv, int *i)
     {
         if (fv->selected[*i]
             && (id = fv->map->map[*i]) != -1
-            && (sc = fv->sf->glyphs[id]) != NULL)
+            && (sc = fv->sf->glyphs[id]) != NULL
+            && (!classified || (sc->glyph_class != 1) /*No Class == 1*/ ))
         {
             (*i)++;
             return sc;
@@ -2867,7 +2868,7 @@ void FVBuildItScript(void* _fv, StrokeInfo* si)
         SplineChar* glyph;
         
         i = count = 0;
-        while (TakeNextSelected(fv, &i))
+        while (TakeNextSelected(fv, &i, true))
         {
             count++;
         }
@@ -2875,7 +2876,7 @@ void FVBuildItScript(void* _fv, StrokeInfo* si)
         ff_progress_start_indicator(0, _("Building Glyphs"), _("Glyph"), 0, count, 1);
 
         i = current = 0;
-        while ((glyph = TakeNextSelected(fv, &i))
+        while ((glyph = TakeNextSelected(fv, &i, true))
                 && ff_progress_next())
         {
             char buff[32];
@@ -2889,6 +2890,11 @@ void FVBuildItScript(void* _fv, StrokeInfo* si)
             glyph->layers[target].splines = SplineSetStroke(splines, si, order);
             SplinePointListsFree(splines);
 
+            // round to hunderdths to aviod buffer overflow somewhere
+            // bug: monotonous contours are open
+            splines = glyph->layers[target].splines;
+            SplineSetsRound2Int(splines, 100.0, glyph->inspiro, false);
+            
             // random + srmov_none
             splines = glyph->layers[target].splines;
             glyph->layers[target].splines = SplineSetRemoveOverlap(NULL, splines, over_remove);
@@ -2905,12 +2911,30 @@ void FVBuildItScript(void* _fv, StrokeInfo* si)
             splines = glyph->layers[target].splines;
             glyph->layers[target].splines = SplineCharSimplify(NULL, splines, &smpl);
 
-            //todo round to int
+            //round to int
+            splines = glyph->layers[target].splines;
+            SplineSetsRound2Int(splines, 100.0, glyph->inspiro, false);
         }
 
         fv->sf->changed = true;
         FVReattachCVs(fv->sf, fv->sf);
 
         ff_progress_end_indicator();
+    }
+}
+
+void FVCharDecor(void* _fv)
+{
+    FontViewBase* fv = _fv;
+
+    if (fv->sf->multilayer)
+    {
+        int i = 0;
+        SplineChar* glyph;
+
+        while (glyph = TakeNextSelected(fv, &i, false))
+        {
+            glyph->glyph_class = glyph->glyph_class == 1 ? 0 : 1;
+        }
     }
 }

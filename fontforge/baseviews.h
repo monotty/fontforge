@@ -318,6 +318,7 @@ extern void VrTrans(struct vr *vr,real transform[6]);
 extern int SFNLTrans(FontViewBase *fv,char *x_expr,char *y_expr);
 
 extern void FV_Build_Glyphs(FontViewBase* fv);
+extern void FV_Char_Decor(FontViewBase* fv);
 
 struct smallcaps {
     double lc_stem_width, uc_stem_width;

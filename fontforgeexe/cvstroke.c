@@ -1373,6 +1373,11 @@ void FV_Build_Glyphs(FontViewBase* fv)
     FVBuildItScript(fv, si);
 }
 
+void FV_Char_Decor(FontViewBase* fv)
+{
+    FVCharDecor(fv);
+}
+
 void FreeHandStrokeDlg(StrokeInfo *si) {
     MakeStrokeDlg(NULL,NULL,si,false);
 }

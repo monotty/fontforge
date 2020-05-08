@@ -254,69 +254,6 @@ void FVUnlinkRef(FontViewBase* fv)
 	}
 }
 
-
-// Unreference all links in the background layer and store result splines in this layer
-//void FVRefsToSplines(FontViewBase* fv)
-//{
-//	int i, bg_layer, first, last, gid;
-//	SplineChar* sc;
-//	RefChar* rf, * next;
-//	BDFFont* bdf;
-//	BDFChar* bdfc;
-//	BDFRefChar* head, * cur;
-//
-//	bg_layer = ly_back;
-//
-//	// iterate over all
-//	for (i = 0; i < fv->map->enccount; ++i)
-//	{
-//		// choose selected and not empty
-//		if (fv->selected[i]
-//			&& (gid = fv->map->map[i]) != -1
-//			&& (sc = fv->sf->glyphs[gid]) != NULL)
-//		{
-//			// choose background with reference
-//			if (sc->layer_cnt >= bg_layer)
-//			{
-//				rf = sc->layers[bg_layer].refs;
-//
-//				while (rf != NULL)
-//				{
-//					SCCopySplinesFromRef(rf, sc, bg_layer);
-//					rf = rf->next;
-//				}
-//
-//				SCCharChangedUpdate(sc, bg_layer);
-//			}
-//
-//			for (bdf = fv->sf->bitmaps; bdf != NULL; bdf = bdf->next)
-//			{
-//				if (bdf != fv->active_bitmap && onlycopydisplayed)
-//				{
-//					continue;
-//				}
-//
-//				bdfc = gid == -1 || gid >= bdf->glyphcnt ? NULL : bdf->glyphs[gid];
-//
-//				if (bdfc != NULL && bdfc->refs != NULL)
-//				{
-//					BCMergeReferences(bdfc, bdfc, 0, 0);
-//
-//					for (head = bdfc->refs; head != NULL; )
-//					{
-//						cur = head; head = cur->next; free(cur);
-//					}
-//
-//					bdfc->refs = NULL;
-//					BCCharChangedUpdate(bdfc);
-//				}
-//			}
-//		}
-//	}
-//	FVRefreshAll(fv->sf);
-//}
-
-
 void FVUndo(FontViewBase *fv) {
     int i,j,layer,first,last, gid;
     MMSet *mm = fv->sf->mm;
