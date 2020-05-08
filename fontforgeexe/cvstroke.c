@@ -1354,8 +1354,9 @@ void FV_Build_Glyphs(FontViewBase* fv)
 {
     StrokeInfo* si = CVStrokeInfo();
 
-    si->width = 60.0;
-    si->height = 20.0;
+    //todo unify
+    si->width = 150.0;
+    si->height = 50.0;
     si->join = lj_nib;
     si->cap = lc_nib;
     si->stroke_type = si_round;
@@ -1367,7 +1368,7 @@ void FV_Build_Glyphs(FontViewBase* fv)
     si->leave_users_center = true;
     si->joinlimit = 10.0;
     si->accuracy_target = 0.25;
-    si->penangle = FF_PI / 4;
+    si->penangle = -FF_PI / 4;
 
     MakeStrokeDlg(0, 0, si, false);
     FVBuildItScript(fv, si);

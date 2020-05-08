@@ -4017,7 +4017,8 @@ static void vwlistcheck(GWindow gw, struct gmenuitem *mi, GEvent *UNUSED(e)) {
 	    vwlist[i].ti.disabled = !mv->sf->hasvmetrics;
 	  break;
 	  case MID_Layers:
-	    vwlist[i].ti.disabled = mv->sf->layer_cnt<=2 || mv->sf->multilayer;
+	    //vwlist[i].ti.disabled = mv->sf->layer_cnt<=2 || mv->sf->multilayer;
+          vwlist[i].ti.disabled = mv->sf->layer_cnt < 2;// || mv->sf->multilayer;
 	  break;
 	}
     vwlist[i].ti.checked = mv->bdf==NULL;

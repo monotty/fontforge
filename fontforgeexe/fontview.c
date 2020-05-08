@@ -363,6 +363,7 @@ static void FVDrawGlyph(GWindow pixmap, FontView* fv, int index, int forcebg)
 				}
 				else if (decor)
 				{
+					//todo optimize
 					uint8 clr = brightness > 160 ? 0 : 0xff;
 
 					int bgr = ~clr;
@@ -5982,6 +5983,7 @@ static void lylistcheck(GWindow gw, struct gmenuitem* mi, GEvent* UNUSED(e))
 		sub[ly].ti.text = utf82u_copy(sf->layers[ly].name);
 		sub[ly].ti.checkable = true;
 		sub[ly].ti.checked = ly == fv->b.active_layer;
+		//sub[ly].ti.selected = ly == fv->b.active_layer;
 		sub[ly].invoke = FVMenuChangeLayer;
 		sub[ly].mid = ly;
 		sub[ly].ti.fg = COLOR_DEFAULT;
@@ -6155,7 +6157,8 @@ static void vwlistcheck(GWindow gw, struct gmenuitem* mi, GEvent* UNUSED(e))
 				mi->ti.disabled = sf->onlybitmaps && fv->show != fv->filled;
 				break;
 			case MID_Layers:
-				mi->ti.disabled = sf->layer_cnt <= 2 || sf->multilayer;
+				//mi->ti.disabled = sf->layer_cnt <= 2 || sf->multilayer;
+				mi->ti.disabled = sf->layer_cnt < 2;// || sf->multilayer;
 				break;
 		}
 	}
