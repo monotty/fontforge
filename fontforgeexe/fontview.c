@@ -72,17 +72,6 @@
 #include <windows.h>
 #endif
 
- // sdn: I'm too lazy to deal with standards
-#define NULL 0
-typedef unsigned int uint32;
-typedef int int32;
-typedef short int16;
-typedef signed char int8;
-typedef unsigned short uint16;
-typedef unsigned char uint8;
-#define true	1
-#define false	0
-
 int OpenCharsInNewWindow = 0;
 char* RecentFiles[RECENT_MAX] = { NULL };
 int save_to_dir = 0;			/* use sfdir rather than sfd */
@@ -287,6 +276,14 @@ static void FVDrawGlyph(GWindow pixmap, FontView* fv, int index, int forcebg)
 		GDrawFillRect(pixmap, &box, decor_color);
 	}
 	else
+		if (sc)
+		{
+			Color clr = sc->width == 1000  ?
+			//Color clr = (strncmp("NameMe", sc->name, 6) != 0) ?
+				(fv->b.selected[index] ? fvselcol : view_bgcol)
+				: 0xFF00FF;
+			GDrawFillRect(pixmap, &box, clr);
+		}else
 	if (index < fv->b.map->enccount && (fv->b.selected[index] || forcebg))
 	{
 		//box.x = j * fv->cbw + 1; box.width = fv->cbw - 1;
@@ -295,6 +292,8 @@ static void FVDrawGlyph(GWindow pixmap, FontView* fv, int index, int forcebg)
 		//if (decor)
 		//GDrawFillRect(pixmap, &box, 0x0);
 		//else
+
+		
 		GDrawFillRect(pixmap, &box, fv->b.selected[index] ? fvselcol : view_bgcol);
 
 		//Color clr;

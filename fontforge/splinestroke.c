@@ -2913,7 +2913,7 @@ void FVBuildItScript(void* _fv, StrokeInfo* si)
 
             //round to int
             splines = glyph->layers[target].splines;
-            SplineSetsRound2Int(splines, 100.0, glyph->inspiro, false);
+            SplineSetsRound2Int(splines, 1.0, glyph->inspiro, false);
         }
 
         fv->sf->changed = true;

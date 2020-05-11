@@ -42,17 +42,6 @@
 #include <stdio.h>
 #include <string.h>
 
- // sdn: I'm too lazy to deal with standards
-#define NULL 0
-typedef unsigned int uint32;
-typedef int int32;
-typedef short int16;
-typedef signed char int8;
-typedef unsigned short uint16;
-typedef unsigned char uint8;
-#define true	1
-#define false	0
-
 Color default_background = 0xffffff;		/* white */
 
 static void HintsFree(Hints* h)

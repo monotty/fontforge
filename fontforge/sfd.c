@@ -1216,30 +1216,40 @@ static void SFDDumpTtfTable(FILE *sfd,struct ttf_table *tab,SplineFont *sf) {
     }
 }
 
-static int SFDOmit(SplineChar *sc) {
-    int layer;
-    BDFFont *bdf;
+static int SFDOmit(SplineChar* sc)
+{
+	int layer;
+	BDFFont* bdf;
 
-    if ( sc==NULL )
-return( true );
-    if ( sc->comment!=NULL || sc->color!=COLOR_DEFAULT )
-return( false );
-    for ( layer = ly_back; layer<sc->layer_cnt; ++layer ) {
-	if ( sc->layers[layer].splines!=NULL ||
-		sc->layers[layer].refs!=NULL ||
-		sc->layers[layer].images!=NULL )
-return( false );
-    }
-    if ( sc->parent->onlybitmaps ) {
-	for ( bdf = sc->parent->bitmaps; bdf!=NULL; bdf=bdf->next ) {
-	    if ( sc->orig_pos<bdf->glyphcnt && bdf->glyphs[sc->orig_pos]!=NULL )
-return( false );
+	if (sc == NULL)
+		return(true);
+
+	//if (strncmp("NameMe", sc->name, 6) == 0)
+	//{
+	//	return(true);
+	//}
+
+	if (sc->comment != NULL || sc->color != COLOR_DEFAULT)
+		return(false);
+	for (layer = ly_back; layer < sc->layer_cnt; ++layer)
+	{
+		if (sc->layers[layer].splines != NULL ||
+			sc->layers[layer].refs != NULL ||
+			sc->layers[layer].images != NULL)
+			return(false);
 	}
-    }
-    if ( !sc->widthset )
-return(true);
+	if (sc->parent->onlybitmaps)
+	{
+		for (bdf = sc->parent->bitmaps; bdf != NULL; bdf = bdf->next)
+		{
+			if (sc->orig_pos < bdf->glyphcnt && bdf->glyphs[sc->orig_pos] != NULL)
+				return(false);
+		}
+	}
+	if (!sc->widthset)
+		return(true);
 
-return( false );
+	return(false);
 }
 
 static void SFDDumpRefs(FILE *sfd,RefChar *refs, int *newgids) {
@@ -3324,7 +3334,7 @@ int SFDWrite(char* filename, SplineFont* sf, EncMap* map, EncMap* normal, int to
 		tempfilename = malloc(tempfilename_size);
 
 		strncpy(tempfilename, filename, tempfilename_size); 
-		strcat(tempfilename, "/" FONT_PROPS);
+		strncat(tempfilename, "/" FONT_PROPS, tempfilename_size);
 	}
 
 	sfd = fopen(tempfilename, "w");

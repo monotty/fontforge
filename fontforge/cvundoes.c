@@ -2224,71 +2224,89 @@ return( (newsf->ascent+newsf->descent) / (double) (oldsf->ascent+oldsf->descent)
 
 static int anchor_lost_warning = false;
 
-static void APMerge(SplineChar *sc,AnchorPoint *anchor) {
-    AnchorPoint *ap, *prev, *next, *test;
-    AnchorClass *ac;
+static void APMerge(SplineChar* sc, AnchorPoint* anchor)
+{
+	AnchorPoint* ap, * prev, * next, * test;
+	AnchorClass* ac;
 
-    if ( anchor==NULL )
-return;
-    anchor = AnchorPointsCopy(anchor);
-    /* If we pasted from one font to another, the anchor class list will be */
-    /*  different. */
-    for ( ac = sc->parent->anchor; ac!=NULL && ac!=anchor->anchor; ac=ac->next );
-    if ( ac==NULL ) {		/* Into a different font. See if we can find a class with same name in new font */
-	prev = NULL;
-	for ( ap = anchor; ap!=NULL; ap=next ) {
-	    next = ap->next;
-	    for ( ac = sc->parent->anchor; ac!=NULL && strcmp(ac->name,ap->anchor->name)!=0; ac = ac->next );
-	    if ( ac!=NULL ) {
-		ap->anchor = ac;
-		prev = ap;
-	    } else {
-		if ( prev==NULL )
-		    anchor = next;
-		else
-		    prev->next = next;
-		ap->next = NULL;
-		AnchorPointsFree(ap);
-		anchor_lost_warning = true;
-	    }
+	if (anchor == NULL)
+		return;
+	anchor = AnchorPointsCopy(anchor);
+	/* If we pasted from one font to another, the anchor class list will be */
+	/*  different. */
+	for (ac = sc->parent->anchor; ac != NULL && ac != anchor->anchor; ac = ac->next);
+	if (ac == NULL)
+	{		/* Into a different font. See if we can find a class with same name in new font */
+		prev = NULL;
+		for (ap = anchor; ap != NULL; ap = next)
+		{
+			next = ap->next;
+			
+			//todo: Seg fault: ap->anchor - damaged pointer
+			for (ac = sc->parent->anchor; ac != NULL && strcmp(ac->name, ap->anchor->name) != 0; ac = ac->next)
+			{
+				;
+			}
+
+			if (ac != NULL)
+			{
+				ap->anchor = ac;
+				prev = ap;
+			}
+			else
+			{
+				if (prev == NULL)
+					anchor = next;
+				else
+					prev->next = next;
+				ap->next = NULL;
+				AnchorPointsFree(ap);
+				anchor_lost_warning = true;
+			}
+		}
+		if (anchor_lost_warning)
+			ff_post_error(_("Anchor Lost"), _("At least one anchor point was lost when pasting from one font to another because no matching anchor class could be found in the new font."));
+		if (anchor == NULL)
+			return;
 	}
-	if ( anchor_lost_warning )
-	    ff_post_error(_("Anchor Lost"),_("At least one anchor point was lost when pasting from one font to another because no matching anchor class could be found in the new font."));
-	if ( anchor==NULL )
-return;
-    }
-    if ( sc->anchor==NULL ) {
-	sc->anchor = anchor;
-return;
-    }
+	if (sc->anchor == NULL)
+	{
+		sc->anchor = anchor;
+		return;
+	}
 
-    prev = NULL;
-    for ( ap=anchor; ap!=NULL; ap=next ) {
-	next = ap->next;
-	for ( test=sc->anchor; test!=NULL; test=test->next )
-	    if ( test->anchor==ap->anchor ) {
-		if (( test->type==at_centry && ap->type==at_cexit) ||
-			(test->type==at_cexit && ap->type==at_centry))
-		    /* It's ok */;
-		else if ( test->type!=at_baselig || ap->type!=at_baselig ||
-			test->lig_index==ap->lig_index )
-	break;
-	    }
-	if ( test!=NULL ) {
-	    ff_post_error(_("Duplicate Anchor"),_("There is already an anchor point named %1$.40s in %2$.40s."),test->anchor->name,sc->name);
-	    if ( prev==NULL )
-		anchor = next;
-	    else
-		prev->next = next;
-	    ap->next = NULL;
-	    AnchorPointsFree(ap);
-	} else
-	    prev = ap;
-    }
-    if ( prev!=NULL ) {
-	prev->next = sc->anchor;
-	sc->anchor = anchor;
-    }
+	prev = NULL;
+	for (ap = anchor; ap != NULL; ap = next)
+	{
+		next = ap->next;
+		for (test = sc->anchor; test != NULL; test = test->next)
+			if (test->anchor == ap->anchor)
+			{
+				if ((test->type == at_centry && ap->type == at_cexit) ||
+					(test->type == at_cexit && ap->type == at_centry))
+					/* It's ok */;
+				else if (test->type != at_baselig || ap->type != at_baselig ||
+					test->lig_index == ap->lig_index)
+					break;
+			}
+		if (test != NULL)
+		{
+			ff_post_error(_("Duplicate Anchor"), _("There is already an anchor point named %1$.40s in %2$.40s."), test->anchor->name, sc->name);
+			if (prev == NULL)
+				anchor = next;
+			else
+				prev->next = next;
+			ap->next = NULL;
+			AnchorPointsFree(ap);
+		}
+		else
+			prev = ap;
+	}
+	if (prev != NULL)
+	{
+		prev->next = sc->anchor;
+		sc->anchor = anchor;
+	}
 }
 
 static int InstrsSameParent( SplineChar *sc, SplineFont *copied_from) {
