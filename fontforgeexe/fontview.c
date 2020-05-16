@@ -6822,7 +6822,6 @@ static void FVExpose(FontView* fv, GWindow pixmap, GEvent* event)
 						use_utf8 = true;
 						*pt = '\0'; // We terminate the string in case the appendage (?) fails.
 						pt = utf8_idpb(pt, uni, 0);
-						//if (pt) *pt = '\0'; else fprintf(stderr, "Invalid Unicode alert.\n");
 						if (pt) *pt = '\0'; else TRACE("Invalid Unicode alert.\n");
 					}
 					else
@@ -7898,7 +7897,7 @@ static void FontView_ReformatAll(SplineFont* sf)
 	MetricsView* mvs;
 	extern int use_freetype_to_rasterize_fv;
 
-	if (sf->fv == NULL || ((FontView*)(sf->fv))->v == NULL || ((FontView*)(sf->fv))->colcnt == 0)			/* Can happen in scripts */
+	if (sf->fv == NULL || ((FontView*)(sf->fv))->v == NULL)			/* Can happen in scripts */
 		return;
 
 	for (fv = (FontView*)(sf->fv); fv != NULL; fv = (FontView*)(fv->b.nextsame))
@@ -7921,15 +7920,18 @@ static void FontView_ReformatAll(SplineFont* sf)
 			else fv->show = new;
 		}
 		BDFFontFree(old);
-		fv->rowltot = (fv->b.map->enccount + fv->colcnt - 1) / fv->colcnt;
-		GScrollBarSetBounds(fv->vsb, 0, fv->rowltot, fv->rowcnt);
-		if (fv->rowoff > fv->rowltot - fv->rowcnt)
+		if (((FontView*)(sf->fv))->colcnt != 0)
 		{
-			fv->rowoff = fv->rowltot - fv->rowcnt;
-			if (fv->rowoff < 0) fv->rowoff = 0;
-			GScrollBarSetPos(fv->vsb, fv->rowoff);
+			fv->rowltot = (fv->b.map->enccount + fv->colcnt - 1) / fv->colcnt;
+			GScrollBarSetBounds(fv->vsb, 0, fv->rowltot, fv->rowcnt);
+			if (fv->rowoff > fv->rowltot - fv->rowcnt)
+			{
+				fv->rowoff = fv->rowltot - fv->rowcnt;
+				if (fv->rowoff < 0) fv->rowoff = 0;
+				GScrollBarSetPos(fv->vsb, fv->rowoff);
+			}
+			GDrawRequestExpose(fv->v, NULL, false);
 		}
-		GDrawRequestExpose(fv->v, NULL, false);
 		GDrawSetCursor(fv->v, ct_pointer);
 	}
 	for (mvs = sf->metrics; mvs != NULL; mvs = mvs->next) if (mvs->bdf == NULL)
