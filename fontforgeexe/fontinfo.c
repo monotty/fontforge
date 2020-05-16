@@ -5525,21 +5525,37 @@ static int GFI_UseXUIDChanged(GGadget *g, GEvent *e) {
 return( true );
 }
 
-static void LookupSetup(struct lkdata *lk,OTLookup *lookups) {
+static void LookupSetup(struct lkdata* lk, OTLookup* lookups)
+{
     int cnt, subcnt;
-    OTLookup *otl;
-    struct lookup_subtable *sub;
+    OTLookup* otl;
+    struct lookup_subtable* sub;
 
-    for ( cnt=0, otl=lookups; otl!=NULL; ++cnt, otl=otl->next );
-    lk->cnt = cnt; lk->max = cnt+10;
-    lk->all = calloc(lk->max,sizeof(struct lkinfo));
-    for ( cnt=0, otl=lookups; otl!=NULL; ++cnt, otl=otl->next ) {
-	lk->all[cnt].lookup = otl;
-	for ( subcnt=0, sub=otl->subtables; sub!=NULL; ++subcnt, sub=sub->next );
-	lk->all[cnt].subtable_cnt = subcnt; lk->all[cnt].subtable_max = subcnt+10;
-	lk->all[cnt].subtables = calloc(lk->all[cnt].subtable_max,sizeof(struct lksubinfo));
-	for ( subcnt=0, sub=otl->subtables; sub!=NULL; ++subcnt, sub=sub->next )
-	    lk->all[cnt].subtables[subcnt].subtable = sub;
+    for (cnt = 0, otl = lookups; otl != NULL; ++cnt)
+    {
+        otl = otl->next;
+    }
+
+    lk->cnt = cnt; 
+    lk->max = cnt + 10;
+
+    lk->all = calloc(lk->max, sizeof(struct lkinfo));
+
+    for (cnt = 0, otl = lookups; otl != NULL; ++cnt, otl = otl->next)
+    {
+        lk->all[cnt].lookup = otl;
+        for (subcnt = 0, sub = otl->subtables; sub != NULL; ++subcnt)
+        {
+            sub = sub->next;
+        }
+
+        lk->all[cnt].subtable_cnt = subcnt; 
+        lk->all[cnt].subtable_max = subcnt + 10;
+        lk->all[cnt].subtables = calloc(lk->all[cnt].subtable_max, sizeof(struct lksubinfo));
+        for (subcnt = 0, sub = otl->subtables; sub != NULL; ++subcnt, sub = sub->next)
+        {
+            lk->all[cnt].subtables[subcnt].subtable = sub;
+        }
     }
 }
 
@@ -7458,41 +7474,49 @@ return;
     }
 }
 
-static int lookups_e_h(GWindow gw, GEvent *event, int isgpos) {
-    struct gfi_data *gfi = GDrawGetUserData(gw);
+static int lookups_e_h(GWindow gw, GEvent* event, int isgpos)
+{
+    struct gfi_data* gfi = GDrawGetUserData(gw);
 
-    if (( event->type==et_mouseup || event->type==et_mousedown ) &&
-	    (event->u.mouse.button>=4 && event->u.mouse.button<=7) ) {
-return( GGadgetDispatchEvent(GWidgetGetControl(gw,CID_LookupVSB+isgpos),event));
+    if ((event->type == et_mouseup || event->type == et_mousedown) &&
+        (event->u.mouse.button >= 4 && event->u.mouse.button <= 7))
+    {
+        //todo mouse scroll don't work (gadget not found)
+
+        struct ggadget* gadget = GWidgetGetControl(gw, CID_LookupVSB + isgpos);
+        return(GGadgetDispatchEvent(gadget, event));
     }
 
-    switch ( event->type ) {
-      case et_char:
-return( GFI_Char(gfi,event) );
-      case et_expose:
-	LookupExpose(gw,gfi,isgpos);
-      break;
-      case et_mousedown: case et_mousemove: case et_mouseup:
-	LookupMouse(gfi,isgpos,event);
-      break;
-      case et_resize: {
-	GRect r;
-	GDrawGetSize(gw,&r);
-	gfi->lkheight = r.height; gfi->lkwidth = r.width;
-	GFI_LookupScrollbars(gfi,false,false);
-	GFI_LookupScrollbars(gfi,true,false);
-      }
-      break;
+    switch (event->type)
+    {
+        case et_char:
+            return(GFI_Char(gfi, event));
+        case et_expose:
+            LookupExpose(gw, gfi, isgpos);
+            break;
+        case et_mousedown: case et_mousemove: case et_mouseup:
+            LookupMouse(gfi, isgpos, event);
+            break;
+        case et_resize: {
+            GRect r;
+            GDrawGetSize(gw, &r);
+            gfi->lkheight = r.height; gfi->lkwidth = r.width;
+            GFI_LookupScrollbars(gfi, false, false);
+            GFI_LookupScrollbars(gfi, true, false);
+        }
+                      break;
     }
-return( true );
+    return(true);
 }
 
-static int gposlookups_e_h(GWindow gw, GEvent *event) {
-return( lookups_e_h(gw,event,true));
+static int gposlookups_e_h(GWindow gw, GEvent* event)
+{
+    return(lookups_e_h(gw, event, true));
 }
 
-static int gsublookups_e_h(GWindow gw, GEvent *event) {
-return( lookups_e_h(gw,event,false));
+static int gsublookups_e_h(GWindow gw, GEvent* event)
+{
+    return(lookups_e_h(gw, event, false));
 }
 
 void FontInfo(SplineFont *sf,int deflayer,int defaspect,int sync) {
@@ -10396,45 +10420,46 @@ return;
     lkbuttonsarray[i] = GCD_Glue;
     lkbuttonsarray[i+1] = NULL;
 
-    for ( i=0; i<2; ++i ) {
-	lkaspects[i].text = (unichar_t *) (i?"GPOS":"GSUB");
-	lkaspects[i].text_is_1byte = true;
-	lkaspects[i].gcd = &lkbox[2*i];
+    for (i = 0; i < 2; ++i)
+    {
+        lkaspects[i].text = (unichar_t*)(i ? "GPOS" : "GSUB");
+        lkaspects[i].text_is_1byte = true;
+        lkaspects[i].gcd = &lkbox[2 * i];
 
-	lksubgcd[i][0].gd.pos.x = 10; lksubgcd[i][0].gd.pos.y = 10;
-	lksubgcd[i][0].gd.pos.width = ngcd[15].gd.pos.width;
-	lksubgcd[i][0].gd.pos.height = 150;
-	lksubgcd[i][0].gd.flags = gg_visible | gg_enabled;
-	lksubgcd[i][0].gd.u.drawable_e_h = i ? gposlookups_e_h : gsublookups_e_h;
-	lksubgcd[i][0].gd.cid = CID_LookupWin+i;
-	lksubgcd[i][0].creator = GDrawableCreate;
+        lksubgcd[i][0].gd.pos.x = 10; lksubgcd[i][0].gd.pos.y = 10;
+        lksubgcd[i][0].gd.pos.width = ngcd[15].gd.pos.width;
+        lksubgcd[i][0].gd.pos.height = 150;
+        lksubgcd[i][0].gd.flags = gg_visible | gg_enabled;
+        lksubgcd[i][0].gd.u.drawable_e_h = i ? gposlookups_e_h : gsublookups_e_h;
+        lksubgcd[i][0].gd.cid = CID_LookupWin + i;
+        lksubgcd[i][0].creator = GDrawableCreate;
 
-	lksubgcd[i][1].gd.pos.x = 10; lksubgcd[i][1].gd.pos.y = 10;
-	lksubgcd[i][1].gd.pos.height = 150;
-	lksubgcd[i][1].gd.flags = gg_visible | gg_enabled | gg_sb_vert;
-	lksubgcd[i][1].gd.cid = CID_LookupVSB+i;
-	lksubgcd[i][1].gd.handle_controlevent = LookupsVScroll;
-	lksubgcd[i][1].creator = GScrollBarCreate;
+        lksubgcd[i][1].gd.pos.x = 10; lksubgcd[i][1].gd.pos.y = 10;
+        lksubgcd[i][1].gd.pos.height = 150;
+        lksubgcd[i][1].gd.flags = gg_visible | gg_enabled | gg_sb_vert;
+        lksubgcd[i][1].gd.cid = CID_LookupVSB + i;
+        lksubgcd[i][1].gd.handle_controlevent = LookupsVScroll;
+        lksubgcd[i][1].creator = GScrollBarCreate;
 
-	lksubgcd[i][2].gd.pos.x = 10; lksubgcd[i][2].gd.pos.y = 10;
-	lksubgcd[i][2].gd.pos.width = 150;
-	lksubgcd[i][2].gd.flags = gg_visible | gg_enabled;
-	lksubgcd[i][2].gd.cid = CID_LookupHSB+i;
-	lksubgcd[i][2].gd.handle_controlevent = LookupsHScroll;
-	lksubgcd[i][2].creator = GScrollBarCreate;
+        lksubgcd[i][2].gd.pos.x = 10; lksubgcd[i][2].gd.pos.y = 10;
+        lksubgcd[i][2].gd.pos.width = 150;
+        lksubgcd[i][2].gd.flags = gg_visible | gg_enabled;
+        lksubgcd[i][2].gd.cid = CID_LookupHSB + i;
+        lksubgcd[i][2].gd.handle_controlevent = LookupsHScroll;
+        lksubgcd[i][2].creator = GScrollBarCreate;
 
-	lksubgcd[i][3].gd.pos.x = 10; lksubgcd[i][3].gd.pos.y = 10;
-	lksubgcd[i][3].gd.pos.width = lksubgcd[i][3].gd.pos.height = _GScrollBar_Width;
-	lksubgcd[i][3].gd.flags = gg_visible | gg_enabled | gg_tabset_nowindow;
-	lksubgcd[i][3].creator = GDrawableCreate;
+        lksubgcd[i][3].gd.pos.x = 10; lksubgcd[i][3].gd.pos.y = 10;
+        lksubgcd[i][3].gd.pos.width = lksubgcd[i][3].gd.pos.height = _GScrollBar_Width;
+        lksubgcd[i][3].gd.flags = gg_visible | gg_enabled | gg_tabset_nowindow;
+        lksubgcd[i][3].creator = GDrawableCreate;
 
-	lkarray[i][0] = &lksubgcd[i][0]; lkarray[i][1] = &lksubgcd[i][1]; lkarray[i][2] = NULL;
-	lkarray[i][3] = &lksubgcd[i][2]; lkarray[i][4] = &lksubgcd[i][3]; lkarray[i][5] = NULL;
-	lkarray[i][6] = NULL;
+        lkarray[i][0] = &lksubgcd[i][0]; lkarray[i][1] = &lksubgcd[i][1]; lkarray[i][2] = NULL;
+        lkarray[i][3] = &lksubgcd[i][2]; lkarray[i][4] = &lksubgcd[i][3]; lkarray[i][5] = NULL;
+        lkarray[i][6] = NULL;
 
-	lkbox[2*i].gd.flags = gg_enabled|gg_visible;
-	lkbox[2*i].gd.u.boxelements = lkarray[i];
-	lkbox[2*i].creator = GHVBoxCreate;
+        lkbox[2 * i].gd.flags = gg_enabled | gg_visible;
+        lkbox[2 * i].gd.u.boxelements = lkarray[i];
+        lkbox[2 * i].creator = GHVBoxCreate;
     }
 
     lkaspects[0].selected = true;

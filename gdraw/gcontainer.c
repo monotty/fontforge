@@ -247,186 +247,224 @@ return;
     _GWidget_IndicateFocusGadget(focus,mf_tab);
 }
 
-static int _GWidget_Container_eh(GWindow gw, GEvent *event) {
-/* Gadgets can get mouse, char and expose events */
-/* Widgets might need char events redirected to them */
-/* If a gadget doesn't want an event it returns false from its eh */
-/* If a subwidget doesn't want an event it may send it up to us */
-    int handled = false;
-    GGadget *gadget;
-    GContainerD *gd = (GContainerD *) (gw->widget_data);
-    GWindow pixmap;
-    GWindow parent;
-    GTopLevelD *topd;
+static int _GWidget_Container_eh(GWindow gw, GEvent* event)
+{
+	/* Gadgets can get mouse, char and expose events */
+	/* Widgets might need char events redirected to them */
+	/* If a gadget doesn't want an event it returns false from its eh */
+	/* If a subwidget doesn't want an event it may send it up to us */
+	int handled = false;
+	GGadget* gadget;
+	GContainerD* gd = (GContainerD*)(gw->widget_data);
+	GWindow pixmap;
+	GWindow parent;
+	GTopLevelD* topd;
 
-    if ( gd==NULL )			/* dying */
-return(true);
+	if (gd == NULL)			/* dying */
+		return(true);
 
-    for ( parent = gw; parent->parent!=NULL && parent->parent->widget_data!=NULL &&
-	    !parent->is_toplevel; parent = parent->parent );
-    topd = (GTopLevelD *) (parent->widget_data);
-    if ( topd==NULL )
-	fprintf( stderr, "No top level window found\n" );
+	for (parent = gw; parent->parent != NULL && parent->parent->widget_data != NULL &&
+		!parent->is_toplevel; parent = parent->parent);
+	topd = (GTopLevelD*)(parent->widget_data);
+	if (topd == NULL)
+		fprintf(stderr, "No top level window found\n");
 
-    GGadgetPopupExternalEvent(event);
-    if ( event->type == et_expose ) {
-	GRect old;
+	GGadgetPopupExternalEvent(event);
+	if (event->type == et_expose)
+	{
+		GRect old;
 
-	pixmap = _GWidget_GetPixmap(gw,&event->u.expose.rect);
-	pixmap->ggc->bg = gw->ggc->bg;
-	GDrawPushClip(pixmap,&event->u.expose.rect,&old);
-	pixmap->user_data = gw->user_data;
+		pixmap = _GWidget_GetPixmap(gw, &event->u.expose.rect);
+		pixmap->ggc->bg = gw->ggc->bg;
+		GDrawPushClip(pixmap, &event->u.expose.rect, &old);
+		pixmap->user_data = gw->user_data;
 
-	if ( gd->e_h!=NULL ) {
-	    (gd->e_h)(pixmap,event);
-	}
-	for ( gadget = gd->gadgets; gadget!=NULL ; gadget=gadget->prev )
-	    if ( ! ( gadget->r.x>event->u.expose.rect.x+event->u.expose.rect.width ||
-		    gadget->r.y>event->u.expose.rect.y+event->u.expose.rect.height ||
-		    gadget->r.x+gadget->r.width<event->u.expose.rect.x ||
-		    gadget->r.y+gadget->r.height<event->u.expose.rect.y ) &&
-		    gadget->state!=gs_invisible )
-		(gadget->funcs->handle_expose)(pixmap,gadget,event);
-
-	GDrawPopClip(pixmap,&old);
-	_GWidget_RestorePixmap(gw,pixmap,&event->u.expose.rect);
-
-return( true );
-    } else if ( event->type >= et_mousemove && event->type <= et_crossing ) {
-	if ( topd!=NULL && topd->popupowner!=NULL ) {
-	    handled = (topd->popupowner->funcs->handle_mouse)(topd->popupowner,event);
-return( handled );
-	}
-	if ( gd->grabgadget && event->type==et_mousedown &&
-		(event->u.mouse.state&ksm_buttons)==0 )
-	    gd->grabgadget = NULL;		/* Happens if a gadget invokes a popup menu. Gadget remains grabbed because menu gets the mouse up */
-	if ( gd->grabgadget!=NULL ) {
-	    handled = (gd->grabgadget->funcs->handle_mouse)(gd->grabgadget,event);
-	    if ( !GDrawNativeWindowExists(NULL,event->native_window) ||
-		    gw->is_dying || gw->widget_data==NULL )
-return( true );
-	    if ( event->type==et_mouseup )
-		gd->grabgadget = NULL;
-	} else if ( event->type==et_mousedown ) {
-	    if ( !parent->is_popup )
-		last_input_window = parent;
-	    for ( gadget = gd->gadgets; gadget!=NULL && !handled ; gadget=gadget->prev ) {
-		if ( gadget->state!=gs_disabled && gadget->state!=gs_invisible &&
-			gadget->takes_input &&
-			GGadgetWithin(gadget,event->u.mouse.x,event->u.mouse.y)) {
-		    handled = (gadget->funcs->handle_mouse)(gadget,event);
-		    if ( !GDrawNativeWindowExists(NULL,event->native_window) ||
-			    gw->is_dying || gw->widget_data==NULL )
-return( true );
-		    gd->grabgadget = gadget;
-		    if ( gadget->focusable && handled )
-			GWidgetIndicateFocusGadget(gadget);
+		if (gd->e_h != NULL)
+		{
+			(gd->e_h)(pixmap, event);
 		}
-	    }
-	} else {
-	    for ( gadget = gd->gadgets; gadget!=NULL && !handled ; gadget=gadget->prev ) {
-		if ( !gadget->state!=gs_disabled && gadget->state!=gs_invisible &&
-			/*gadget->takes_input &&*/	/* everybody needs mouse moves for popups, even labels */
-			GGadgetWithin(gadget,event->u.mouse.x,event->u.mouse.y)) {
-		    if ( gd->lastwiggle!=NULL && gd->lastwiggle!=gadget )
-			(gd->lastwiggle->funcs->handle_mouse)(gd->lastwiggle,event);
-		    handled = (gadget->funcs->handle_mouse)(gadget,event);
-		    if ( !GDrawNativeWindowExists(NULL,event->native_window) ||
-			    gw->is_dying || gw->widget_data==NULL )
-return( true );
-		    gd->lastwiggle = gadget;
+		for (gadget = gd->gadgets; gadget != NULL; gadget = gadget->prev)
+			if (!(gadget->r.x > event->u.expose.rect.x + event->u.expose.rect.width ||
+				gadget->r.y > event->u.expose.rect.y + event->u.expose.rect.height ||
+				gadget->r.x + gadget->r.width < event->u.expose.rect.x ||
+				gadget->r.y + gadget->r.height < event->u.expose.rect.y) &&
+				gadget->state != gs_invisible)
+				(gadget->funcs->handle_expose)(pixmap, gadget, event);
+
+		GDrawPopClip(pixmap, &old);
+		_GWidget_RestorePixmap(gw, pixmap, &event->u.expose.rect);
+
+		return(true);
+	}
+	else if (event->type >= et_mousemove && event->type <= et_crossing)
+	{
+		if (topd != NULL && topd->popupowner != NULL)
+		{
+			handled = (topd->popupowner->funcs->handle_mouse)(topd->popupowner, event);
+			return(handled);
 		}
-	    }
-	    if ( !handled && gd->lastwiggle!=NULL ) {
-		(gd->lastwiggle->funcs->handle_mouse)(gd->lastwiggle,event);
-		if ( !GDrawNativeWindowExists(NULL,event->native_window) ||
-			gw->is_dying )
-return( true );
-	    }
+		if (gd->grabgadget && event->type == et_mousedown &&
+			(event->u.mouse.state & ksm_buttons) == 0)
+			gd->grabgadget = NULL;		/* Happens if a gadget invokes a popup menu. Gadget remains grabbed because menu gets the mouse up */
+		if (gd->grabgadget != NULL)
+		{
+			handled = (gd->grabgadget->funcs->handle_mouse)(gd->grabgadget, event);
+			if (!GDrawNativeWindowExists(NULL, event->native_window) ||
+				gw->is_dying || gw->widget_data == NULL)
+				return(true);
+			if (event->type == et_mouseup)
+				gd->grabgadget = NULL;
+		}
+		else if (event->type == et_mousedown)
+		{
+			if (!parent->is_popup)
+				last_input_window = parent;
+			for (gadget = gd->gadgets; gadget != NULL && !handled; gadget = gadget->prev)
+			{
+				if (gadget->state != gs_disabled && gadget->state != gs_invisible &&
+					gadget->takes_input &&
+					GGadgetWithin(gadget, event->u.mouse.x, event->u.mouse.y))
+				{
+					handled = (gadget->funcs->handle_mouse)(gadget, event);
+					if (!GDrawNativeWindowExists(NULL, event->native_window) ||
+						gw->is_dying || gw->widget_data == NULL)
+						return(true);
+					gd->grabgadget = gadget;
+					if (gadget->focusable && handled)
+						GWidgetIndicateFocusGadget(gadget);
+				}
+			}
+		}
+		else
+		{
+			for (gadget = gd->gadgets; gadget != NULL && !handled; gadget = gadget->prev)
+			{
+				if (!gadget->state != gs_disabled && gadget->state != gs_invisible &&
+					/*gadget->takes_input &&*/	/* everybody needs mouse moves for popups, even labels */
+					GGadgetWithin(gadget, event->u.mouse.x, event->u.mouse.y))
+				{
+					if (gd->lastwiggle != NULL && gd->lastwiggle != gadget)
+						(gd->lastwiggle->funcs->handle_mouse)(gd->lastwiggle, event);
+					handled = (gadget->funcs->handle_mouse)(gadget, event);
+					if (!GDrawNativeWindowExists(NULL, event->native_window) ||
+						gw->is_dying || gw->widget_data == NULL)
+						return(true);
+					gd->lastwiggle = gadget;
+				}
+			}
+			if (!handled && gd->lastwiggle != NULL)
+			{
+				(gd->lastwiggle->funcs->handle_mouse)(gd->lastwiggle, event);
+				if (!GDrawNativeWindowExists(NULL, event->native_window) ||
+					gw->is_dying)
+					return(true);
+			}
+		}
 	}
-    } else if ( event->type == et_char || event->type == et_charup ) {
-	if ( topd!=NULL ) {
-	    handled = (topd->handle_key)(parent,gw,event);
+	else if (event->type == et_char || event->type == et_charup)
+	{
+		if (topd != NULL)
+		{
+			handled = (topd->handle_key)(parent, gw, event);
+		}
 	}
-    } else if ( event->type == et_drag || event->type == et_dragout || event->type==et_drop ) {
-	GGadget *lastdd = NULL;
-	GEvent e;
-	for ( gadget = gd->gadgets; gadget!=NULL && !handled ; gadget=gadget->prev ) {
-	    if ( gadget->funcs->handle_sel &&
-		    GGadgetWithin(gadget,event->u.drag_drop.x,event->u.drag_drop.y))
-		if (( handled = (gadget->funcs->handle_sel)(gadget,event) )) {
-		    lastdd = gadget;
-		    if ( !GDrawNativeWindowExists(NULL,event->native_window) ||
-			    gw->is_dying )
-return( true );
-		    }
+	else if (event->type == et_drag || event->type == et_dragout || event->type == et_drop)
+	{
+		GGadget* lastdd = NULL;
+		GEvent e;
+		for (gadget = gd->gadgets; gadget != NULL && !handled; gadget = gadget->prev)
+		{
+			if (gadget->funcs->handle_sel &&
+				GGadgetWithin(gadget, event->u.drag_drop.x, event->u.drag_drop.y))
+				if ((handled = (gadget->funcs->handle_sel)(gadget, event)))
+				{
+					lastdd = gadget;
+					if (!GDrawNativeWindowExists(NULL, event->native_window) ||
+						gw->is_dying)
+						return(true);
+				}
+		}
+		if (!handled && gd->e_h != NULL)
+		{
+			handled = (gd->e_h)(gw, event);
+			if (!GDrawNativeWindowExists(NULL, event->native_window) ||
+				gw->is_dying)
+				return(true);
+			lastdd = (GGadget*)-1;
+		}
+		e.type = et_dragout;
+		e.w = gw;
+		if (lastdd != gd->lastddgadget)
+		{
+			if (gd->lastddgadget == (GGadget*)-1)
+				(gd->e_h)(gw, &e);
+			else if (gd->lastddgadget != NULL)
+				(gd->lastddgadget->funcs->handle_sel)(gd->lastddgadget, &e);
+			if (!GDrawNativeWindowExists(NULL, event->native_window) ||
+				gw->is_dying)
+				return(true);
+		}
+		if (event->type == et_drag)
+			gd->lastddgadget = lastdd;
+		else
+			gd->lastddgadget = NULL;
+		return(handled);
 	}
-	if ( !handled && gd->e_h!=NULL ) {
-	    handled = (gd->e_h)(gw,event);
-	    if ( !GDrawNativeWindowExists(NULL,event->native_window) ||
-		    gw->is_dying )
-return( true );
-	    lastdd = (GGadget *) -1;
+	else if (event->type == et_selclear)
+	{
+		for (gadget = gd->gadgets; gadget != NULL && !handled; gadget = gadget->prev)
+		{
+			if (gadget->funcs->handle_sel)
+			{
+				if ((handled = (gadget->funcs->handle_sel)(gadget, event)))
+					break;
+			}
+		}
 	}
-	e.type = et_dragout;
-	e.w = gw;
-	if ( lastdd!=gd->lastddgadget ) {
-	    if ( gd->lastddgadget==(GGadget *) -1 )
-		(gd->e_h)(gw,&e);
-	    else if ( gd->lastddgadget!=NULL )
-		(gd->lastddgadget->funcs->handle_sel)(gd->lastddgadget,&e);
-	    if ( !GDrawNativeWindowExists(NULL,event->native_window) ||
-		    gw->is_dying )
-return( true );
+	else if (event->type == et_timer)
+	{
+		for (gadget = gd->gadgets; gadget != NULL && !handled; gadget = gadget->prev)
+		{
+			if (gadget->funcs->handle_timer)
+			{
+				if ((handled = (gadget->funcs->handle_timer)(gadget, event)))
+					break;
+			}
+		}
 	}
-	if ( event->type==et_drag )
-	    gd->lastddgadget = lastdd;
-	else
-	    gd->lastddgadget = NULL;
-return( handled );
-    } else if ( event->type == et_selclear ) {
-	for ( gadget = gd->gadgets; gadget!=NULL && !handled ; gadget=gadget->prev ) {
-	    if ( gadget->funcs->handle_sel ) {
-		if ( (handled = (gadget->funcs->handle_sel)(gadget,event)) )
-	break;
-	    }
+	else if (event->type == et_resize)
+	{
+		GWidgetFlowGadgets(gw);
 	}
-    } else if ( event->type == et_timer ) {
-	for ( gadget = gd->gadgets; gadget!=NULL && !handled ; gadget=gadget->prev ) {
-	    if ( gadget->funcs->handle_timer ) {
-		if ( (handled = (gadget->funcs->handle_timer)(gadget,event)) )
-	break;
-	    }
+	if (gd->e_h != NULL && (!handled || event->type == et_mousemove))
+		handled = (gd->e_h)(gw, event);
+	if (event->type == et_destroy)
+	{
+		GGadget* prev;
+		for (gadget = gd->gadgets; gadget != NULL; gadget = prev)
+		{
+			prev = gadget->prev;
+			if (!gadget->contained)
+				(gadget->funcs->destroy)(gadget);
+			/* contained ggadgets will be destroyed when their owner is destroyed */
+		}
+		/* Widgets are windows and should get their own destroy events and free themselves */
+		/* remove us from our parent */
+		parent = gw->parent;
+		if (parent != NULL && parent->widget_data != NULL)
+		{
+			GContainerD* pgd = (GContainerD*)(parent->widget_data);
+			struct gwidgetdata* wd, * pwd;
+			for (pwd = NULL, wd = pgd->widgets; wd != NULL && wd != (struct gwidgetdata*) gd; pwd = wd, wd = wd->next);
+			if (pwd == NULL)
+				pgd->widgets = gd->next;
+			else
+				pwd->next = gd->next;
+		}
+		free(gd);
+		gw->widget_data = NULL;
 	}
-    } else if ( event->type == et_resize ) {
-	GWidgetFlowGadgets(gw);
-    }
-    if ( gd->e_h!=NULL && (!handled || event->type==et_mousemove ))
-	handled = (gd->e_h)(gw,event);
-    if ( event->type == et_destroy ) {
-	GGadget *prev;
-	for ( gadget = gd->gadgets; gadget!=NULL ; gadget=prev ) {
-	    prev = gadget->prev;
-	    if ( !gadget->contained )
-		(gadget->funcs->destroy)(gadget);
-	    /* contained ggadgets will be destroyed when their owner is destroyed */
-	}
-	/* Widgets are windows and should get their own destroy events and free themselves */
-	/* remove us from our parent */
-	parent = gw->parent;
-	if ( parent!=NULL && parent->widget_data!=NULL ) {
-	    GContainerD *pgd = (GContainerD *) (parent->widget_data);
-	    struct gwidgetdata *wd, *pwd;
-	    for ( pwd=NULL, wd=pgd->widgets; wd!=NULL && wd!=(struct gwidgetdata *) gd; pwd = wd, wd = wd->next );
-	    if ( pwd==NULL )
-		pgd->widgets = gd->next;
-	    else
-		pwd->next = gd->next;
-	}
-	free(gd);
-	gw->widget_data = NULL;
-    }
-return( handled );
+	return(handled);
 }
 
 static int GWidgetCheckMn(GContainerD *gd,GEvent *event) {
@@ -1029,25 +1067,29 @@ void GWidgetRequestVisiblePalette(GWindow palette,int visible) {
     }
 }
 
-GGadget *GWidgetGetControl(GWindow gw, int cid) {
-    GGadget *gadget;
-    GContainerD *gd = (GContainerD *) (gw->widget_data);
-    GWidgetD *widg;
+GGadget* GWidgetGetControl(GWindow gw, int cid)
+{
+	GGadget* gadget;
+	GContainerD* gd = (GContainerD*)(gw->widget_data);
+	GWidgetD* widg;
 
-    if ( gd==NULL || !gd->iscontainer )
-return( NULL );
-    for ( gadget = gd->gadgets; gadget!=NULL ; gadget=gadget->prev ) {
-	if ( gadget->cid == cid )
-return( gadget );
-    }
-    for ( widg = gd->widgets; widg!=NULL; widg = widg->next ) {
-	if ( widg->iscontainer ) {
-	    gadget = GWidgetGetControl(widg->w,cid);
-	    if ( gadget!=NULL )
-return( gadget );
+	if (gd == NULL || !gd->iscontainer)
+		return(NULL);
+	for (gadget = gd->gadgets; gadget != NULL; gadget = gadget->prev)
+	{
+		if (gadget->cid == cid)
+			return(gadget);
 	}
-    }
-return( NULL );
+	for (widg = gd->widgets; widg != NULL; widg = widg->next)
+	{
+		if (widg->iscontainer)
+		{
+			gadget = GWidgetGetControl(widg->w, cid);
+			if (gadget != NULL)
+				return(gadget);
+		}
+	}
+	return(NULL);
 }
 
 GGadget *_GWidgetGetGadgets(GWindow gw) {

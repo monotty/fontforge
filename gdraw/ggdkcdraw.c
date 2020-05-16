@@ -1252,6 +1252,8 @@ int GGDKDrawDoText8(GWindow w, int32 x, int32 y, const char *text, int32 cnt, Co
 
     pango_layout_set_font_description(gw->pango_layout, fd);
     pango_layout_set_text(gw->pango_layout, (char *)text, cnt);
+
+    //todo crash on delete first line of just created Lookup Subtable
     pango_layout_get_pixel_extents(gw->pango_layout, &ink, &rect);
 
     if (drawit == tf_drawit) {

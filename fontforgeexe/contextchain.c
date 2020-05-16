@@ -1689,8 +1689,10 @@ return( false );
 return( true );
 }
 
-#define CCD_WIDTH	340
-#define CCD_HEIGHT	340
+//#define CCD_WIDTH	340
+//#define CCD_HEIGHT	340
+#define CCD_WIDTH	640 /* GPOS Edit window width  */
+#define CCD_HEIGHT	640 /* GPOS Edit window height */
 
 static unichar_t **CCD_GlyphListCompletion(GGadget *t,int from_tab) {
     struct contextchaindlg *ccd = GDrawGetUserData(GDrawGetParentWindow(GGadgetGetWindow(t)));
