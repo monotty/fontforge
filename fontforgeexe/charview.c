@@ -5334,6 +5334,8 @@ static void _CV_CharChangedUpdate(CharView *cv,int changed) {
 	/* If we changed the grid then any character needs to know it */
 	FVRedrawAllCharViewsSF(cv->b.sc->parent);
     }
+    if ( cv->showpointnumbers || cv->show_ft_results )
+	SCNumberPoints(cv->b.sc, cvlayer);
     cv->recentchange = false;
     cv->p.sp = NULL;		/* Might have been deleted */
 }
@@ -9227,16 +9229,7 @@ static void cv_edlistcheck(CharView *cv, struct gmenuitem *mi) {
 	    mi->ti.disabled = cv->b.gridfit==NULL;
 	  break;
 	  case MID_Paste:
-	    mi->ti.disabled = !CopyContainsSomething() &&
-#ifndef _NO_LIBPNG
-		    !GDrawSelectionHasType(cv->gw,sn_clipboard,"image/png") &&
-#endif
-		    !GDrawSelectionHasType(cv->gw,sn_clipboard,"image/svg+xml") &&
-		    !GDrawSelectionHasType(cv->gw,sn_clipboard,"image/svg-xml") &&
-		    !GDrawSelectionHasType(cv->gw,sn_clipboard,"image/svg") &&
-		    !GDrawSelectionHasType(cv->gw,sn_clipboard,"image/bmp") &&
-		    !GDrawSelectionHasType(cv->gw,sn_clipboard,"image/eps") &&
-		    !GDrawSelectionHasType(cv->gw,sn_clipboard,"image/ps");
+	    mi->ti.disabled = !CopyContainsSomething() && !SCClipboardHasPasteableContents();
 	  break;
 	  case MID_Undo:
 	    mi->ti.disabled = cv->b.layerheads[cv->b.drawmode]->undoes==NULL;
@@ -9360,7 +9353,6 @@ return;
 	    if ( first == NULL ) first = spline;
 	}
     }
-    SCNumberPoints(cv->b.sc,CVLayer((CharViewBase *) cv));
     CVCharChangedUpdate(&cv->b);
 }
 

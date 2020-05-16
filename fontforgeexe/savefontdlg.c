@@ -99,6 +99,7 @@ static int nfnt_warned = false, post_warned = false;
 #define CID_TTF_DummyDSIG	1117
 #define CID_NativeKern		1118
 #define CID_TTF_OldKernMappedOnly 1119
+#define CID_TTF_FFTMTable	1120
 
 struct gfc_data
 {
@@ -301,83 +302,74 @@ static int OPT_OldKern(GGadget* g, GEvent* e)
 	return(true);
 }
 
-static int sod_e_h(GWindow gw, GEvent* event)
-{
-	if (event->type == et_close)
-	{
-		struct gfc_data* d = GDrawGetUserData(gw);
-		d->sod_done = true;
+static int sod_e_h(GWindow gw, GEvent *event) {
+    if ( event->type==et_close ) {
+	struct gfc_data *d = GDrawGetUserData(gw);
+	d->sod_done = true;
+    } else if ( event->type == et_char ) {
+	if ( event->u.chr.keysym == GK_F1 || event->u.chr.keysym == GK_Help ) {
+	    help("ui/dialogs/generate.html", "#generate-options");
+return( true );
 	}
-	else if (event->type == et_char)
-	{
-		if (event->u.chr.keysym == GK_F1 || event->u.chr.keysym == GK_Help)
-		{
-			help("ui/dialogs/generate.html", "#generate-options");
-			return(true);
-		}
-		return(false);
-	}
-	else if (event->type == et_controlevent && event->u.control.subtype == et_buttonactivate)
-	{
-		struct gfc_data* d = GDrawGetUserData(gw);
-		if (GGadgetGetCid(event->u.control.g) == CID_OK)
-		{
-			if (d->sod_which == 0)
-			{		/* PostScript */
-				d->ps_flags = 0;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_PS_AFM)))
-					d->ps_flags |= ps_flag_afm;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_PS_AFMmarks)))
-					d->ps_flags |= ps_flag_afmwithmarks;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_PS_PFM)))
-					d->ps_flags |= ps_flag_pfm;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_PS_TFM)))
-					d->ps_flags |= ps_flag_tfm;
-				/*if ( !GGadgetIsChecked(GWidgetGetControl(gw,CID_PS_HintSubs)) )*/
-					/*d->ps_flags |= ps_flag_nohintsubs;*/
-				if (!GGadgetIsChecked(GWidgetGetControl(gw, CID_PS_Flex)))
-					d->ps_flags |= ps_flag_noflex;
-				if (!GGadgetIsChecked(GWidgetGetControl(gw, CID_PS_Hints)))
-					d->ps_flags |= ps_flag_nohints;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_PS_Round)))
-					d->ps_flags |= ps_flag_round;
-				/*if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_PS_Restrict256)) )*/
-					/*d->ps_flags |= ps_flag_restrict256;*/
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_FontLog)))
-					d->ps_flags |= ps_flag_outputfontlog;
-			}
-			else if (d->sod_which == 1 || d->sod_which == 2)
-			{	/* Open/TrueType */
-				d->sfnt_flags = 0;
-				if (!GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_Hints)))
-					d->sfnt_flags |= ttf_flag_nohints;
-				if (!GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_FullPS)))
-					d->sfnt_flags |= ttf_flag_shortps;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_AppleMode)))
-					d->sfnt_flags |= ttf_flag_applemode;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_OpenTypeMode)))
-					d->sfnt_flags |= ttf_flag_otmode;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_OldKern)) &&
-					!(d->sfnt_flags & ttf_flag_applemode))
-					d->sfnt_flags |= ttf_flag_oldkern;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_DummyDSIG)))
-					d->sfnt_flags |= ttf_flag_dummyDSIG;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_PfEdComments)))
-					d->sfnt_flags |= ttf_flag_pfed_comments;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_PfEdColors)))
-					d->sfnt_flags |= ttf_flag_pfed_colors;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_PfEdLookups)))
-					d->sfnt_flags |= ttf_flag_pfed_lookupnames;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_PfEdGuides)))
-					d->sfnt_flags |= ttf_flag_pfed_guides;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_PfEdLayers)))
-					d->sfnt_flags |= ttf_flag_pfed_layers;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_TeXTable)))
-					d->sfnt_flags |= ttf_flag_TeXtable;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_GlyphMap)))
-					d->sfnt_flags |= ttf_flag_glyphmap;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_OFM)))
-					d->sfnt_flags |= ttf_flag_ofm;
+return( false );
+    } else if ( event->type==et_controlevent && event->u.control.subtype == et_buttonactivate ) {
+	struct gfc_data *d = GDrawGetUserData(gw);
+	if ( GGadgetGetCid(event->u.control.g)==CID_OK ) {
+	    if ( d->sod_which==0 ) {		/* PostScript */
+		d->ps_flags = 0;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_PS_AFM)) )
+		    d->ps_flags |= ps_flag_afm;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_PS_AFMmarks)) )
+		    d->ps_flags |= ps_flag_afmwithmarks;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_PS_PFM)) )
+		    d->ps_flags |= ps_flag_pfm;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_PS_TFM)) )
+		    d->ps_flags |= ps_flag_tfm;
+		/*if ( !GGadgetIsChecked(GWidgetGetControl(gw,CID_PS_HintSubs)) )*/
+		    /*d->ps_flags |= ps_flag_nohintsubs;*/
+		if ( !GGadgetIsChecked(GWidgetGetControl(gw,CID_PS_Flex)) )
+		    d->ps_flags |= ps_flag_noflex;
+		if ( !GGadgetIsChecked(GWidgetGetControl(gw,CID_PS_Hints)) )
+		    d->ps_flags |= ps_flag_nohints;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_PS_Round)) )
+		    d->ps_flags |= ps_flag_round;
+		/*if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_PS_Restrict256)) )*/
+		    /*d->ps_flags |= ps_flag_restrict256;*/
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_FontLog)) )
+		    d->ps_flags |= ps_flag_outputfontlog;
+	    } else if ( d->sod_which==1 || d->sod_which==2 ) {	/* Open/TrueType */
+		d->sfnt_flags = 0;
+		if ( !GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_Hints)) )
+		    d->sfnt_flags |= ttf_flag_nohints;
+		if ( !GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_FullPS)) )
+		    d->sfnt_flags |= ttf_flag_shortps;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_AppleMode)) )
+		    d->sfnt_flags |= ttf_flag_applemode;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_OpenTypeMode)) )
+		    d->sfnt_flags |= ttf_flag_otmode;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_OldKern)) &&
+			!(d->sfnt_flags&ttf_flag_applemode) )
+		    d->sfnt_flags |= ttf_flag_oldkern;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_DummyDSIG)) )
+		    d->sfnt_flags |= ttf_flag_dummyDSIG;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_PfEdComments)) )
+		    d->sfnt_flags |= ttf_flag_pfed_comments;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_PfEdColors)) )
+		    d->sfnt_flags |= ttf_flag_pfed_colors;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_PfEdLookups)) )
+		    d->sfnt_flags |= ttf_flag_pfed_lookupnames;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_PfEdGuides)) )
+		    d->sfnt_flags |= ttf_flag_pfed_guides;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_PfEdLayers)) )
+		    d->sfnt_flags |= ttf_flag_pfed_layers;
+		if ( !GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_FFTMTable)) )
+		    d->sfnt_flags |= ttf_flag_noFFTMtable;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_TeXTable)) )
+		    d->sfnt_flags |= ttf_flag_TeXtable;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_GlyphMap)) )
+		    d->sfnt_flags |= ttf_flag_glyphmap;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_OFM)) )
+		    d->sfnt_flags |= ttf_flag_ofm;
 
 				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_PS_AFM)))
 					d->sfnt_flags |= ps_flag_afm;
@@ -419,32 +411,34 @@ static int sod_e_h(GWindow gw, GEvent* event)
 				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_PS_TFM)))
 					d->psotb_flags = d->ps_flags |= ps_flag_tfm;
 
-				if (!GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_FullPS)))
-					d->psotb_flags |= ttf_flag_shortps;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_PfEdComments)))
-					d->psotb_flags |= ttf_flag_pfed_comments;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_PfEdColors)))
-					d->psotb_flags |= ttf_flag_pfed_colors;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_PfEdLookups)))
-					d->psotb_flags |= ttf_flag_pfed_lookupnames;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_PfEdGuides)))
-					d->psotb_flags |= ttf_flag_pfed_guides;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_PfEdLayers)))
-					d->psotb_flags |= ttf_flag_pfed_layers;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_TeXTable)))
-					d->psotb_flags |= ttf_flag_TeXtable;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_GlyphMap)))
-					d->psotb_flags |= ttf_flag_glyphmap;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_OFM)))
-					d->psotb_flags |= ttf_flag_ofm;
-				if (GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_NoMacNames)))
-					d->psotb_flags |= ttf_flag_nomacnames;
-			}
-			d->sod_invoked = true;
-		}
-		d->sod_done = true;
+		if ( !GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_FullPS)) )
+		    d->psotb_flags |= ttf_flag_shortps;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_PfEdComments)) )
+		    d->psotb_flags |= ttf_flag_pfed_comments;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_PfEdColors)) )
+		    d->psotb_flags |= ttf_flag_pfed_colors;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_PfEdLookups)) )
+		    d->psotb_flags |= ttf_flag_pfed_lookupnames;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_PfEdGuides)) )
+		    d->psotb_flags |= ttf_flag_pfed_guides;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_PfEdLayers)) )
+		    d->psotb_flags |= ttf_flag_pfed_layers;
+		if ( !GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_FFTMTable)) )
+		    d->psotb_flags |= ttf_flag_noFFTMtable;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_TeXTable)) )
+		    d->psotb_flags |= ttf_flag_TeXtable;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_GlyphMap)) )
+		    d->psotb_flags |= ttf_flag_glyphmap;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_OFM)) )
+		    d->psotb_flags |= ttf_flag_ofm;
+		if ( GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_NoMacNames)) )
+		    d->psotb_flags |= ttf_flag_nomacnames;
+	    }
+	    d->sod_invoked = true;
 	}
-	return(true);
+	d->sod_done = true;
+    }
+return( true );
 }
 
 static void OptSetDefaults(GWindow gw, struct gfc_data* d, int which, int iscid)
@@ -488,20 +482,22 @@ static void OptSetDefaults(GWindow gw, struct gfc_data* d, int which, int iscid)
 	else
 		GGadgetSetChecked(GWidgetGetControl(gw, CID_TTF_OpenTypeMode), (flags & ttf_flag_otmode));
 
-	GGadgetSetChecked(GWidgetGetControl(gw, CID_TTF_PfEdComments), flags & ttf_flag_pfed_comments);
-	GGadgetSetChecked(GWidgetGetControl(gw, CID_TTF_PfEdColors), flags & ttf_flag_pfed_colors);
-	GGadgetSetChecked(GWidgetGetControl(gw, CID_TTF_PfEdLookups), flags & ttf_flag_pfed_lookupnames);
-	GGadgetSetChecked(GWidgetGetControl(gw, CID_TTF_PfEdGuides), flags & ttf_flag_pfed_guides);
-	GGadgetSetChecked(GWidgetGetControl(gw, CID_TTF_PfEdLayers), flags & ttf_flag_pfed_layers);
-	GGadgetSetChecked(GWidgetGetControl(gw, CID_TTF_TeXTable), flags & ttf_flag_TeXtable);
-	GGadgetSetChecked(GWidgetGetControl(gw, CID_TTF_GlyphMap), flags & ttf_flag_glyphmap);
-	GGadgetSetChecked(GWidgetGetControl(gw, CID_TTF_OldKern),
-		(flags & ttf_flag_oldkern) && !GGadgetIsChecked(GWidgetGetControl(gw, CID_TTF_AppleMode)));
-	GGadgetSetChecked(GWidgetGetControl(gw, CID_TTF_DummyDSIG), flags & ttf_flag_dummyDSIG);
-	GGadgetSetChecked(GWidgetGetControl(gw, CID_FontLog), flags & ps_flag_outputfontlog);
-	GGadgetSetChecked(GWidgetGetControl(gw, CID_NativeKern), flags & ttf_native_kern);
-	GGadgetSetChecked(GWidgetGetControl(gw, CID_TTF_OldKernMappedOnly), flags & ttf_flag_oldkernmappedonly);
-	GGadgetSetChecked(GWidgetGetControl(gw, CID_TTF_NoMacNames), flags & ttf_flag_nomacnames);
+    GGadgetSetChecked(GWidgetGetControl(gw,CID_TTF_PfEdComments),flags&ttf_flag_pfed_comments);
+    GGadgetSetChecked(GWidgetGetControl(gw,CID_TTF_PfEdColors),flags&ttf_flag_pfed_colors);
+    GGadgetSetChecked(GWidgetGetControl(gw,CID_TTF_PfEdLookups),flags&ttf_flag_pfed_lookupnames);
+    GGadgetSetChecked(GWidgetGetControl(gw,CID_TTF_PfEdGuides),flags&ttf_flag_pfed_guides);
+    GGadgetSetChecked(GWidgetGetControl(gw,CID_TTF_PfEdLayers),flags&ttf_flag_pfed_layers);
+    GGadgetSetChecked(GWidgetGetControl(gw,CID_TTF_FFTMTable),
+	    which!=0 && !(flags&ttf_flag_noFFTMtable));
+    GGadgetSetChecked(GWidgetGetControl(gw,CID_TTF_TeXTable),flags&ttf_flag_TeXtable);
+    GGadgetSetChecked(GWidgetGetControl(gw,CID_TTF_GlyphMap),flags&ttf_flag_glyphmap);
+    GGadgetSetChecked(GWidgetGetControl(gw,CID_TTF_OldKern),
+	    (flags&ttf_flag_oldkern) && !GGadgetIsChecked(GWidgetGetControl(gw,CID_TTF_AppleMode)));
+    GGadgetSetChecked(GWidgetGetControl(gw,CID_TTF_DummyDSIG),flags&ttf_flag_dummyDSIG);
+    GGadgetSetChecked(GWidgetGetControl(gw,CID_FontLog),flags&ps_flag_outputfontlog);
+    GGadgetSetChecked(GWidgetGetControl(gw,CID_NativeKern),flags&ttf_native_kern);
+    GGadgetSetChecked(GWidgetGetControl(gw,CID_TTF_OldKernMappedOnly),flags&ttf_flag_oldkernmappedonly);
+    GGadgetSetChecked(GWidgetGetControl(gw,CID_TTF_NoMacNames),flags&ttf_flag_nomacnames);
 
 	GGadgetSetEnabled(GWidgetGetControl(gw, CID_PS_Hints), which != 1);
 	GGadgetSetEnabled(GWidgetGetControl(gw, CID_PS_Flex), which != 1);
@@ -524,19 +520,20 @@ static void OptSetDefaults(GWindow gw, struct gfc_data* d, int which, int iscid)
 	GGadgetSetEnabled(GWidgetGetControl(gw, CID_TTF_OldKern), which != 0);
 	GGadgetSetEnabled(GWidgetGetControl(gw, CID_TTF_DummyDSIG), which != 0);
 
-	GGadgetSetEnabled(GWidgetGetControl(gw, CID_TTF_PfEd), which != 0);
-	GGadgetSetEnabled(GWidgetGetControl(gw, CID_TTF_PfEdComments), which != 0);
-	GGadgetSetEnabled(GWidgetGetControl(gw, CID_TTF_PfEdColors), which != 0);
-	GGadgetSetEnabled(GWidgetGetControl(gw, CID_TTF_PfEdLookups), which != 0);
-	GGadgetSetEnabled(GWidgetGetControl(gw, CID_TTF_PfEdGuides), which != 0);
-	GGadgetSetEnabled(GWidgetGetControl(gw, CID_TTF_PfEdColors), which != 0);
-	GGadgetSetEnabled(GWidgetGetControl(gw, CID_TTF_PfEdLayers), which != 0);
-	GGadgetSetEnabled(GWidgetGetControl(gw, CID_TTF_TeXTable), which != 0);
-	GGadgetSetEnabled(GWidgetGetControl(gw, CID_TTF_GlyphMap), which != 0);
-	GGadgetSetEnabled(GWidgetGetControl(gw, CID_TTF_OFM), which != 0);
-
-	GGadgetSetEnabled(GWidgetGetControl(gw, CID_TTF_OldKernMappedOnly), which != 0);
-	GGadgetSetEnabled(GWidgetGetControl(gw, CID_TTF_NoMacNames), which != 0);
+    GGadgetSetEnabled(GWidgetGetControl(gw,CID_TTF_PfEd),which!=0);
+    GGadgetSetEnabled(GWidgetGetControl(gw,CID_TTF_PfEdComments),which!=0);
+    GGadgetSetEnabled(GWidgetGetControl(gw,CID_TTF_PfEdColors),which!=0);
+    GGadgetSetEnabled(GWidgetGetControl(gw,CID_TTF_PfEdLookups),which!=0);
+    GGadgetSetEnabled(GWidgetGetControl(gw,CID_TTF_PfEdGuides),which!=0);
+    GGadgetSetEnabled(GWidgetGetControl(gw,CID_TTF_PfEdColors),which!=0);
+    GGadgetSetEnabled(GWidgetGetControl(gw,CID_TTF_PfEdLayers),which!=0);
+    GGadgetSetEnabled(GWidgetGetControl(gw,CID_TTF_FFTMTable), which!=0);
+    GGadgetSetEnabled(GWidgetGetControl(gw,CID_TTF_TeXTable),which!=0);
+    GGadgetSetEnabled(GWidgetGetControl(gw,CID_TTF_GlyphMap),which!=0);
+    GGadgetSetEnabled(GWidgetGetControl(gw,CID_TTF_OFM),which!=0);
+    
+    GGadgetSetEnabled(GWidgetGetControl(gw,CID_TTF_OldKernMappedOnly),which!=0 );
+    GGadgetSetEnabled(GWidgetGetControl(gw,CID_TTF_NoMacNames),which!=0 );
 
 	d->optset[which] = true;
 }
@@ -544,16 +541,15 @@ static void OptSetDefaults(GWindow gw, struct gfc_data* d, int which, int iscid)
 #define OPT_Width	230
 #define OPT_Height	233
 
-static void SaveOptionsDlg(struct gfc_data* d, int which, int iscid)
-{
-	int k, fontlog_k, group, group2;
-	GWindow gw;
-	GWindowAttrs wattrs;
-	GGadgetCreateData gcd[35];
-	GTextInfo label[35];
-	GRect pos;
-	GGadgetCreateData* hvarray1[21], * hvarray2[42], * hvarray3[8], * harray[7], * varray[11];
-	GGadgetCreateData boxes[6];
+static void SaveOptionsDlg(struct gfc_data *d,int which,int iscid) {
+    int k,fontlog_k,group,group2;
+    GWindow gw;
+    GWindowAttrs wattrs;
+    GGadgetCreateData gcd[36];
+    GTextInfo label[36];
+    GRect pos;
+    GGadgetCreateData *hvarray1[21], *hvarray2[44], *hvarray3[8], *harray[7], *varray[11];
+    GGadgetCreateData boxes[6];
 
 	d->sod_done = false;
 	d->sod_which = which;
@@ -852,17 +848,27 @@ static void SaveOptionsDlg(struct gfc_data* d, int which, int iscid)
 	gcd[k++].creator = GCheckBoxCreate;
 	hvarray2[27] = GCD_HPad10; hvarray2[28] = &gcd[k - 1]; hvarray2[29] = NULL;
 
-	gcd[k].gd.pos.x = gcd[k - 3].gd.pos.x; gcd[k].gd.pos.y = gcd[k - 5].gd.pos.y;
-	gcd[k].gd.flags = gg_visible;
-	label[k].text = (unichar_t*)_("TeX Table");
-	label[k].text_is_1byte = true;
-	gcd[k].gd.popup_msg = _("The TeX table is an extension to the TrueType format\nand the various data you would expect to find in\na tfm file (that isn't already stored elsewhere\nin the ttf file)\n");
-	gcd[k].gd.label = &label[k];
-	gcd[k].gd.cid = CID_TTF_TeXTable;
-	gcd[k++].creator = GCheckBoxCreate;
-	hvarray2[32] = &gcd[k - 1]; hvarray2[33] = GCD_ColSpan; hvarray2[34] = NULL;
-	hvarray2[37] = GCD_Glue; hvarray2[38] = GCD_Glue; hvarray2[39] = NULL;
-	hvarray2[40] = NULL;
+    gcd[k].gd.pos.x = gcd[k-3].gd.pos.x; gcd[k].gd.pos.y = gcd[k-5].gd.pos.y;
+    gcd[k].gd.flags = gg_visible;
+    label[k].text = (unichar_t *) _("FFTM Table");
+    label[k].text_is_1byte = true;
+    gcd[k].gd.popup_msg = _("The FFTM table is an extension to the TrueType format\nand contains a series of timestamps defined by FontForge\n");
+    gcd[k].gd.label = &label[k];
+    gcd[k].gd.cid = CID_TTF_FFTMTable;
+    gcd[k++].creator = GCheckBoxCreate;
+    hvarray2[32] = &gcd[k-1]; hvarray2[33] = GCD_ColSpan; hvarray2[34] = NULL;
+
+    gcd[k].gd.pos.x = gcd[k-1].gd.pos.x; gcd[k].gd.pos.y = gcd[k-1].gd.pos.y;
+    gcd[k].gd.flags = gg_visible;
+    label[k].text = (unichar_t *) _("TeX Table");
+    label[k].text_is_1byte = true;
+    gcd[k].gd.popup_msg = _("The TeX table is an extension to the TrueType format\nand the various data you would expect to find in\na tfm file (that isn't already stored elsewhere\nin the ttf file)\n");
+    gcd[k].gd.label = &label[k];
+    gcd[k].gd.cid = CID_TTF_TeXTable;
+    gcd[k++].creator = GCheckBoxCreate;
+    hvarray2[37] = &gcd[k-1]; hvarray2[38] = GCD_ColSpan; hvarray2[39] = NULL;
+    hvarray2[40] = GCD_Glue; hvarray2[41] = GCD_Glue; hvarray2[42] = NULL;
+    hvarray2[43] = NULL;
 
 	boxes[3].gd.flags = gg_enabled | gg_visible;
 	boxes[3].gd.u.boxelements = hvarray2;

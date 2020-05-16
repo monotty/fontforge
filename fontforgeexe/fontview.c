@@ -416,82 +416,82 @@ static void FVDrawGlyph(GWindow pixmap, FontView* fv, int index, int forcebg)
 			base.trans = 0;
 			base.clut->trans_index = 0;
 
-			base.data = bdfc->bitmap;
-			base.bytes_per_line = bdfc->bytes_per_line;
-			base.width = bdfc->xmax - bdfc->xmin + 1;
-			base.height = bdfc->ymax - bdfc->ymin + 1;
-			box.x = j * fv->cbw; box.width = fv->cbw;
-			box.y = i * fv->cbh + fv->lab_height + 1; box.height = box.width + 1;
-			GDrawPushClip(pixmap, &box, &old2);
-			if (!fv->b.sf->onlybitmaps && fv->show != fv->filled &&
-				sc->layers[fv->b.active_layer].splines == NULL && sc->layers[fv->b.active_layer].refs == NULL &&
-				!sc->widthset &&
-				!(bdfc->xmax <= 0 && bdfc->xmin == 0 && bdfc->ymax <= 0 && bdfc->ymax == 0))
-			{
-				/* If we have a bitmap but no outline character... */
-				GRect b;
-				b.x = box.x + 1; b.y = box.y + 1; b.width = box.width - 2; b.height = box.height - 2;
-				GDrawDrawRect(pixmap, &b, 0x008000);
-				++b.x; ++b.y; b.width -= 2; b.height -= 2;
-				GDrawDrawRect(pixmap, &b, 0x008000);
-			}
-			/* I assume that the bitmap image matches the bounding*/
-			/*  box. In some bitmap fonts the bitmap has white space on the*/
-			/*  right. This can throw off the centering algorithem */
-			if (fv->magnify > 1)
-			{
-				GDrawDrawImageMagnified(pixmap, &gi, NULL,
-					j * fv->cbw + (fv->cbw - 1 - fv->magnify * base.width) / 2,
-					i * fv->cbh + fv->lab_height + 1 + fv->magnify * (fv->show->ascent - bdfc->ymax),
-					fv->magnify * base.width, fv->magnify * base.height);
-			}
-			else if ((GDrawHasCairo(pixmap) & gc_alpha) && base.image_type == it_index)
-			{
-				GDrawDrawGlyph(pixmap, &gi, NULL,
-					j * fv->cbw + (fv->cbw - 1 - base.width) / 2,
-					i * fv->cbh + fv->lab_height + 1 + fv->show->ascent - bdfc->ymax);
-			}
-			else
-				GDrawDrawImage(pixmap, &gi, NULL,
-					j * fv->cbw + (fv->cbw - 1 - base.width) / 2,
-					i * fv->cbh + fv->lab_height + 1 + fv->show->ascent - bdfc->ymax);
-			if (fv->showhmetrics)
-			{
-				int x1, x0 = j * fv->cbw + (fv->cbw - 1 - fv->magnify * base.width) / 2 - bdfc->xmin * fv->magnify;
-				/* Draw advance width & horizontal origin */
-				if (fv->showhmetrics & fvm_origin)
-					GDrawDrawLine(pixmap, x0, i * fv->cbh + fv->lab_height + yorg - 3, x0,
-						i * fv->cbh + fv->lab_height + yorg + 2, METRICS_ORIGIN);
-				x1 = x0 + fv->magnify * bdfc->width;
-				if (fv->showhmetrics & fvm_advanceat)
-					GDrawDrawLine(pixmap, x1, i * fv->cbh + fv->lab_height + 1, x1,
-						(i + 1) * fv->cbh - 1, METRICS_ADVANCE);
-				if (fv->showhmetrics & fvm_advanceto)
-					GDrawDrawLine(pixmap, x0, (i + 1) * fv->cbh - 2, x1,
-						(i + 1) * fv->cbh - 2, METRICS_ADVANCE);
-			}
-			if (fv->showvmetrics)
-			{
-				int x0 = j * fv->cbw + (fv->cbw - 1 - fv->magnify * base.width) / 2 - bdfc->xmin * fv->magnify
-					+ fv->magnify * fv->show->pixelsize / 2;
-				int y0 = i * fv->cbh + fv->lab_height + yorg;
-				int yvw = y0 + fv->magnify * sc->vwidth * fv->show->pixelsize / em;
-				if (fv->showvmetrics & fvm_baseline)
-					GDrawDrawLine(pixmap, x0, i * fv->cbh + fv->lab_height + 1, x0,
-						(i + 1) * fv->cbh - 1, METRICS_BASELINE);
-				if (fv->showvmetrics & fvm_advanceat)
-					GDrawDrawLine(pixmap, j * fv->cbw, yvw, (j + 1) * fv->cbw,
-						yvw, METRICS_ADVANCE);
-				if (fv->showvmetrics & fvm_advanceto)
-					GDrawDrawLine(pixmap, j * fv->cbw + 2, y0, j * fv->cbw + 2,
-						yvw, METRICS_ADVANCE);
-				if (fv->showvmetrics & fvm_origin)
-					GDrawDrawLine(pixmap, x0 - 3, i * fv->cbh + fv->lab_height + yorg, x0 + 2, i * fv->cbh + fv->lab_height + yorg, METRICS_ORIGIN);
-			}
-			GDrawPopClip(pixmap, &old2);
-			if (!fv->show->piecemeal) BDFCharFree(bdfc);
-		}
+	    base.data = bdfc->bitmap;
+	    base.bytes_per_line = bdfc->bytes_per_line;
+	    base.width = bdfc->xmax-bdfc->xmin+1;
+	    base.height = bdfc->ymax-bdfc->ymin+1;
+	    box.x = j*fv->cbw; box.width = fv->cbw;
+	    box.y = i*fv->cbh+fv->lab_height+1; box.height = box.width+1;
+	    GDrawPushClip(pixmap,&box,&old2);
+	    if ( !fv->b.sf->onlybitmaps && fv->show!=fv->filled &&
+		    sc->layers[fv->b.active_layer].splines==NULL && sc->layers[fv->b.active_layer].refs==NULL &&
+		    !sc->widthset &&
+		    !(bdfc->xmax<=0 && bdfc->xmin==0 && bdfc->ymax<=0 && bdfc->ymax==0) ) {
+		/* If we have a bitmap but no outline character... */
+		GRect b;
+		b.x = box.x+1; b.y = box.y+1; b.width = box.width-2; b.height = box.height-2;
+		GDrawDrawRect(pixmap,&b,0x008000);
+		++b.x; ++b.y; b.width -= 2; b.height -= 2;
+		GDrawDrawRect(pixmap,&b,0x008000);
+	    }
+
+	    // Keep centering consistent to bdfc->width. If base.width!=bdfc->width,
+	    // the bitmap has likely been run through BCCompressBitmap. In this
+	    // case, bdfc->xmin should represent the true offset from the origin
+	    // to the first used column.
+	    int xwidth = (bdfc->width != base.width) ? bdfc->width - bdfc->xmin*2 : base.width;
+
+	    /* I assume that the bitmap image matches the bounding*/
+	    /*  box. In some bitmap fonts the bitmap has white space on the*/
+	    /*  right. This can throw off the centering algorithem */
+	    if ( fv->magnify>1 ) {
+		GDrawDrawImageMagnified(pixmap,&gi,NULL,
+			j*fv->cbw+(fv->cbw-1-fv->magnify*xwidth)/2,
+			i*fv->cbh+fv->lab_height+1+fv->magnify*(fv->show->ascent-bdfc->ymax),
+			fv->magnify*base.width,fv->magnify*base.height);
+	    } else if ( (GDrawHasCairo(pixmap)&gc_alpha) && base.image_type==it_index ) {
+		GDrawDrawGlyph(pixmap,&gi,NULL,
+			j*fv->cbw+(fv->cbw-1-xwidth)/2,
+			i*fv->cbh+fv->lab_height+1+fv->show->ascent-bdfc->ymax);
+	    } else
+		GDrawDrawImage(pixmap,&gi,NULL,
+			j*fv->cbw+(fv->cbw-1-xwidth)/2,
+			i*fv->cbh+fv->lab_height+1+fv->show->ascent-bdfc->ymax);
+	    if ( fv->showhmetrics ) {
+		int x1, x0 = j*fv->cbw+(fv->cbw-1-fv->magnify*xwidth)/2- bdfc->xmin*fv->magnify;
+		/* Draw advance width & horizontal origin */
+		if ( fv->showhmetrics&fvm_origin )
+		    GDrawDrawLine(pixmap,x0,i*fv->cbh+fv->lab_height+yorg-3,x0,
+			    i*fv->cbh+fv->lab_height+yorg+2,METRICS_ORIGIN);
+		x1 = x0 + fv->magnify*bdfc->width;
+		if ( fv->showhmetrics&fvm_advanceat )
+		    GDrawDrawLine(pixmap,x1,i*fv->cbh+fv->lab_height+1,x1,
+			    (i+1)*fv->cbh-1,METRICS_ADVANCE);
+		if ( fv->showhmetrics&fvm_advanceto )
+		    GDrawDrawLine(pixmap,x0,(i+1)*fv->cbh-2,x1,
+			    (i+1)*fv->cbh-2,METRICS_ADVANCE);
+	    }
+	    if ( fv->showvmetrics ) {
+		int x0 = j*fv->cbw+(fv->cbw-1-fv->magnify*xwidth)/2- bdfc->xmin*fv->magnify
+			+ fv->magnify*fv->show->pixelsize/2;
+		int y0 = i*fv->cbh+fv->lab_height+yorg;
+		int yvw = y0 + fv->magnify*sc->vwidth*fv->show->pixelsize/em;
+		if ( fv->showvmetrics&fvm_baseline )
+		    GDrawDrawLine(pixmap,x0,i*fv->cbh+fv->lab_height+1,x0,
+			    (i+1)*fv->cbh-1,METRICS_BASELINE);
+		if ( fv->showvmetrics&fvm_advanceat )
+		    GDrawDrawLine(pixmap,j*fv->cbw,yvw,(j+1)*fv->cbw,
+			    yvw,METRICS_ADVANCE);
+		if ( fv->showvmetrics&fvm_advanceto )
+		    GDrawDrawLine(pixmap,j*fv->cbw+2,y0,j*fv->cbw+2,
+			    yvw,METRICS_ADVANCE);
+		if ( fv->showvmetrics&fvm_origin )
+		    GDrawDrawLine(pixmap,x0-3,i*fv->cbh+fv->lab_height+yorg,x0+2,i*fv->cbh+fv->lab_height+yorg,METRICS_ORIGIN);
+	    }
+	    GDrawPopClip(pixmap,&old2);
+	    if ( !fv->show->piecemeal ) BDFCharFree( bdfc );
 	}
+    }
 }
 
 static void FVToggleCharSelected(FontView* fv, int enc)
@@ -4842,15 +4842,14 @@ static void fllistcheck(GWindow gw, struct gmenuitem* mi, GEvent* UNUSED(e))
 	}
 }
 
-static void edlistcheck(GWindow gw, struct gmenuitem* mi, GEvent* UNUSED(e))
-{
-	FontView* fv = (FontView*)GDrawGetUserData(gw);
-	int pos = FVAnyCharSelected(fv), i, gid;
-	int not_pasteable = pos == -1 ||
-		(!CopyContainsSomething() && !SCClipboardHasPasteableContents());
-	
-	RefChar* base = CopyContainsRef(fv->b.sf);
-	int base_enc = base != NULL ? fv->b.map->backmap[base->orig_pos] : -1;
+static void edlistcheck(GWindow gw, struct gmenuitem *mi, GEvent *UNUSED(e)) {
+    FontView *fv = (FontView *) GDrawGetUserData(gw);
+    int pos = FVAnyCharSelected(fv), i, gid;
+    int not_pasteable = pos==-1 ||
+		    (!CopyContainsSomething() && !SCClipboardHasPasteableContents());
+    RefChar *base = CopyContainsRef(fv->b.sf);
+    int base_enc = base!=NULL ? fv->b.map->backmap[base->orig_pos] : -1;
+
 
 
 	for (mi = mi->sub; mi->ti.text != NULL || mi->ti.line; ++mi)
@@ -6807,189 +6806,160 @@ static void FVExpose(FontView* fv, GWindow pixmap, GEvent* event)
 						else	/* Leave a hole for the blank char */
 							buf[0] = 0x11a8 + sc->jamo - (19 + 21 + 1);
 #endif
-					}
-					else if (uni > 0 && uni < unicode4_size)
-					{
-						char* pt = utf8_buf;
-						use_utf8 = true;
-						*pt = '\0'; // We terminate the string in case the appendage (?) fails.
-						pt = utf8_idpb(pt, uni, 0);
-						if (pt) *pt = '\0'; else TRACE("Invalid Unicode alert.\n");
-					}
-					else
-					{
-						char* pt = strchr(sc->name, '.');
-						buf[0] = '?';
-						fg = 0xff0000;
-						if (pt != NULL)
-						{
-							int i, n = pt - sc->name;
-							char* end;
-							SplineFont* cm = fv->b.sf->cidmaster;
-							if (n == 7 && sc->name[0] == 'u' && sc->name[1] == 'n' && sc->name[2] == 'i' &&
-								(i = strtol(sc->name + 3, &end, 16), end - sc->name == 7))
-								buf[0] = i;
-							else if (n >= 5 && n <= 7 && sc->name[0] == 'u' &&
-								(i = strtol(sc->name + 1, &end, 16), end - sc->name == n))
-								buf[0] = i;
-							else if (cm != NULL && (i = CIDFromName(sc->name, cm)) != -1)
-							{
-								int uni;
-								uni = CID2Uni(FindCidMap(cm->cidregistry, cm->ordering, cm->supplement, cm),
-									i);
-								if (uni != -1)
-									buf[0] = uni;
-							}
-							else
-							{
-								int uni;
-								*pt = '\0';
-								uni = UniFromName(sc->name, fv->b.sf->uni_interp, fv->b.map->enc);
-								if (uni != -1)
-									buf[0] = uni;
-								*pt = '.';
-							}
-							if (strstr(pt, ".vert") != NULL)
-								styles = _uni_vertical;
-							if (buf[0] != '?')
-							{
-								fg = def_fg;
-								if (strstr(pt, ".italic") != NULL)
-									styles = _uni_italic;
-							}
-						}
-						else if (strncmp(sc->name, "hwuni", 5) == 0)
-						{
-							int uni = -1;
-							sscanf(sc->name, "hwuni%x", (unsigned*)&uni);
-							if (uni != -1) buf[0] = uni;
-						}
-						else if (strncmp(sc->name, "italicuni", 9) == 0)
-						{
-							int uni = -1;
-							sscanf(sc->name, "italicuni%x", (unsigned*)&uni);
-							if (uni != -1) { buf[0] = uni; styles = _uni_italic; }
-							fg = def_fg;
-						}
-						else if (strncmp(sc->name, "vertcid_", 8) == 0 ||
-							strncmp(sc->name, "vertuni", 7) == 0)
-						{
-							styles = _uni_vertical;
-						}
-					}
-					break;
+		} else if ( uni>0 && uni<unicode4_size ) {
+		    char *pt = utf8_buf;
+		    use_utf8 = true;
+			*pt = '\0'; // We terminate the string in case the appendage (?) fails.
+		    pt = utf8_idpb(pt,uni,0);
+		    if (pt) *pt = '\0'; else TRACE("Invalid Unicode alert.\n");
+		} else {
+		    char *pt = strchr(sc->name,'.');
+		    buf[0] = '?';
+		    fg = 0xff0000;
+		    if ( pt!=NULL ) {
+			int i, n = pt-sc->name;
+			char *end;
+			SplineFont *cm = fv->b.sf->cidmaster;
+			if ( n==7 && sc->name[0]=='u' && sc->name[1]=='n' && sc->name[2]=='i' &&
+				(i=strtol(sc->name+3,&end,16), end-sc->name==7))
+			    buf[0] = i;
+			else if ( n>=5 && n<=7 && sc->name[0]=='u' &&
+				(i=strtol(sc->name+1,&end,16), end-sc->name==n))
+			    buf[0] = i;
+			else if ( cm!=NULL && (i=CIDFromName(sc->name,cm))!=-1 ) {
+			    int uni;
+			    uni = CID2Uni(FindCidMap(cm->cidregistry,cm->ordering,cm->supplement,cm),
+				    i);
+			    if ( uni!=-1 )
+				buf[0] = uni;
+			} else {
+			    int uni;
+			    *pt = '\0';
+			    uni = UniFromName(sc->name,fv->b.sf->uni_interp,fv->b.map->enc);
+			    if ( uni!=-1 )
+				buf[0] = uni;
+			    *pt = '.';
 			}
-			r.x = j * fv->cbw + 1; r.width = fv->cbw - 1;
-			r.y = i * fv->cbh + 1; r.height = fv->lab_height - 1;
-			bg = view_bgcol;
-			fgxor = 0x000000;
-			changed = sc->changed;
-			if (fv->b.sf->onlybitmaps && gid < fv->show->glyphcnt)
-				changed = gid == -1 || fv->show->glyphs[gid] == NULL ? false : fv->show->glyphs[gid]->changed;
-			if (changed ||
-				sc->layers[ly_back].splines != NULL || sc->layers[ly_back].images != NULL ||
-				sc->color != COLOR_DEFAULT)
-			{
-				if (sc->layers[ly_back].splines != NULL || sc->layers[ly_back].images != NULL ||
-					sc->color != COLOR_DEFAULT)
-					bg = sc->color != COLOR_DEFAULT ? sc->color : 0x808080;
-				if (sc->changed)
-				{
-					fgxor = bg ^ fvchangedcol;
-					bg = fvchangedcol;
-				}
-				GDrawFillRect(pixmap, &r, bg);
+			if ( strstr(pt,".vert")!=NULL )
+			    styles = _uni_vertical;
+			if ( buf[0]!='?' ) {
+			    fg = def_fg;
+			    if ( strstr(pt,".italic")!=NULL )
+				styles = _uni_italic;
 			}
-			if ((!fv->b.sf->layers[fv->b.active_layer].order2 && sc->changedsincelasthinted) ||
-				(fv->b.sf->layers[fv->b.active_layer].order2 && sc->layers[fv->b.active_layer].splines != NULL &&
-					sc->ttf_instrs_len <= 0) ||
-				(fv->b.sf->layers[fv->b.active_layer].order2 && sc->instructions_out_of_date))
-			{
-				Color hintcol = fvhintingneededcol;
-				if (fv->b.sf->layers[fv->b.active_layer].order2 && sc->instructions_out_of_date && sc->ttf_instrs_len > 0)
-					hintcol = 0xff0000;
-				GDrawDrawLine(pixmap, r.x, r.y, r.x, r.y + r.height - 1, hintcol);
-				GDrawDrawLine(pixmap, r.x + 1, r.y, r.x + 1, r.y + r.height - 1, hintcol);
-				GDrawDrawLine(pixmap, r.x + 2, r.y, r.x + 2, r.y + r.height - 1, hintcol);
-				GDrawDrawLine(pixmap, r.x + r.width - 1, r.y, r.x + r.width - 1, r.y + r.height - 1, hintcol);
-				GDrawDrawLine(pixmap, r.x + r.width - 2, r.y, r.x + r.width - 2, r.y + r.height - 1, hintcol);
-				GDrawDrawLine(pixmap, r.x + r.width - 3, r.y, r.x + r.width - 3, r.y + r.height - 1, hintcol);
-			}
-			if (use_utf8 && sc->unicodeenc != -1 &&
-				/* Pango complains if we try to draw non characters */
-				/* These two are guaranteed "NOT A UNICODE CHARACTER" in all planes */
-				((sc->unicodeenc & 0xffff) == 0xfffe || (sc->unicodeenc & 0xffff) == 0xffff ||
-					(sc->unicodeenc >= 0xfdd0 && sc->unicodeenc <= 0xfdef) ||	/* noncharacters */
-					(sc->unicodeenc >= 0xfe00 && sc->unicodeenc <= 0xfe0f) ||	/* variation selectors */
-					(sc->unicodeenc >= 0xe0110 && sc->unicodeenc <= 0xe01ff) ||	/* variation selectors */
-			   /*  The surrogates in BMP aren't valid either */
-					(sc->unicodeenc >= 0xd800 && sc->unicodeenc <= 0xdfff)))
-			{	/* surrogates */
-				GDrawDrawLine(pixmap, r.x, r.y, r.x + r.width - 1, r.y + r.height - 1, 0x000000);
-				GDrawDrawLine(pixmap, r.x, r.y + r.height - 1, r.x + r.width - 1, r.y, 0x000000);
-			}
-			else if (use_utf8)
-			{
-				GTextBounds size;
-				if (styles != laststyles) GDrawSetFont(pixmap, FVCheckFont(fv, styles));
-				width = GDrawGetText8Bounds(pixmap, utf8_buf, -1, &size);
-				if (size.lbearing == 0 && size.rbearing == 0)
-				{
-					utf8_buf[0] = 0xe0 | (0xfffd >> 12);
-					utf8_buf[1] = 0x80 | ((0xfffd >> 6) & 0x3f);
-					utf8_buf[2] = 0x80 | (0xfffd & 0x3f);
-					utf8_buf[3] = 0;
-					width = GDrawGetText8Bounds(pixmap, utf8_buf, -1, &size);
-				}
-				width = size.rbearing - size.lbearing + 1;
-				if (width >= fv->cbw - 1)
-				{
-					GDrawPushClip(pixmap, &r, &old2);
-					width = fv->cbw - 1;
-				}
-				if (sc->unicodeenc < 0x80 || sc->unicodeenc >= 0xa0)
-				{
-					y = i * fv->cbh + fv->lab_as + 1;
-					/* move rotated glyph up a bit to center it */
-					if (styles & _uni_vertical)
-						y -= fv->lab_as / 2;
-					GDrawDrawText8(pixmap, j * fv->cbw + (fv->cbw - 1 - width) / 2 - size.lbearing, y, utf8_buf, -1, fg ^ fgxor);
-				}
-				if (width >= fv->cbw - 1)
-					GDrawPopClip(pixmap, &old2);
-				laststyles = styles;
-			}
-			else
-			{
-				if (styles != laststyles) GDrawSetFont(pixmap, FVCheckFont(fv, styles));
-				width = GDrawGetTextWidth(pixmap, buf, -1);
-				if (width >= fv->cbw - 1)
-				{
-					GDrawPushClip(pixmap, &r, &old2);
-					width = fv->cbw - 1;
-				}
-				if (sc->unicodeenc < 0x80 || sc->unicodeenc >= 0xa0)
-				{
-					y = i * fv->cbh + fv->lab_as + 1;
-					/* move rotated glyph up a bit to center it */
-					if (styles & _uni_vertical)
-						y -= fv->lab_as / 2;
-					GDrawDrawText(pixmap, j * fv->cbw + (fv->cbw - 1 - width) / 2, y, buf, -1, fg ^ fgxor);
-				}
-				if (width >= fv->cbw - 1)
-					GDrawPopClip(pixmap, &old2);
-				laststyles = styles;
-			}
+		    } else if ( strncmp(sc->name,"hwuni",5)==0 ) {
+			int uni=-1;
+			sscanf(sc->name,"hwuni%x", (unsigned *) &uni );
+			if ( uni!=-1 ) buf[0] = uni;
+		    } else if ( strncmp(sc->name,"italicuni",9)==0 ) {
+			int uni=-1;
+			sscanf(sc->name,"italicuni%x", (unsigned *) &uni );
+			if ( uni!=-1 ) { buf[0] = uni; styles=_uni_italic; }
+			fg = def_fg;
+		    } else if ( strncmp(sc->name,"vertcid_",8)==0 ||
+			    strncmp(sc->name,"vertuni",7)==0 ) {
+			styles = _uni_vertical;
+		    }
 		}
-		FVDrawGlyph(pixmap, fv, index, false);
+	      break;
+	    }
+	    r.x = j*fv->cbw+1; r.width = fv->cbw-1;
+	    r.y = i*fv->cbh+1; r.height = fv->lab_height-1;
+	    bg = view_bgcol;
+	    fgxor = 0x000000;
+	    changed = sc->changed;
+	    if ( fv->b.sf->onlybitmaps && gid<fv->show->glyphcnt )
+		changed = gid==-1 || fv->show->glyphs[gid]==NULL? false : fv->show->glyphs[gid]->changed;
+	    if ( changed ||
+		    sc->layers[ly_back].splines!=NULL || sc->layers[ly_back].images!=NULL ||
+		    sc->color!=COLOR_DEFAULT ) {
+		if ( sc->layers[ly_back].splines!=NULL || sc->layers[ly_back].images!=NULL ||
+			sc->color!=COLOR_DEFAULT )
+		    bg = sc->color!=COLOR_DEFAULT?sc->color:0x808080;
+		if ( sc->changed ) {
+		    fgxor = bg ^ fvchangedcol;
+		    bg = fvchangedcol;
+		}
+		GDrawFillRect(pixmap,&r,bg);
+	    }
+	    if ( (!fv->b.sf->layers[fv->b.active_layer].order2 && sc->changedsincelasthinted ) ||
+		     ( fv->b.sf->layers[fv->b.active_layer].order2 && sc->layers[fv->b.active_layer].splines!=NULL &&
+			sc->ttf_instrs_len<=0 ) ||
+		     ( fv->b.sf->layers[fv->b.active_layer].order2 && sc->instructions_out_of_date ) ) {
+		Color hintcol = fvhintingneededcol;
+		if ( fv->b.sf->layers[fv->b.active_layer].order2 && sc->instructions_out_of_date && sc->ttf_instrs_len>0 )
+		    hintcol = 0xff0000;
+		GDrawDrawLine(pixmap,r.x,r.y,r.x,r.y+r.height-1,hintcol);
+		GDrawDrawLine(pixmap,r.x+1,r.y,r.x+1,r.y+r.height-1,hintcol);
+		GDrawDrawLine(pixmap,r.x+2,r.y,r.x+2,r.y+r.height-1,hintcol);
+		GDrawDrawLine(pixmap,r.x+r.width-1,r.y,r.x+r.width-1,r.y+r.height-1,hintcol);
+		GDrawDrawLine(pixmap,r.x+r.width-2,r.y,r.x+r.width-2,r.y+r.height-1,hintcol);
+		GDrawDrawLine(pixmap,r.x+r.width-3,r.y,r.x+r.width-3,r.y+r.height-1,hintcol);
+	    }
+	    if ( use_utf8 && sc->unicodeenc!=-1 &&
+		/* Pango complains if we try to draw non characters */
+		/* These two are guaranteed "NOT A UNICODE CHARACTER" in all planes */
+		    ((sc->unicodeenc&0xffff)==0xfffe || (sc->unicodeenc&0xffff)==0xffff ||
+		     (sc->unicodeenc>=0xfdd0 && sc->unicodeenc<=0xfdef) ||	/* noncharacters */
+		     (sc->unicodeenc>=0xfe00 && sc->unicodeenc<=0xfe0f) ||	/* variation selectors */
+		     (sc->unicodeenc>=0xe0110 && sc->unicodeenc<=0xe01ff) ||	/* variation selectors */
+		/*  The surrogates in BMP aren't valid either */
+		     (sc->unicodeenc>=0xd800 && sc->unicodeenc<=0xdfff))) {	/* surrogates */
+		GDrawDrawLine(pixmap,r.x,r.y,r.x+r.width-1,r.y+r.height-1,0x000000);
+		GDrawDrawLine(pixmap,r.x,r.y+r.height-1,r.x+r.width-1,r.y,0x000000);
+	    } else if ( use_utf8 ) {
+		GTextBounds size;
+		if ( styles!=laststyles ) GDrawSetFont(pixmap,FVCheckFont(fv,styles));
+		width = GDrawGetText8Bounds(pixmap,utf8_buf,-1,&size);
+		if ( size.lbearing==0 && size.rbearing==0 ) {
+		    utf8_buf[0] = 0xe0 | (0xfffd>>12);
+		    utf8_buf[1] = 0x80 | ((0xfffd>>6)&0x3f);
+		    utf8_buf[2] = 0x80 | (0xfffd&0x3f);
+		    utf8_buf[3] = 0;
+		    width = GDrawGetText8Bounds(pixmap,utf8_buf,-1,&size);
+		}
+		width = size.rbearing - size.lbearing+1;
+		if ( width >= fv->cbw-1 ) {
+		    GDrawPushClip(pixmap,&r,&old2);
+		    width = fv->cbw-1;
+		}
+		if ( sc->unicodeenc<0x80 || sc->unicodeenc>=0xa0 ) {
+		    y = i*fv->cbh+fv->lab_as+1;
+		    /* move rotated glyph up a bit to center it */
+		    if (styles&_uni_vertical)
+			y -= fv->lab_as/2;
+		    GDrawDrawText8(pixmap,j*fv->cbw+(fv->cbw-1-width)/2-size.lbearing,y,utf8_buf,-1,fg^fgxor);
+		}
+		if ( width >= fv->cbw-1 )
+		    GDrawPopClip(pixmap,&old2);
+		laststyles = styles;
+	    } else {
+		if ( styles!=laststyles ) GDrawSetFont(pixmap,FVCheckFont(fv,styles));
+		width = GDrawGetTextWidth(pixmap,buf,-1);
+		if ( width >= fv->cbw-1 ) {
+		    GDrawPushClip(pixmap,&r,&old2);
+		    width = fv->cbw-1;
+		}
+		if ( sc->unicodeenc<0x80 || sc->unicodeenc>=0xa0 ) {
+		    y = i*fv->cbh+fv->lab_as+1;
+		    /* move rotated glyph up a bit to center it */
+		    if (styles&_uni_vertical)
+			y -= fv->lab_as/2;
+		    GDrawDrawText(pixmap,j*fv->cbw+(fv->cbw-1-width)/2,y,buf,-1,fg^fgxor);
+		}
+		if ( width >= fv->cbw-1 )
+		    GDrawPopClip(pixmap,&old2);
+		laststyles = styles;
+	    }
 	}
-	if (fv->showhmetrics & fvm_baseline)
-	{
-		for (i = 0; i <= fv->rowcnt; ++i)
-			GDrawDrawLine(pixmap, 0, i * fv->cbh + fv->lab_height + fv->magnify * fv->show->ascent + 1, fv->width, i * fv->cbh + fv->lab_height + fv->magnify * fv->show->ascent + 1, METRICS_BASELINE);
-	}
-	GDrawPopClip(pixmap, &old);
-	GDrawSetDither(NULL, true);
+	FVDrawGlyph(pixmap,fv,index,false);
+    }
+    if ( fv->showhmetrics&fvm_baseline ) {
+	for ( i=0; i<=fv->rowcnt; ++i )
+	    GDrawDrawLine(pixmap,0,i*fv->cbh+fv->lab_height+fv->magnify*fv->show->ascent+1,fv->width,i*fv->cbh+fv->lab_height+fv->magnify*fv->show->ascent+1,METRICS_BASELINE);
+    }
+    GDrawPopClip(pixmap,&old);
+    GDrawSetDither(NULL, true);
 }
 
 void FVDrawInfo(FontView* fv, GWindow pixmap, GEvent* event)
@@ -7889,50 +7859,45 @@ static void FontView_ReformatAll(SplineFont* sf)
 	MetricsView* mvs;
 	extern int use_freetype_to_rasterize_fv;
 
-	if (sf->fv == NULL || ((FontView*)(sf->fv))->v == NULL)			/* Can happen in scripts */
-		return;
+    if ( sf->fv==NULL || ((FontView *) (sf->fv))->v==NULL )			/* Can happen in scripts */
+return;
 
-	for (fv = (FontView*)(sf->fv); fv != NULL; fv = (FontView*)(fv->b.nextsame))
-	{
-		GDrawSetCursor(fv->v, ct_watch);
-		old = fv->filled;
-		/* In CID fonts fv->b.sf may not be same as sf */
-		new = SplineFontPieceMeal(fv->b.sf, fv->b.active_layer, fv->filled->pixelsize, 72,
-			(fv->antialias ? pf_antialias : 0) | (fv->bbsized ? pf_bbsized : 0) |
-			(use_freetype_to_rasterize_fv && !sf->strokedfont && !sf->multilayer ? pf_ft_nohints : 0),
-			NULL);
-		fv->filled = new;
-		if (fv->show == old)
-			fv->show = new;
-		else
-		{
-			for (bdf = sf->bitmaps; bdf != NULL &&
-				(bdf->pixelsize != fv->show->pixelsize || BDFDepth(bdf) != BDFDepth(fv->show)); bdf = bdf->next);
-			if (bdf != NULL) fv->show = bdf;
-			else fv->show = new;
-		}
-		BDFFontFree(old);
-		if (((FontView*)(sf->fv))->colcnt != 0)
-		{
-			fv->rowltot = (fv->b.map->enccount + fv->colcnt - 1) / fv->colcnt;
-			GScrollBarSetBounds(fv->vsb, 0, fv->rowltot, fv->rowcnt);
-			if (fv->rowoff > fv->rowltot - fv->rowcnt)
-			{
-				fv->rowoff = fv->rowltot - fv->rowcnt;
-				if (fv->rowoff < 0) fv->rowoff = 0;
-				GScrollBarSetPos(fv->vsb, fv->rowoff);
-			}
-			GDrawRequestExpose(fv->v, NULL, false);
-		}
-		GDrawSetCursor(fv->v, ct_pointer);
+    for ( fv=(FontView *) (sf->fv); fv!=NULL; fv=(FontView *) (fv->b.nextsame) ) {
+	GDrawSetCursor(fv->v,ct_watch);
+	old = fv->filled;
+				/* In CID fonts fv->b.sf may not be same as sf */
+	new = SplineFontPieceMeal(fv->b.sf,fv->b.active_layer,fv->filled->pixelsize,72,
+		(fv->antialias?pf_antialias:0)|(fv->bbsized?pf_bbsized:0)|
+		    (use_freetype_to_rasterize_fv && !sf->strokedfont && !sf->multilayer?pf_ft_nohints:0),
+		NULL);
+	fv->filled = new;
+	if ( fv->show==old )
+	    fv->show = new;
+	else {
+	    for ( bdf=sf->bitmaps; bdf != NULL &&
+		( bdf->pixelsize != fv->show->pixelsize || BDFDepth( bdf ) != BDFDepth( fv->show )); bdf=bdf->next );
+	    if ( bdf != NULL ) fv->show = bdf;
+	    else fv->show = new;
 	}
-	for (mvs = sf->metrics; mvs != NULL; mvs = mvs->next) if (mvs->bdf == NULL)
-	{
-		BDFFontFree(mvs->show);
-		mvs->show = SplineFontPieceMeal(sf, mvs->layer, mvs->ptsize, mvs->dpi,
-			mvs->antialias ? (pf_antialias | pf_ft_recontext) : pf_ft_recontext, NULL);
-		GDrawRequestExpose(mvs->gw, NULL, false);
+	BDFFontFree(old);
+	if ( ((FontView *) (sf->fv))->colcnt!=0 ) {
+	    fv->rowltot = (fv->b.map->enccount+fv->colcnt-1)/fv->colcnt;
+	    GScrollBarSetBounds(fv->vsb,0,fv->rowltot,fv->rowcnt);
+	    if ( fv->rowoff>fv->rowltot-fv->rowcnt ) {
+		    fv->rowoff = fv->rowltot-fv->rowcnt;
+		    if ( fv->rowoff<0 ) fv->rowoff =0;
+		    GScrollBarSetPos(fv->vsb,fv->rowoff);
+	    }
+	    GDrawRequestExpose(fv->v,NULL,false);
 	}
+	GDrawSetCursor(fv->v,ct_pointer);
+    }
+    for ( mvs=sf->metrics; mvs!=NULL; mvs=mvs->next ) if ( mvs->bdf==NULL ) {
+	BDFFontFree(mvs->show);
+	mvs->show = SplineFontPieceMeal(sf,mvs->layer,mvs->ptsize,mvs->dpi,
+		mvs->antialias?(pf_antialias|pf_ft_recontext):pf_ft_recontext,NULL);
+	GDrawRequestExpose(mvs->gw,NULL,false);
+    }
 }
 
 void FontViewRemove(FontView* fv)

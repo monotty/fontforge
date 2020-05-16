@@ -1244,7 +1244,7 @@ return;
 	    current->me.x = (current->prevcp.x + ss->first->nextcp.x)/2;
 	    current->me.y = (current->prevcp.y + ss->first->nextcp.y)/2;
 	}
-	if ( current->me.x==ss->first->me.x && current->me.y==ss->first->me.y ) {
+	if ( current != ss->first && current->me.x==ss->first->me.x && current->me.y==ss->first->me.y ) {
 	    current->prev->to = ss->first;
 	    ss->first->prev = current->prev;
 	    ss->first->prevcp = current->prevcp;
@@ -2231,6 +2231,9 @@ return;
 /*  date of font's modification */
 int ttf_fftm_dump(SplineFont *sf,struct alltabs *at) {
     int32 results[2];
+
+    if ( at->gi.flags & ttf_flag_noFFTMtable )
+	return false;
 
     at->fftmf = GFileTmpfile();
 
