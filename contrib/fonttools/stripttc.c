@@ -75,11 +75,19 @@ static int handlefont(char *filename,int which,FILE *ttc,int offset) {
     FILE *ttf;
     int i, cnt, *offsets, *lengths, head, tag, pos, headpos;
 
-    strcpy(outfile,filename);
+    strncpy(outfile,filename, sizeof(outfile));
+
     pt = strrchr(outfile,'.');
-    if ( pt==NULL )
-	pt = outfile + strlen(outfile);
-    sprintf( pt, "_%02d.ttf", which );
+    int buf_size = pt - outfile;
+
+    if (pt == NULL)
+    {
+        int str_size = strlen(outfile);
+        pt = outfile + str_size;
+        buf_size = sizeof(outfile) - str_size;
+    }
+
+    snprintf( pt, buf_size, "_%02d.ttf", which );
 
     ttf = fopen( outfile,"wb");
     if ( ttf==NULL ) {

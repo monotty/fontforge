@@ -720,13 +720,13 @@ static void MakeExportName(char *buffer, int blen,char *format_spec,
 		    *buffer++ = *pt++;
 	    } else if ( ch=='u' || ch=='U' ) {
 		if ( sc->unicodeenc == -1 )
-		    strcpy(unicode,"xxxx");
+		    strncpy(unicode,"xxxx", sizeof(unicode));
 		else
-		    sprintf( unicode,ch=='u' ? "%04x" : "%04X", sc->unicodeenc );
+		    snprintf( unicode, sizeof(unicode), ch=='u' ? "%04x" : "%04X", sc->unicodeenc );
 		for ( pt=unicode; *pt!='\0' && buffer<bend; )
 		    *buffer++ = *pt++;
 	    } else if ( ch=='e' ) {
-		sprintf( unicode,"%d", (int) map->backmap[sc->orig_pos] );
+		snprintf( unicode, sizeof(unicode),"%d", (int) map->backmap[sc->orig_pos] );
 		for ( pt=unicode; *pt!='\0' && buffer<bend; )
 		    *buffer++ = *pt++;
 	    } else

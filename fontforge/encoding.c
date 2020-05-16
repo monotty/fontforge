@@ -507,7 +507,7 @@ static char *getPfaEditEncodings(void) {
     ffdir = getFontForgeUserDir(Config);
     if ( ffdir==NULL )
         return NULL;
-    sprintf(buffer,"%s/Encodings.ps", ffdir);
+    snprintf(buffer, sizeof(buffer), "%s/Encodings.ps", ffdir);
     free(ffdir);
     encfile = copy(buffer);
     return encfile;
@@ -824,7 +824,7 @@ return;
 	    else if ( item->unicode[i]<' ' || (item->unicode[i]>=0x7f && item->unicode[i]<0xa0))
 		fprintf( file, " /.notdef" );
 	    else
-		fprintf( file, " /%s", StdGlyphName(buffer,item->unicode[i],ui_none,(NameList *) -1));
+		fprintf( file, " /%s", StdGlyphName(buffer, sizeof(buffer), item->unicode[i],ui_none,(NameList *) -1));
 	    if ( (i&0xf)==0 )
 		fprintf( file, "\t\t%% 0x%02x\n", i );
 	    else
@@ -893,15 +893,15 @@ int CID2NameUni(struct cidmap *map,int cid, char *buffer, int len) {
 	strncpy(buffer,map->name[cid],len);
 	buffer[len-1] = '\0';
     } else if ( cid==0 )
-	strcpy(buffer,".notdef");
+	strncpy(buffer,".notdef", len);
     else if ( cid<map->namemax && map->unicode[cid]!=0 ) {
 	if ( map->unicode==NULL || map->namemax==0 )
 	    enc = 0;
 	else
 	    enc = map->unicode[cid];
-	temp = StdGlyphName(buffer,enc,ui_none,(NameList *) -1);
+	temp = StdGlyphName(buffer, len, enc,ui_none,(NameList *) -1);
 	if ( temp!=buffer )
-	    strcpy(buffer,temp);
+	    strncpy(buffer,temp, len);
     } else
 	snprintf(buffer,len,"%s.%d", map->ordering, cid);
 return( enc );
@@ -1471,7 +1471,7 @@ return(NULL);
     new->familyname = copy(cidmaster->familyname);
     new->weight = copy(cidmaster->weight);
     new->copyright = copy(cidmaster->copyright);
-    sprintf(buffer,"%g", (double)cidmaster->cidversion);
+    snprintf(buffer, sizeof(buffer), "%g", (double)cidmaster->cidversion);
     new->version = copy(buffer);
     new->italicangle = cidmaster->italicangle;
     new->upos = cidmaster->upos;
@@ -1863,7 +1863,7 @@ char *SFEncodingName(SplineFont *sf,EncMap *map) {
     if ( sf->cidmaster!=NULL )
 	sf = sf->cidmaster;
     if ( sf->subfontcnt!=0 ) {
-	sprintf( buffer, "%.50s-%.50s-%d", sf->cidregistry, sf->ordering, sf->supplement );
+	snprintf( buffer, sizeof(buffer), "%.50s-%.50s-%d", sf->cidregistry, sf->ordering, sf->supplement );
 return( copy( buffer ));
     }
 return( copy( map->enc->enc_name ));

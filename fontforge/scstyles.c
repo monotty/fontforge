@@ -2043,34 +2043,42 @@ static void MakeSCLookups(SplineFont *sf,struct lookup_subtable **c2sc,
     }
 }
 
-static SplineChar *MakeSmallCapName(char *buffer, int bufsize, SplineFont *sf,
-	SplineChar *sc,struct genericchange *genchange) {
-    SplineChar *lc_sc;
-    const char *ext;
-    int lower;
+static SplineChar* MakeSmallCapName(char* buffer, int bufsize, SplineFont* sf,
+	SplineChar* sc, struct genericchange* genchange)
+{
+	SplineChar* lc_sc;
+	const char* ext;
+	int lower;
 
-    if ( sc->unicodeenc>=0 && sc->unicodeenc<0x10000 ) {
-	lower = tolower(sc->unicodeenc);
-	ext = isupper(sc->unicodeenc) ? genchange->extension_for_letters :
-	      islower(sc->unicodeenc) ? genchange->extension_for_letters :
-		sc->unicodeenc==0xdf  ? genchange->extension_for_letters :
-		sc->unicodeenc>=0xfb00 && sc->unicodeenc<=0xfb06 ? genchange->extension_for_letters :
-					    genchange->extension_for_symbols;
-    } else {
-	lower = sc->unicodeenc;
-	ext = genchange->extension_for_symbols;
-    }
-    lc_sc = SFGetChar(sf,lower,NULL);
-    if ( lc_sc!=NULL )
-	snprintf(buffer,bufsize,"%s.%s", lc_sc->name, ext );
-    else {
-	const char *pt = StdGlyphName(buffer,lower,sf->uni_interp,sf->for_new_glyphs);
-	if ( pt!=buffer )
-	    strcpy(buffer,pt);
-	strcat(buffer,".");
-	strcat(buffer,ext);
-    }
-return( lc_sc );
+	if (sc->unicodeenc >= 0 && sc->unicodeenc < 0x10000)
+	{
+		lower = tolower(sc->unicodeenc);
+		ext = isupper(sc->unicodeenc) ? genchange->extension_for_letters :
+			islower(sc->unicodeenc) ? genchange->extension_for_letters :
+			sc->unicodeenc == 0xdf ? genchange->extension_for_letters :
+			sc->unicodeenc >= 0xfb00 && sc->unicodeenc <= 0xfb06 ? genchange->extension_for_letters :
+			genchange->extension_for_symbols;
+	}
+	else
+	{
+		lower = sc->unicodeenc;
+		ext = genchange->extension_for_symbols;
+	}
+	lc_sc = SFGetChar(sf, lower, NULL);
+	if (lc_sc != NULL)
+		snprintf(buffer, bufsize, "%s.%s", lc_sc->name, ext);
+	else
+	{
+		const char* pt = StdGlyphName(buffer, bufsize, lower, sf->uni_interp, sf->for_new_glyphs);
+		if (pt != buffer)
+		{
+			strncpy(buffer, pt, bufsize);
+		}
+
+		strcat(buffer, ".");
+		strcat(buffer, ext);
+	}
+	return(lc_sc);
 }
 
 static SplineChar *MakeSmallCapGlyphSlot(SplineFont *sf,SplineChar *cap_sc,

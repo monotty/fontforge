@@ -433,7 +433,7 @@ int BDFFontDump(char *filename,BDFFont *font, EncMap *map, int res) {
     for ( i=0; i<map->enccount; i++ ) if (( gid=map->map[i])!=-1 && ( bdfc = font->glyphs[gid] ) != NULL )
 	BCPrepareForOutput( bdfc,true );
     if ( filename==NULL ) {
-	sprintf(buffer,"%s-%s.%d.bdf", font->sf->fontname, encodingname, font->pixelsize );
+	snprintf(buffer, sizeof(buffer), "%s-%s.%d.bdf", font->sf->fontname, encodingname, font->pixelsize );
 	filename = buffer;
     }
     file = fopen(filename,"w" );

@@ -589,7 +589,7 @@ static void MVSetFeatures(MetricsView *mv) {
 	ti[i] = calloc( 1,sizeof(GTextInfo));
 	ti[i]->fg = ti[i]->bg = COLOR_DEFAULT;
 	if ( (tags[i]>>24)<' ' || (tags[i]>>24)>0x7e )
-	    sprintf( buf, "<%d,%d>", tags[i]>>16, tags[i]&0xffff );
+	    snprintf( buf, sizeof(buf), "<%d,%d>", tags[i]>>16, tags[i]&0xffff );
 	else {
 	    buf[0] = tags[i]>>24; buf[1] = tags[i]>>16; buf[2] = tags[i]>>8; buf[3] = tags[i]; buf[4] = 0;
 	}
@@ -760,10 +760,10 @@ if( !mv->perchar[i].width )
 return;
 
     //printf("MVRefreshValues() **** setting width to %d\n", sc->width );
-    sprintf(buf,"%d",mv->vertical ? sc->vwidth : sc->width);
+    snprintf(buf, sizeof(buf), "%d",mv->vertical ? sc->vwidth : sc->width);
     GGadgetSetTitle8(mv->perchar[i].width,buf);
 
-    sprintf(buf,"%.2f",mv->vertical ? sc->parent->ascent-(double) bb.maxy : (double) bb.minx);
+    snprintf(buf, sizeof(buf), "%.2f",mv->vertical ? sc->parent->ascent-(double) bb.maxy : (double) bb.minx);
     if ( buf[strlen(buf)-1]=='0' ) {
 	buf[strlen(buf)-1] = '\0';
 	if ( buf[strlen(buf)-1]=='0' ) {
@@ -774,7 +774,7 @@ return;
     }
     GGadgetSetTitle8(mv->perchar[i].lbearing,buf);
 
-    sprintf(buf,"%.2f",(double) (mv->vertical ? sc->vwidth-(sc->parent->ascent-bb.miny) : sc->width-bb.maxx));
+    snprintf(buf, sizeof(buf),"%.2f",(double) (mv->vertical ? sc->vwidth-(sc->parent->ascent-bb.miny) : sc->width-bb.maxx));
     if ( buf[strlen(buf)-1]=='0' ) {
 	buf[strlen(buf)-1] = '\0';
 	if ( buf[strlen(buf)-1]=='0' ) {
@@ -794,7 +794,7 @@ if( !mv->perchar[i+1].kern )
   return;
 
     if ( kern_offset!=0x7ffffff && i!=mv->glyphcnt-1 ) {
-	sprintf(buf,"%d",kern_offset);
+	snprintf(buf, sizeof(buf),"%d",kern_offset);
 	GGadgetSetTitle8(mv->perchar[i+1].kern,buf);
     } else if ( i!=mv->glyphcnt-1 )
 	GGadgetSetTitle8(mv->perchar[i+1].kern,"");
@@ -1066,7 +1066,8 @@ void MVReKern(MetricsView *mv) {
     GDrawRequestExpose(mv->v,NULL,false);
 }
 
-void MVRegenChar(MetricsView *mv, SplineChar *sc) {
+void MVRegenChar(MetricsView *mv, SplineChar *sc) 
+{
     int i;
 
     if( !sc->suspendMetricsViewEventPropagation )
@@ -3290,7 +3291,7 @@ static void MVMenuPointSize(GWindow mgw, struct gmenuitem *UNUSED(mi), GEvent *U
     gcd[k++].creator = GLabelCreate;
     hvarray[i][0] = &gcd[k-1];
 
-    sprintf( buffer, "%d", (int) rint( mv->ptsize/iscale ));
+    snprintf( buffer, sizeof(dbuffer), "%d", (int) rint( mv->ptsize/iscale ));
     label[k].text = (unichar_t *) buffer;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -3307,7 +3308,7 @@ static void MVMenuPointSize(GWindow mgw, struct gmenuitem *UNUSED(mi), GEvent *U
     gcd[k++].creator = GLabelCreate;
     hvarray[i][0] = &gcd[k-1];
 
-    sprintf( dbuffer, "%d", mv->dpi );
+    snprintf( dbuffer, sizeof(dbuffer), "%d", mv->dpi );
     label[k].text = (unichar_t *) dbuffer;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -4016,7 +4017,8 @@ static void vwlistcheck(GWindow gw, struct gmenuitem *mi, GEvent *UNUSED(e)) {
 	    vwlist[i].ti.disabled = !mv->sf->hasvmetrics;
 	  break;
 	  case MID_Layers:
-	    vwlist[i].ti.disabled = mv->sf->layer_cnt<=2 || mv->sf->multilayer;
+	    //vwlist[i].ti.disabled = mv->sf->layer_cnt<=2 || mv->sf->multilayer;
+          vwlist[i].ti.disabled = mv->sf->layer_cnt < 2;// || mv->sf->multilayer;
 	  break;
 	}
     vwlist[i].ti.checked = mv->bdf==NULL;
@@ -4031,9 +4033,9 @@ static void vwlistcheck(GWindow gw, struct gmenuitem *mi, GEvent *UNUSED(e)) {
 		i<sizeof(vwlist)/sizeof(vwlist[0])-1 && bdf!=NULL;
 		++i, bdf = bdf->next ) {
 	    if ( BDFDepth(bdf)==1 )
-		sprintf( buffer, _("%d pixel bitmap"), bdf->pixelsize );
+		snprintf( buffer, sizeof(buffer), _("%d pixel bitmap"), bdf->pixelsize );
 	    else
-		sprintf( buffer, _("%d@%d pixel bitmap"),
+		snprintf( buffer, sizeof(buffer), _("%d@%d pixel bitmap"),
 			bdf->pixelsize, BDFDepth(bdf) );
 	    vwlist[i].ti.text = utf82u_copy(buffer);
 	    vwlist[i].ti.checkable = true;

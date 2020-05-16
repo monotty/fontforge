@@ -554,9 +554,9 @@ void TTFLoadBitmaps(FILE *ttf,struct ttfinfo *info,int onlyone) {
     sel = calloc(cnt,sizeof(char));
     for ( i=0; i<cnt; ++i ) {
 	if ( sizes[i].depth==1 )
-	    sprintf(buf,"%d", sizes[i].ppem );
+	    snprintf(buf, sizeof(buf), "%d", sizes[i].ppem );
 	else
-	    sprintf(buf,"%d@%d", sizes[i].ppem, sizes[i].depth );
+	    snprintf(buf, sizeof(buf), "%d@%d", sizes[i].ppem, sizes[i].depth );
 	choices[i] = copy(buf);
     }
     /* When loading a ttf font with only bitmaps, and there's only one strike */

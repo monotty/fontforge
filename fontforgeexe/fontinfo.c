@@ -1932,7 +1932,7 @@ return( copy(orig));
     /* now I want to change the number as little as possible. So if they use */
     /*  arabic numerals we can get by with just switching the decimal point */
     /*  If they use some other number convention, then parse in the old locale*/
-    /*  and sprintf in the PostScript ("C") locale. This might lose some */
+    /*  and snprintf in the PostScript ("C") locale. This might lose some */
     /*  precision but the basic idea will get across */
     for ( pt=orig; *pt; ) {
 	if ( strncmp(pt,decimal_point,dlen)==0 ) {
@@ -1962,7 +1962,7 @@ return( NULL );
     }
     free(new);
     oldlocale = uselocale_hack(tmplocale);
-    sprintf( buffer, "%g", dval );
+    snprintf( buffer, sizeof(buffer), "%g", dval );
     uselocale_hack(oldlocale);
 return( copy(buffer));
 }
@@ -2349,11 +2349,11 @@ return( true );
 return( true );
 	  break;
 	}
-	sprintf( buf, "%d", ascent ); if ( ascent==0 ) buf[0]='\0'; uc_strcpy(ubuf,buf);
+	snprintf( buf, sizeof(buf), "%d", ascent ); if ( ascent==0 ) buf[0]='\0'; uc_strcpy(ubuf,buf);
 	GGadgetSetTitle(GWidgetGetControl(d->gw,CID_Ascent),ubuf);
-	sprintf( buf, "%d", descent ); if ( descent==0 ) buf[0]='\0'; uc_strcpy(ubuf,buf);
+	snprintf( buf, sizeof(buf), "%d", descent ); if ( descent==0 ) buf[0]='\0'; uc_strcpy(ubuf,buf);
 	GGadgetSetTitle(GWidgetGetControl(d->gw,CID_Descent),ubuf);
-	sprintf( buf, "%d", ascent+descent ); if ( ascent+descent==0 ) buf[0]='\0'; uc_strcpy(ubuf,buf);
+	snprintf( buf, sizeof(buf), "%d", ascent+descent ); if ( ascent+descent==0 ) buf[0]='\0'; uc_strcpy(ubuf,buf);
 	GGadgetSetTitle(GWidgetGetControl(d->gw,CID_Em),ubuf);
     }
 return( true );
@@ -2364,7 +2364,7 @@ static int GFI_GuessItalic(GGadget *g, GEvent *e) {
 	struct gfi_data *d = GDrawGetUserData(GGadgetGetWindow(g));
 	double val = SFGuessItalicAngle(d->sf);
 	char buf[30]; unichar_t ubuf[30];
-	sprintf( buf, "%.1f", val);
+	snprintf( buf, sizeof(buf), "%.1f", val);
 	uc_strcpy(ubuf,buf);
 	GGadgetSetTitle(GWidgetGetControl(d->gw,CID_ItalicAngle),ubuf);
     }
@@ -2756,7 +2756,7 @@ return( u2utf8_copy(_uGetModifiers(
 		_GGadgetGetTitle(GWidgetGetControl(d->gw,CID_Family)),
 		_GGadgetGetTitle(GWidgetGetControl(d->gw,CID_Weight)))));
       case ttf_version:
-	sprintf(versionbuf,_("Version %.20s"),
+	snprintf(versionbuf, sizeof(versionbuf), _("Version %.20s"),
 		v=GGadgetGetTitle8(GWidgetGetControl(d->gw,CID_Version)));
 	free(v);
 return( copy(versionbuf));
@@ -2776,14 +2776,19 @@ return( NULL );
 return( tn_recalculatedef(d,strings[3*r+1].u.md_ival ));
 }
 
-static const char *langname(int lang,char *buffer) {
+static const char* langname(int lang, char* buffer, size_t buffer_size)
+{
     int i;
-    for ( i=0; mslanguages[i].text!=NULL; ++i )
-	if ( mslanguages[i].userdata == (void *) (intpt) lang )
-return( (char *) mslanguages[i].text );
+    for (i = 0; mslanguages[i].text != NULL; ++i)
+    {
+        if (mslanguages[i].userdata == (void*)(intpt)lang)
+        {
+            return((char*)mslanguages[i].text);
+        }
+    }
 
-    sprintf( buffer, "%04X", lang );
-return( buffer );
+    snprintf(buffer, buffer_size, "%04X", lang);
+    return(buffer);
 }
 
 static int strid_sorter(const void *pt1, const void *pt2) {
@@ -2794,8 +2799,8 @@ static int strid_sorter(const void *pt1, const void *pt2) {
     if ( n1[1].u.md_ival!=n2[1].u.md_ival )
 return( n1[1].u.md_ival - n2[1].u.md_ival );
 
-    l1 = langname(n1[0].u.md_ival,buf1);
-    l2 = langname(n2[0].u.md_ival,buf2);
+    l1 = langname(n1[0].u.md_ival,buf1, sizeof(buf1));
+    l2 = langname(n2[0].u.md_ival,buf2, sizeof(buf2));
 return( strcoll(l1,l2));
 }
 
@@ -2807,8 +2812,8 @@ static int lang_sorter(const void *pt1, const void *pt2) {
     if ( n1[0].u.md_ival==n2[0].u.md_ival )
 return( n1[1].u.md_ival - n2[1].u.md_ival );
 
-    l1 = langname(n1[0].u.md_ival,buf1);
-    l2 = langname(n2[0].u.md_ival,buf2);
+    l1 = langname(n1[0].u.md_ival,buf1, sizeof(buf1));
+    l2 = langname(n2[0].u.md_ival,buf2, sizeof(buf2));
 return( strcoll(l1,l2));
 }
 
@@ -2840,8 +2845,8 @@ return( n1[1].u.md_ival - n2[1].u.md_ival );
     pos1 = specialvals(n1); pos2 = specialvals(n2);
     if ( pos1<0 || pos2<0 )
 return( pos1-pos2 );
-    l1 = langname(n1[0].u.md_ival,buf1);
-    l2 = langname(n2[0].u.md_ival,buf2);
+    l1 = langname(n1[0].u.md_ival,buf1, sizeof(buf1));
+    l2 = langname(n2[0].u.md_ival,buf2, sizeof(buf2));
 return( strcoll(l1,l2));
 }
 
@@ -3171,7 +3176,7 @@ static char *TN_BigEditTitle(GGadget *g,int r, int c) {
     int rows;
     struct matrix_data *strings = GMatrixEditGet(g, &rows);
 
-    lang = langname(strings[3*r].u.md_ival,buf2);
+    lang = langname(strings[3*r].u.md_ival,buf2, sizeof(buf2));
     for ( k=0; ttfnameids[k].text!=NULL && ttfnameids[k].userdata!=(void *) (intpt) strings[3*r+1].u.md_ival;
 	    ++k );
     snprintf(buf,sizeof(buf),_("%1$.30s string for %2$.30s"),
@@ -3313,10 +3318,10 @@ static int GFI_AddOFL(GGadget *g, GEvent *e) {
 			len = 0;
 			for ( l=0; data[l]!=NULL; ++l ) {
 			    if ( l==0 ) {
-				sprintf( buffer, data[l], tm->tm_year+1900, author );
+				snprintf( buffer, sizeof(buffer), data[l], tm->tm_year+1900, author );
 			        bpt = buffer;
 			    } else if ( l==1 ) {
-				sprintf( buffer, data[l], reservedname );
+				snprintf( buffer, sizeof(buffer), data[l], reservedname );
 			        bpt = buffer;
 			    } else
 				bpt = data[l];
@@ -3359,8 +3364,8 @@ static int ss_cmp(const void *_md1, const void *_md2) {
     const char *l1, *l2;
 
     if ( md1[1].u.md_ival == md2[1].u.md_ival ) {
-       l1 = langname(md1[0].u.md_ival,buf1);
-       l2 = langname(md2[0].u.md_ival,buf2);
+       l1 = langname(md1[0].u.md_ival,buf1, sizeof(buf1));
+       l2 = langname(md2[0].u.md_ival,buf2, sizeof(buf2));
 return( strcoll(l1,l2));
     }
 return( md1[1].u.md_ival - md2[1].u.md_ival );
@@ -3399,8 +3404,8 @@ static int size_cmp(const void *_md1, const void *_md2) {
     char buf1[20], buf2[20];
     const char *l1, *l2;
 
-   l1 = langname(md1[0].u.md_ival,buf1);
-   l2 = langname(md2[0].u.md_ival,buf2);
+   l1 = langname(md1[0].u.md_ival,buf1, sizeof(buf1));
+   l2 = langname(md2[0].u.md_ival,buf2, sizeof(buf2));
 return( strcoll(l1,l2));
 }
 
@@ -4668,9 +4673,9 @@ return;
 
     val = u_strtod(_GGadgetGetTitle(GWidgetGetControl(d->gw,ocid)),NULL);
     if ( isoffset )
-	sprintf( buf,"%g",rint( val-(ismax ? b.maxy : b.miny)) );
+	snprintf( buf, sizeof(buf), "%g",rint( val-(ismax ? b.maxy : b.miny)) );
     else
-	sprintf( buf,"%g",rint( val+(ismax ? b.maxy : b.miny)) );
+	snprintf( buf, sizeof(buf), "%g",rint( val+(ismax ? b.maxy : b.miny)) );
     GGadgetSetTitle8(GWidgetGetControl(d->gw,ocid),buf);
 }
 
@@ -4752,45 +4757,45 @@ static void GFI_SubSuperSet(struct gfi_data *d, struct pfminfo *info) {
     char buffer[40];
     unichar_t ubuf[40];
 
-    sprintf( buffer, "%d", info->os2_subxsize );
+    snprintf( buffer, sizeof(buffer), "%d", info->os2_subxsize );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_SubXSize),ubuf);
 
-    sprintf( buffer, "%d", info->os2_subysize );
+    snprintf( buffer, sizeof(buffer), "%d", info->os2_subysize );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_SubYSize),ubuf);
 
-    sprintf( buffer, "%d", info->os2_subxoff );
+    snprintf( buffer, sizeof(buffer), "%d", info->os2_subxoff );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_SubXOffset),ubuf);
 
-    sprintf( buffer, "%d", info->os2_subyoff );
+    snprintf( buffer, sizeof(buffer), "%d", info->os2_subyoff );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_SubYOffset),ubuf);
 
 
-    sprintf( buffer, "%d", info->os2_supxsize );
+    snprintf( buffer, sizeof(buffer), "%d", info->os2_supxsize );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_SuperXSize),ubuf);
 
-    sprintf( buffer, "%d", info->os2_supysize );
+    snprintf( buffer, sizeof(buffer), "%d", info->os2_supysize );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_SuperYSize),ubuf);
 
-    sprintf( buffer, "%d", info->os2_supxoff );
+    snprintf( buffer, sizeof(buffer), "%d", info->os2_supxoff );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_SuperXOffset),ubuf);
 
-    sprintf( buffer, "%d", info->os2_supyoff );
+    snprintf( buffer, sizeof(buffer), "%d", info->os2_supyoff );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_SuperYOffset),ubuf);
 
 
-    sprintf( buffer, "%d", info->os2_strikeysize );
+    snprintf( buffer, sizeof(buffer), "%d", info->os2_strikeysize );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_StrikeoutSize),ubuf);
 
-    sprintf( buffer, "%d", info->os2_strikeypos );
+    snprintf( buffer, sizeof(buffer), "%d", info->os2_strikeypos );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_StrikeoutPos),ubuf);
 }
@@ -4867,7 +4872,7 @@ static void TTFSetup(struct gfi_data *d) {
 	GGadgetSetTitle8(GWidgetGetControl(d->gw,CID_WeightClass),
 		(char *) weightclass[info.weight/100-1].text);
     else {
-	sprintf( buffer, "%d", info.weight );
+	snprintf( buffer, sizeof(buffer), "%d", info.weight );
 	GGadgetSetTitle8(GWidgetGetControl(d->gw,CID_WeightClass),buffer);
     }
     GGadgetSelectOneListItem(GWidgetGetControl(d->gw,CID_WidthClass),info.width-1);
@@ -4880,7 +4885,7 @@ static void TTFSetup(struct gfi_data *d) {
     if ( d->sf->os2_version>=0 && d->sf->os2_version<=4 )
 	GGadgetSelectOneListItem(GWidgetGetControl(d->gw,CID_OS2Version),d->sf->os2_version);
     else {
-	sprintf( buffer,"%d", d->sf->os2_version );
+	snprintf( buffer, sizeof(buffer), "%d", d->sf->os2_version );
 	GGadgetSetTitle8(GWidgetGetControl(d->gw,CID_OS2Version),buffer);
     }
     GGadgetSetChecked(GWidgetGetControl(d->gw,CID_UseTypoMetrics),d->sf->use_typo_metrics);
@@ -4923,53 +4928,53 @@ static void TTFSetup(struct gfi_data *d) {
 
     d->ttf_set = true;
     /* FSType is already set */
-    sprintf( buffer, "%d", info.linegap );
+    snprintf( buffer, sizeof(buffer), "%d", info.linegap );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_LineGap),ubuf);
-    sprintf( buffer, "%d", info.vlinegap );
+    snprintf( buffer, sizeof(buffer), "%d", info.vlinegap );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_VLineGap),ubuf);
-    sprintf( buffer, "%d", info.os2_typolinegap );
+    snprintf( buffer, sizeof(buffer), "%d", info.os2_typolinegap );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_TypoLineGap),ubuf);
 
     GGadgetSetChecked(GWidgetGetControl(d->gw,CID_WinAscentIsOff),info.winascent_add);
     GFI_AsDsLab(d,CID_WinAscentIsOff,true);
-    sprintf( buffer, "%d", info.os2_winascent );
+    snprintf( buffer, sizeof(buffer), "%d", info.os2_winascent );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_WinAscent),ubuf);
     GGadgetSetChecked(GWidgetGetControl(d->gw,CID_WinDescentIsOff),info.windescent_add);
     GFI_AsDsLab(d,CID_WinDescentIsOff,true);
-    sprintf( buffer, "%d", info.os2_windescent );
+    snprintf( buffer, sizeof(buffer), "%d", info.os2_windescent );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_WinDescent),ubuf);
 
     GGadgetSetChecked(GWidgetGetControl(d->gw,CID_TypoAscentIsOff),info.typoascent_add);
     GFI_AsDsLab(d,CID_TypoAscentIsOff,true);
-    sprintf( buffer, "%d", info.os2_typoascent );
+    snprintf( buffer, sizeof(buffer), "%d", info.os2_typoascent );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_TypoAscent),ubuf);
     GGadgetSetChecked(GWidgetGetControl(d->gw,CID_TypoDescentIsOff),info.typodescent_add);
     GFI_AsDsLab(d,CID_TypoDescentIsOff,true);
-    sprintf( buffer, "%d", info.os2_typodescent );
+    snprintf( buffer, sizeof(buffer), "%d", info.os2_typodescent );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_TypoDescent),ubuf);
 
-    sprintf( buffer, "%d", info.os2_capheight );
+    snprintf( buffer, sizeof(buffer), "%d", info.os2_capheight );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_CapHeight),ubuf);
-    sprintf( buffer, "%d", info.os2_xheight );
+    snprintf( buffer, sizeof(buffer), "%d", info.os2_xheight );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_XHeight),ubuf);
 
     GGadgetSetChecked(GWidgetGetControl(d->gw,CID_HHeadAscentIsOff),info.hheadascent_add);
     GFI_AsDsLab(d,CID_HHeadAscentIsOff,true);
-    sprintf( buffer, "%d", info.hhead_ascent );
+    snprintf( buffer, sizeof(buffer), "%d", info.hhead_ascent );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_HHeadAscent),ubuf);
     GGadgetSetChecked(GWidgetGetControl(d->gw,CID_HHeadDescentIsOff),info.hheaddescent_add);
     GFI_AsDsLab(d,CID_HHeadDescentIsOff,true);
-    sprintf( buffer, "%d", info.hhead_descent );
+    snprintf( buffer, sizeof(buffer), "%d", info.hhead_descent );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(d->gw,CID_HHeadDescent),ubuf);
 }
@@ -5056,7 +5061,9 @@ static int GFI_MoreParams(GGadget *g, GEvent *e) {
     GTextInfo txlabel[35];
     int i,y,k,j;
     char **params, **popups;
-    char values[20][20];
+    const int val_size = 20;
+    char values[val_size][val_size];
+    //char values[20][20];
 
     if ( e->type==et_controlevent && e->u.control.subtype == et_buttonactivate ) {
 	struct gfi_data *d = GDrawGetUserData(GGadgetGetWindow(g));
@@ -5100,7 +5107,7 @@ return( true );
 	    txgcd[k++].creator = GLabelCreate;
 	    txarray[j][0] = &txgcd[k-1];
 
-	    sprintf( values[i], "%g", d->texdata.params[i+7]*(double) (d->sf->ascent+d->sf->descent)/(double) (1<<20));
+	    snprintf( values[i], val_size, "%g", d->texdata.params[i+7]*(double) (d->sf->ascent+d->sf->descent)/(double) (1<<20));
 	    txlabel[k].text = (unichar_t *) values[i];
 	    txlabel[k].text_is_1byte = true;
 	    txgcd[k].gd.label = &txlabel[k];
@@ -5196,7 +5203,7 @@ static void DefaultTeX(struct gfi_data *d) {
     }
 
     for ( i=0; i<7; ++i ) {
-	sprintf( buffer,"%g", d->texdata.params[i]*(sf->ascent+sf->descent)/(double) (1<<20));
+	snprintf( buffer, sizeof(buffer), "%g", d->texdata.params[i]*(sf->ascent+sf->descent)/(double) (1<<20));
 	GGadgetSetTitle8(GWidgetGetControl(d->gw,CID_TeX+i),buffer);
     }
     if ( sf->texdata.type==tex_math )
@@ -5408,7 +5415,7 @@ static int OS2_UnicodeChange(GGadget *g, GEvent *e) {
 		flags[bit>>5] |= (1<<(bit&31));
 	    }
 
-	sprintf( ranges, "%08x.%08x.%08x.%08x", flags[3], flags[2], flags[1], flags[0]);
+	snprintf( ranges, sizeof(ranges), "%08x.%08x.%08x.%08x", flags[3], flags[2], flags[1], flags[0]);
 	GGadgetSetTitle8(field,ranges);
     }
 return( true );
@@ -5425,7 +5432,7 @@ static int OS2_URangesDefault(GGadget *g, GEvent *e) {
 	    SplineFont *sf = gfi->sf;
 	    char ranges[40];
 	    OS2FigureUnicodeRanges(sf,sf->pfminfo.unicoderanges);
-	    sprintf( ranges, "%08x.%08x.%08x.%08x",
+	    snprintf( ranges, sizeof(ranges), "%08x.%08x.%08x.%08x",
 		    sf->pfminfo.unicoderanges[3], sf->pfminfo.unicoderanges[2],
 		    sf->pfminfo.unicoderanges[1], sf->pfminfo.unicoderanges[0]);
 	    GGadgetSetTitle8(GWidgetGetControl(gfi->gw,CID_UnicodeRanges),ranges);
@@ -5472,7 +5479,7 @@ static int OS2_CodePageChange(GGadget *g, GEvent *e) {
 		flags[bit>>5] |= (1<<(bit&31));
 	    }
 
-	sprintf( ranges, "%08x.%08x", flags[1], flags[0]);
+	snprintf( ranges, sizeof(ranges), "%08x.%08x", flags[1], flags[0]);
 	GGadgetSetTitle8(field,ranges);
     }
 return( true );
@@ -5489,7 +5496,7 @@ static int OS2_CPageDefault(GGadget *g, GEvent *e) {
 	    SplineFont *sf = gfi->sf;
 	    char codepages[40];
 	    OS2FigureCodePages(sf,sf->pfminfo.codepages);
-	    sprintf( codepages, "%08x.%08x",
+	    snprintf( codepages, sizeof(codepages), "%08x.%08x",
 		    sf->pfminfo.codepages[1], sf->pfminfo.codepages[0]);
 	    GGadgetSetTitle8(GWidgetGetControl(gfi->gw,CID_CodePageRanges),codepages);
 	    OS2_CodePageChange(GWidgetGetControl(gfi->gw,CID_CodePageRanges),NULL);
@@ -5518,21 +5525,37 @@ static int GFI_UseXUIDChanged(GGadget *g, GEvent *e) {
 return( true );
 }
 
-static void LookupSetup(struct lkdata *lk,OTLookup *lookups) {
+static void LookupSetup(struct lkdata* lk, OTLookup* lookups)
+{
     int cnt, subcnt;
-    OTLookup *otl;
-    struct lookup_subtable *sub;
+    OTLookup* otl;
+    struct lookup_subtable* sub;
 
-    for ( cnt=0, otl=lookups; otl!=NULL; ++cnt, otl=otl->next );
-    lk->cnt = cnt; lk->max = cnt+10;
-    lk->all = calloc(lk->max,sizeof(struct lkinfo));
-    for ( cnt=0, otl=lookups; otl!=NULL; ++cnt, otl=otl->next ) {
-	lk->all[cnt].lookup = otl;
-	for ( subcnt=0, sub=otl->subtables; sub!=NULL; ++subcnt, sub=sub->next );
-	lk->all[cnt].subtable_cnt = subcnt; lk->all[cnt].subtable_max = subcnt+10;
-	lk->all[cnt].subtables = calloc(lk->all[cnt].subtable_max,sizeof(struct lksubinfo));
-	for ( subcnt=0, sub=otl->subtables; sub!=NULL; ++subcnt, sub=sub->next )
-	    lk->all[cnt].subtables[subcnt].subtable = sub;
+    for (cnt = 0, otl = lookups; otl != NULL; ++cnt)
+    {
+        otl = otl->next;
+    }
+
+    lk->cnt = cnt; 
+    lk->max = cnt + 10;
+
+    lk->all = calloc(lk->max, sizeof(struct lkinfo));
+
+    for (cnt = 0, otl = lookups; otl != NULL; ++cnt, otl = otl->next)
+    {
+        lk->all[cnt].lookup = otl;
+        for (subcnt = 0, sub = otl->subtables; sub != NULL; ++subcnt)
+        {
+            sub = sub->next;
+        }
+
+        lk->all[cnt].subtable_cnt = subcnt; 
+        lk->all[cnt].subtable_max = subcnt + 10;
+        lk->all[cnt].subtables = calloc(lk->all[cnt].subtable_max, sizeof(struct lksubinfo));
+        for (subcnt = 0, sub = otl->subtables; sub != NULL; ++subcnt, sub = sub->next)
+        {
+            lk->all[cnt].subtables[subcnt].subtable = sub;
+        }
     }
 }
 
@@ -7451,41 +7474,49 @@ return;
     }
 }
 
-static int lookups_e_h(GWindow gw, GEvent *event, int isgpos) {
-    struct gfi_data *gfi = GDrawGetUserData(gw);
+static int lookups_e_h(GWindow gw, GEvent* event, int isgpos)
+{
+    struct gfi_data* gfi = GDrawGetUserData(gw);
 
-    if (( event->type==et_mouseup || event->type==et_mousedown ) &&
-	    (event->u.mouse.button>=4 && event->u.mouse.button<=7) ) {
-return( GGadgetDispatchEvent(GWidgetGetControl(gw,CID_LookupVSB+isgpos),event));
+    if ((event->type == et_mouseup || event->type == et_mousedown) &&
+        (event->u.mouse.button >= 4 && event->u.mouse.button <= 7))
+    {
+        //todo mouse scroll don't work (gadget not found)
+
+        struct ggadget* gadget = GWidgetGetControl(gw, CID_LookupVSB + isgpos);
+        return(GGadgetDispatchEvent(gadget, event));
     }
 
-    switch ( event->type ) {
-      case et_char:
-return( GFI_Char(gfi,event) );
-      case et_expose:
-	LookupExpose(gw,gfi,isgpos);
-      break;
-      case et_mousedown: case et_mousemove: case et_mouseup:
-	LookupMouse(gfi,isgpos,event);
-      break;
-      case et_resize: {
-	GRect r;
-	GDrawGetSize(gw,&r);
-	gfi->lkheight = r.height; gfi->lkwidth = r.width;
-	GFI_LookupScrollbars(gfi,false,false);
-	GFI_LookupScrollbars(gfi,true,false);
-      }
-      break;
+    switch (event->type)
+    {
+        case et_char:
+            return(GFI_Char(gfi, event));
+        case et_expose:
+            LookupExpose(gw, gfi, isgpos);
+            break;
+        case et_mousedown: case et_mousemove: case et_mouseup:
+            LookupMouse(gfi, isgpos, event);
+            break;
+        case et_resize: {
+            GRect r;
+            GDrawGetSize(gw, &r);
+            gfi->lkheight = r.height; gfi->lkwidth = r.width;
+            GFI_LookupScrollbars(gfi, false, false);
+            GFI_LookupScrollbars(gfi, true, false);
+        }
+                      break;
     }
-return( true );
+    return(true);
 }
 
-static int gposlookups_e_h(GWindow gw, GEvent *event) {
-return( lookups_e_h(gw,event,true));
+static int gposlookups_e_h(GWindow gw, GEvent* event)
+{
+    return(lookups_e_h(gw, event, true));
 }
 
-static int gsublookups_e_h(GWindow gw, GEvent *event) {
-return( lookups_e_h(gw,event,false));
+static int gsublookups_e_h(GWindow gw, GEvent* event)
+{
+    return(lookups_e_h(gw, event, false));
 }
 
 void FontInfo(SplineFont *sf,int deflayer,int defaspect,int sync) {
@@ -7675,7 +7706,7 @@ return;
     nlabel[9].text = (unichar_t *) (sf->version?sf->version:"");
     nlabel[9].text_is_1byte = true;
     if ( sf->subfontcnt!=0 ) {
-	sprintf( vbuf,"%g", sf->cidversion );
+	snprintf( vbuf, sizeof(vbuf), "%g", sf->cidversion );
 	nlabel[9].text = (unichar_t *) vbuf;
     }
     ngcd[9].gd.label = &nlabel[9];
@@ -7692,7 +7723,7 @@ return;
 
     sfntrbuf[0]='\0';
     if ( sf->sfntRevision!=sfntRevisionUnset )
-	sprintf( sfntrbuf, "%g", sf->sfntRevision/65536.0 );
+	snprintf( sfntrbuf, sizeof(sfntrbuf), "%g", sf->sfntRevision/65536.0 );
     ngcd[11].gd.flags = gg_visible | gg_enabled;
     nlabel[11].text = (unichar_t *) sfntrbuf;
     nlabel[11].text_is_1byte = true;
@@ -7848,7 +7879,7 @@ return;
     xulabel[6].text = (unichar_t *) "";
     xulabel[6].text_is_1byte = true;
     if ( sf->uniqueid!=0 ) {
-	sprintf( uibuf, "%d", sf->uniqueid );
+	snprintf( uibuf, sizeof(uibuf), "%d", sf->uniqueid );
 	xulabel[6].text = (unichar_t *) uibuf;
     }
     xugcd[6].gd.label = &xulabel[6];
@@ -7882,7 +7913,7 @@ return;
 
     psgcd[1].gd.pos.x = 103; psgcd[1].gd.pos.y = psgcd[0].gd.pos.y-6; psgcd[1].gd.pos.width = 47;
     psgcd[1].gd.flags = gg_visible | gg_enabled;
-    sprintf( asbuf, "%d", sf->ascent );
+    snprintf( asbuf, sizeof(asbuf), "%d", sf->ascent );
     pslabel[1].text = (unichar_t *) asbuf;
     pslabel[1].text_is_1byte = true;
     psgcd[1].gd.label = &pslabel[1];
@@ -7900,7 +7931,7 @@ return;
 
     psgcd[3].gd.pos.x = 200; psgcd[3].gd.pos.y = psgcd[1].gd.pos.y; psgcd[3].gd.pos.width = 47;
     psgcd[3].gd.flags = gg_visible | gg_enabled;
-    sprintf( dsbuf, "%d", sf->descent );
+    snprintf( dsbuf, sizeof(dsbuf), "%d", sf->descent );
     pslabel[3].text = (unichar_t *) dsbuf;
     pslabel[3].text_is_1byte = true;
     psgcd[3].gd.label = &pslabel[3];
@@ -7918,7 +7949,7 @@ return;
 
     psgcd[5].gd.pos.x = psgcd[1].gd.pos.x-20; psgcd[5].gd.pos.y = psgcd[1].gd.pos.y+24; psgcd[5].gd.pos.width = 67;
     psgcd[5].gd.flags = gg_visible | gg_enabled;
-    sprintf( embuf, "%d", sf->descent+sf->ascent );
+    snprintf( embuf, sizeof(embuf), "%d", sf->descent+sf->ascent );
     pslabel[5].text = (unichar_t *) embuf;
     pslabel[5].text_is_1byte = true;
     psgcd[5].gd.label = &pslabel[5];
@@ -7951,7 +7982,7 @@ return;
     psgcd[7].gd.pos.x = 103; psgcd[7].gd.pos.y = psgcd[8].gd.pos.y-6;
     psgcd[7].gd.pos.width = 47;
     psgcd[7].gd.flags = gg_visible | gg_enabled;
-    sprintf( iabuf, "%g", (double) sf->italicangle );
+    snprintf( iabuf, sizeof(iabuf), "%g", (double) sf->italicangle );
     pslabel[7].text = (unichar_t *) iabuf;
     pslabel[7].text_is_1byte = true;
     psgcd[7].gd.label = &pslabel[7];
@@ -7985,7 +8016,7 @@ return;
 
     psgcd[10].gd.pos.x = 103; psgcd[10].gd.pos.y = psgcd[11].gd.pos.y-6; psgcd[10].gd.pos.width = 47;
     psgcd[10].gd.flags = gg_visible | gg_enabled;
-    sprintf( upbuf, "%g", (double) sf->upos );
+    snprintf( upbuf, sizeof(upbuf), "%g", (double) sf->upos );
     pslabel[10].text = (unichar_t *) upbuf;
     pslabel[10].text_is_1byte = true;
     psgcd[10].gd.label = &pslabel[10];
@@ -8002,7 +8033,7 @@ return;
 
     psgcd[13].gd.pos.x = 200; psgcd[13].gd.pos.y = psgcd[10].gd.pos.y; psgcd[13].gd.pos.width = 47;
     psgcd[13].gd.flags = gg_visible | gg_enabled;
-    sprintf( uwbuf, "%g", (double) sf->uwidth );
+    snprintf( uwbuf, sizeof(uwbuf), "%g", (double) sf->uwidth );
     pslabel[13].text = (unichar_t *) uwbuf;
     pslabel[13].text_is_1byte = true;
     psgcd[13].gd.label = &pslabel[13];
@@ -8182,7 +8213,7 @@ return;
     lgcd[k++].creator = GLabelCreate;
     larray2[j++] = &lgcd[k-1];
 
-    sprintf( swbuf,"%g", (double) sf->strokewidth );
+    snprintf( swbuf, sizeof(swbuf), "%g", (double) sf->strokewidth );
     lgcd[k].gd.pos.x = 115; lgcd[k].gd.pos.y = lgcd[k-1].gd.pos.y-6; lgcd[k].gd.pos.width = 137;
     lgcd[k].gd.flags = gg_visible | gg_enabled;
     llabel[k].text = (unichar_t *) swbuf;
@@ -9365,7 +9396,7 @@ return;
     cbox[2].creator = GHBoxCreate;
     cvarray[j++] = &cbox[2];
 
-    sprintf( ranges, "%08x.%08x.%08x.%08x",
+    snprintf( ranges, sizeof(ranges), "%08x.%08x.%08x.%08x",
 	    sf->pfminfo.unicoderanges[3], sf->pfminfo.unicoderanges[2],
 	    sf->pfminfo.unicoderanges[1], sf->pfminfo.unicoderanges[0]);
     clabel[i].text = (unichar_t *) ranges;
@@ -9419,7 +9450,7 @@ return;
     cbox[3].creator = GHBoxCreate;
     cvarray[j++] = &cbox[3];
 
-    sprintf( codepages, "%08x.%08x",
+    snprintf( codepages, sizeof(codepages), "%08x.%08x",
 	    sf->pfminfo.codepages[1], sf->pfminfo.codepages[0]);
     clabel[i].text = (unichar_t *) codepages;
     clabel[i].text_is_1byte = true;
@@ -9855,8 +9886,8 @@ return;
     woffmajorbuf[0]='\0';
     woffminorbuf[0]='\0';
     if ( sf->woffMajor!=woffUnset ) {
-	sprintf( woffmajorbuf, "%d", sf->woffMajor );
-	sprintf( woffminorbuf, "%d", sf->woffMinor );
+	snprintf( woffmajorbuf,  sizeof(woffmajorbuf), "%d", sf->woffMajor );
+	snprintf( woffminorbuf,  sizeof(woffminorbuf), "%d", sf->woffMinor );
     }
     woffgcd[1].gd.flags = gg_visible | gg_enabled;
     wofflabel[1].text = (unichar_t *) woffmajorbuf;
@@ -10019,7 +10050,7 @@ return;
     szgcd[k].gd.popup_msg = _("The size (in points) for which this face was designed");
     szgcd[k++].creator = GLabelCreate;
 
-    sprintf(dszbuf, "%.1f", sf->design_size/10.0);
+    snprintf(dszbuf, sizeof(dszbuf), "%.1f", sf->design_size/10.0);
     szlabel[k].text = (unichar_t *) dszbuf;
     szlabel[k].text_is_1byte = true;
     szgcd[k].gd.label = &szlabel[k];
@@ -10059,7 +10090,7 @@ return;
     szgcd[k].gd.popup_msg = _("The range of sizes (in points) to which this face applies.\nLower bound is exclusive, upper bound is inclusive.");
     szgcd[k++].creator = GLabelCreate;
 
-    sprintf(dsbbuf, "%.1f", sf->design_range_bottom/10.0);
+    snprintf(dsbbuf, sizeof(dsbbuf), "%.1f", sf->design_range_bottom/10.0);
     szlabel[k].text = (unichar_t *) dsbbuf;
     szlabel[k].text_is_1byte = true;
     szgcd[k].gd.label = &szlabel[k];
@@ -10078,7 +10109,7 @@ return;
     szgcd[k].gd.popup_msg = _("The range of sizes (in points) to which this face applies.\nLower bound is exclusive, upper bound is inclusive.");
     szgcd[k++].creator = GLabelCreate;
 
-    sprintf(dstbuf, "%.1f", sf->design_range_top/10.0);
+    snprintf(dstbuf, sizeof(dstbuf), "%.1f", sf->design_range_top/10.0);
     szlabel[k].text = (unichar_t *) dstbuf;
     szlabel[k].text_is_1byte = true;
     szgcd[k].gd.label = &szlabel[k];
@@ -10097,7 +10128,7 @@ return;
     szgcd[k].gd.popup_msg = _("This is an identifying number shared by all members of\nthis font family with the same style (I.e. 10pt Bold and\n24pt Bold would have the same id, but 10pt Italic would not");
     szgcd[k++].creator = GLabelCreate;
 
-    sprintf(sibuf, "%d", sf->fontstyle_id);
+    snprintf(sibuf, sizeof(sibuf), "%d", sf->fontstyle_id);
     szlabel[k].text = (unichar_t *) sibuf;
     szlabel[k].text_is_1byte = true;
     szgcd[k].gd.label = &szlabel[k];
@@ -10389,45 +10420,46 @@ return;
     lkbuttonsarray[i] = GCD_Glue;
     lkbuttonsarray[i+1] = NULL;
 
-    for ( i=0; i<2; ++i ) {
-	lkaspects[i].text = (unichar_t *) (i?"GPOS":"GSUB");
-	lkaspects[i].text_is_1byte = true;
-	lkaspects[i].gcd = &lkbox[2*i];
+    for (i = 0; i < 2; ++i)
+    {
+        lkaspects[i].text = (unichar_t*)(i ? "GPOS" : "GSUB");
+        lkaspects[i].text_is_1byte = true;
+        lkaspects[i].gcd = &lkbox[2 * i];
 
-	lksubgcd[i][0].gd.pos.x = 10; lksubgcd[i][0].gd.pos.y = 10;
-	lksubgcd[i][0].gd.pos.width = ngcd[15].gd.pos.width;
-	lksubgcd[i][0].gd.pos.height = 150;
-	lksubgcd[i][0].gd.flags = gg_visible | gg_enabled;
-	lksubgcd[i][0].gd.u.drawable_e_h = i ? gposlookups_e_h : gsublookups_e_h;
-	lksubgcd[i][0].gd.cid = CID_LookupWin+i;
-	lksubgcd[i][0].creator = GDrawableCreate;
+        lksubgcd[i][0].gd.pos.x = 10; lksubgcd[i][0].gd.pos.y = 10;
+        lksubgcd[i][0].gd.pos.width = ngcd[15].gd.pos.width;
+        lksubgcd[i][0].gd.pos.height = 150;
+        lksubgcd[i][0].gd.flags = gg_visible | gg_enabled;
+        lksubgcd[i][0].gd.u.drawable_e_h = i ? gposlookups_e_h : gsublookups_e_h;
+        lksubgcd[i][0].gd.cid = CID_LookupWin + i;
+        lksubgcd[i][0].creator = GDrawableCreate;
 
-	lksubgcd[i][1].gd.pos.x = 10; lksubgcd[i][1].gd.pos.y = 10;
-	lksubgcd[i][1].gd.pos.height = 150;
-	lksubgcd[i][1].gd.flags = gg_visible | gg_enabled | gg_sb_vert;
-	lksubgcd[i][1].gd.cid = CID_LookupVSB+i;
-	lksubgcd[i][1].gd.handle_controlevent = LookupsVScroll;
-	lksubgcd[i][1].creator = GScrollBarCreate;
+        lksubgcd[i][1].gd.pos.x = 10; lksubgcd[i][1].gd.pos.y = 10;
+        lksubgcd[i][1].gd.pos.height = 150;
+        lksubgcd[i][1].gd.flags = gg_visible | gg_enabled | gg_sb_vert;
+        lksubgcd[i][1].gd.cid = CID_LookupVSB + i;
+        lksubgcd[i][1].gd.handle_controlevent = LookupsVScroll;
+        lksubgcd[i][1].creator = GScrollBarCreate;
 
-	lksubgcd[i][2].gd.pos.x = 10; lksubgcd[i][2].gd.pos.y = 10;
-	lksubgcd[i][2].gd.pos.width = 150;
-	lksubgcd[i][2].gd.flags = gg_visible | gg_enabled;
-	lksubgcd[i][2].gd.cid = CID_LookupHSB+i;
-	lksubgcd[i][2].gd.handle_controlevent = LookupsHScroll;
-	lksubgcd[i][2].creator = GScrollBarCreate;
+        lksubgcd[i][2].gd.pos.x = 10; lksubgcd[i][2].gd.pos.y = 10;
+        lksubgcd[i][2].gd.pos.width = 150;
+        lksubgcd[i][2].gd.flags = gg_visible | gg_enabled;
+        lksubgcd[i][2].gd.cid = CID_LookupHSB + i;
+        lksubgcd[i][2].gd.handle_controlevent = LookupsHScroll;
+        lksubgcd[i][2].creator = GScrollBarCreate;
 
-	lksubgcd[i][3].gd.pos.x = 10; lksubgcd[i][3].gd.pos.y = 10;
-	lksubgcd[i][3].gd.pos.width = lksubgcd[i][3].gd.pos.height = _GScrollBar_Width;
-	lksubgcd[i][3].gd.flags = gg_visible | gg_enabled | gg_tabset_nowindow;
-	lksubgcd[i][3].creator = GDrawableCreate;
+        lksubgcd[i][3].gd.pos.x = 10; lksubgcd[i][3].gd.pos.y = 10;
+        lksubgcd[i][3].gd.pos.width = lksubgcd[i][3].gd.pos.height = _GScrollBar_Width;
+        lksubgcd[i][3].gd.flags = gg_visible | gg_enabled | gg_tabset_nowindow;
+        lksubgcd[i][3].creator = GDrawableCreate;
 
-	lkarray[i][0] = &lksubgcd[i][0]; lkarray[i][1] = &lksubgcd[i][1]; lkarray[i][2] = NULL;
-	lkarray[i][3] = &lksubgcd[i][2]; lkarray[i][4] = &lksubgcd[i][3]; lkarray[i][5] = NULL;
-	lkarray[i][6] = NULL;
+        lkarray[i][0] = &lksubgcd[i][0]; lkarray[i][1] = &lksubgcd[i][1]; lkarray[i][2] = NULL;
+        lkarray[i][3] = &lksubgcd[i][2]; lkarray[i][4] = &lksubgcd[i][3]; lkarray[i][5] = NULL;
+        lkarray[i][6] = NULL;
 
-	lkbox[2*i].gd.flags = gg_enabled|gg_visible;
-	lkbox[2*i].gd.u.boxelements = lkarray[i];
-	lkbox[2*i].creator = GHVBoxCreate;
+        lkbox[2 * i].gd.flags = gg_enabled | gg_visible;
+        lkbox[2 * i].gd.u.boxelements = lkarray[i];
+        lkbox[2 * i].creator = GHVBoxCreate;
     }
 
     lkaspects[0].selected = true;

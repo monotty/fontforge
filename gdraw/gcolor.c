@@ -260,15 +260,15 @@ static int GCol_TextChanged(GGadget *g, GEvent *e) {
 	} else if ( d->col.hsv ) {
 	    gHSV2RGB((struct hslrgb *) &d->col);
 	    for ( i=3; i<6; ++i ) {
-		sprintf( text, "%.2f", *offs[i]);
+		snprintf( text, sizeof(text), "%.2f", *offs[i]);
 		GGadgetSetTitle8(GWidgetGetControl(d->gw,cids[i]),text);
 	    }
 	} else {
 	    gRGB2HSV((struct hslrgb *) &d->col);
-	    sprintf( text, "%3.0f", *offs[0]);
+	    snprintf( text, sizeof(text), "%3.0f", *offs[0]);
 	    GGadgetSetTitle8(GWidgetGetControl(d->gw,cids[0]),text);
 	    for ( i=1; i<3; ++i ) {
-		sprintf( text, "%.2f", *offs[i]);
+		snprintf( text, sizeof(text), "%.2f", *offs[i]);
 		GGadgetSetTitle8(GWidgetGetControl(d->gw,cids[i]),text);
 	    }
 	}
@@ -285,10 +285,10 @@ static void GCol_ShowTexts(struct gcol_data *d) {
     char text[50];
 
     gHSV2RGB((struct hslrgb *) &d->col);
-    sprintf( text, "%3.0f", *offs[0]);
+    snprintf( text, sizeof(text), "%3.0f", *offs[0]);
     GGadgetSetTitle8(GWidgetGetControl(d->gw,cids[0]),text);
     for ( i=1; i<7; ++i ) {
-	sprintf( text, "%.2f", *offs[i]);
+	snprintf( text, sizeof(text), "%.2f", *offs[i]);
 	GGadgetSetTitle8(GWidgetGetControl(d->gw,cids[i]),text);
     }
 }
@@ -646,9 +646,9 @@ struct hslrgba GWidgetColorA(const char *title,struct hslrgba *defcol,struct hsl
 	txarray[i][0] = &gcd[k-1];
 
 	if ( i==0 )
-	    sprintf( values[0], "%3.0f", *offs[0]);
+	    snprintf( values[0], sizeof(values[0]), "%3.0f", *offs[0]);
 	else
-	    sprintf( values[i], "%.2f", *offs[i]);
+	    snprintf( values[i], sizeof(values[0]), "%.2f", *offs[i]);
 	label[k].text = (unichar_t *) values[i];
 	label[k].text_is_1byte = true;
 	gcd[k].gd.label = &label[k];

@@ -765,7 +765,7 @@ static char *glyph2name(int glyph, struct ttfinfo *info) {
     if ( info->glyph_names!=NULL )
 	if ( info->glyph_names[glyph]!=NULL )
 return( info->glyph_names[glyph] );
-    sprintf( buffer,"glyph%d", glyph);
+    snprintf( buffer, sizeof(buffer), "glyph%d", glyph);
 return( strdup(buffer));
 }
 
@@ -1089,7 +1089,7 @@ static void DumpGlyph(FILE *ttf, struct ttfinfo *info, int glyph) {
     FILE *eps;
     double trans[6];
 
-    sprintf(buffer,"%s.eps", name);
+    snprintf(buffer, sizeof(buffer), "%s.eps", name);
     eps = fopen(buffer,"w");
     if ( eps==NULL ) {
 	fprintf( stderr, "Could not open %s for writing\n", buffer );

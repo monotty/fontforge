@@ -1368,32 +1368,41 @@ return( NULL );
 /*  value, etc.  If we have a glyph with a ref with a bad transform, then     */
 /*  go through a similar process to the above */
 
-static SplineChar *RC_MakeNewGlyph(FontViewBase *fv,SplineChar *base, int index,
-	const char *reason, const char *morereason) {
-    char *namebuf;
-    SplineFont *sf = fv->sf;
-    int enc;
-    SplineChar *ret;
+static SplineChar* RC_MakeNewGlyph(FontViewBase* fv, SplineChar* base, int index,
+	const char* reason, const char* morereason)
+{
+	char* namebuf;
+	SplineFont* sf = fv->sf;
+	int enc;
+	SplineChar* ret;
 
-    namebuf = malloc(strlen(base->name)+20);
-    for (;;) {
-	sprintf(namebuf, "%s.ref%d", base->name, index++ );
-	if ( SFGetChar(sf,-1,namebuf)==NULL )
-    break;
-    }
+	int namebuf_size = strlen(base->name) + 20;
+	namebuf = malloc(namebuf_size);
 
-    enc = SFFindSlot(sf, fv->map, -1, namebuf );
-    if ( enc==-1 )
-	enc = fv->map->enccount;
-    ret = SFMakeChar(sf,fv->map,enc);
-    free(ret->name);
-    ret->name = namebuf;
-    SFHashGlyph(sf,ret);
+	for (;;)
+	{
+		snprintf(namebuf, namebuf_size, "%s.ref%d", base->name, index++);
 
-    ret->comment = malloc( strlen(reason)+strlen(ret->name)+strlen(morereason) + 2 );
-    sprintf( ret->comment, reason, base->name, morereason );
-    ret->color = 0xff8080;
-return( ret );
+		if (SFGetChar(sf, -1, namebuf) == NULL)
+		{
+			break;
+		}
+	}
+
+	enc = SFFindSlot(sf, fv->map, -1, namebuf);
+	if (enc == -1)
+		enc = fv->map->enccount;
+	ret = SFMakeChar(sf, fv->map, enc);
+	free(ret->name);
+	ret->name = namebuf;
+	SFHashGlyph(sf, ret);
+
+	int comment_size = strlen(reason) + strlen(ret->name) + strlen(morereason) + 2;
+	ret->comment = malloc(comment_size);
+	snprintf(ret->comment, comment_size, reason, base->name, morereason);
+
+	ret->color = 0xff8080;
+	return(ret);
 }
 
 static void AddRef(SplineChar *sc,SplineChar *rsc, int layer) {

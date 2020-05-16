@@ -271,7 +271,7 @@ void CVFtPpemDlg(CharView *cv,int debug) {
     gcd[k++].creator = GLabelCreate;
     harray1[0] = &gcd[k-1];
 
-    sprintf( buffer2, "%d", gridfit_dpi );
+    snprintf( buffer2, sizeof(buffer2), "%d", gridfit_dpi );
     label[k].text = (unichar_t *) buffer2;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -295,7 +295,7 @@ void CVFtPpemDlg(CharView *cv,int debug) {
     gcd[k++].creator = GLabelCreate;
     harray2[0] = &gcd[k-1];
 
-    sprintf( buffer, "%g", gridfit_pointsizey );
+    snprintf( buffer, sizeof(buffer), "%g", gridfit_pointsizey );
     label[k].text = (unichar_t *) buffer;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -320,7 +320,7 @@ void CVFtPpemDlg(CharView *cv,int debug) {
     gcd[k++].creator = GLabelCreate;
     harray3[0] = &gcd[k-1];
 
-    sprintf( buffer3, "%g", gridfit_x_sameas_y ? gridfit_pointsizey : gridfit_pointsizex);
+    snprintf( buffer3, sizeof(buffer3), "%g", gridfit_x_sameas_y ? gridfit_pointsizey : gridfit_pointsizex);
     label[k].text = (unichar_t *) buffer3;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];

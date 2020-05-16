@@ -238,96 +238,129 @@ static void initmaclangs(void) {
 
 static char *spacer = " ⇒ ";	/* right double arrow */
 
-static GTextInfo *Pref_MacNamesList(struct macname *all) {
-    GTextInfo *ti;
+static GTextInfo* Pref_MacNamesList(struct macname* all)
+{
+    GTextInfo* ti;
     int i, j;
-    struct macname *mn;
-    char *temp, *full;
+    struct macname* mn;
+    char* temp, * full;
 
     initmaclangs();
 
-    for ( i=0, mn=all; mn!=NULL; mn=mn->next, ++i );
-    ti = calloc(i+1,sizeof( GTextInfo ));
+    for (i = 0, mn = all; mn != NULL; mn = mn->next, ++i);
+    ti = calloc(i + 1, sizeof(GTextInfo));
 
-    for ( i=0, mn=all; mn!=NULL; mn=mn->next, ++i ) {
-	temp = MacStrToUtf8(mn->name,mn->enc,mn->lang);
-	if ( temp==NULL )
-    continue;
-	for ( j=0 ; maclanguages[j].text!=0; ++j )
-	    if ( maclanguages[j].userdata == (void *) (intpt) (mn->lang ))
-	break;
-	if ( maclanguages[j].text!=0 ) {
-	    char *lang = (char *) maclanguages[j].text;
-	    full = malloc((strlen(lang)+strlen(temp)+strlen(spacer)+1));
-	    strcpy(full,lang);
-	} else {
-	    char *hunh = "???";
-	    full = malloc((strlen(hunh)+strlen(temp)+strlen(spacer)+1));
-	    strcpy(full,hunh);
-	}
-	strcat(full,spacer);
-	strcat(full,temp);
-	free(temp);
-	ti[i].text = (unichar_t *) full;
-	ti[i].text_is_1byte = true;
-	ti[i].userdata = (void *) mn;
+    for (i = 0, mn = all; mn != NULL; mn = mn->next, ++i)
+    {
+        temp = MacStrToUtf8(mn->name, mn->enc, mn->lang);
+        if (temp == NULL)
+        {
+            continue;
+        }
+
+        for (j = 0; maclanguages[j].text != 0; ++j)
+        {
+            if (maclanguages[j].userdata == (void*)(intpt)(mn->lang))
+            {
+                break;
+            }
+        }
+
+        size_t full_size;
+        if (maclanguages[j].text != 0)
+        {
+            char* lang = (char*)maclanguages[j].text;
+            full = malloc(full_size = (strlen(lang) + strlen(temp) + strlen(spacer) + 1));
+            strncpy(full, lang, full_size);
+        }
+        else
+        {
+            char* hunh = "???";
+            full = malloc(full_size = (strlen(hunh) + strlen(temp) + strlen(spacer) + 1));
+            strncpy(full, hunh, full_size);
+        }
+        strncat(full, spacer, full_size);
+        strncat(full, temp, full_size);
+
+        free(temp);
+        ti[i].text = (unichar_t*)full;
+        ti[i].text_is_1byte = true;
+        ti[i].userdata = (void*)mn;
     }
-return( ti );
+    return(ti);
 }
 
-static GTextInfo *Pref_SettingsList(struct macsetting *all) {
-    GTextInfo *ti;
+static GTextInfo* Pref_SettingsList(struct macsetting* all)
+{
+    GTextInfo* ti;
     int i;
-    struct macsetting *ms;
-    unichar_t *full; char *temp;
+    struct macsetting* ms;
+    unichar_t* full; char* temp;
     char buf[20];
 
-    for ( i=0, ms=all; ms!=NULL; ms=ms->next, ++i );
-    ti = calloc(i+1,sizeof( GTextInfo ));
+    for (i = 0, ms = all; ms != NULL; ms = ms->next, ++i);
+    ti = calloc(i + 1, sizeof(GTextInfo));
 
-    for ( i=0, ms=all; ms!=NULL; ms=ms->next, ++i ) {
-	temp = PickNameFromMacName(ms->setname);
-	sprintf(buf,"%3d ", ms->setting);
-	if ( temp==NULL )
-	    full = uc_copy(buf);
-	else {
-	    full = malloc((strlen(buf)+strlen(temp)+1)*sizeof(unichar_t));
-	    uc_strcpy(full,buf);
-	    utf82u_strcpy(full+u_strlen(full),temp);
-	    free(temp);
-	}
-	ti[i].text = full;
-	ti[i].userdata = ms;
+    for (i = 0, ms = all; ms != NULL; ms = ms->next, ++i)
+    {
+        temp = PickNameFromMacName(ms->setname);
+        snprintf(buf, sizeof(buf), "%3d ", ms->setting);
+        
+        if (temp == NULL)
+        {
+            full = uc_copy(buf);
+        }
+        else
+        {
+            size_t full_size = (strlen(buf) + strlen(temp) + 1) * sizeof(unichar_t);
+            full = malloc(full_size);
+            uc_strncpy(full, buf, full_size);
+
+            size_t str_size = u_strlen(full);
+            utf82u_strncpy(full + str_size, temp, full_size - str_size);
+
+            free(temp);
+        }
+        ti[i].text = full;
+        ti[i].userdata = ms;
     }
-return( ti );
+    return(ti);
 }
 
-static GTextInfo *Pref_FeaturesList(MacFeat *all) {
-    GTextInfo *ti;
+static GTextInfo* Pref_FeaturesList(MacFeat* all)
+{
+    GTextInfo* ti;
     int i;
-    MacFeat *mf;
-    char *temp;
-    unichar_t *full;
+    MacFeat* mf;
+    char* temp;
+    unichar_t* full;
     char buf[20];
 
-    for ( i=0, mf=all; mf!=NULL; mf=mf->next, ++i );
-    ti = calloc(i+1,sizeof( GTextInfo ));
+    for (i = 0, mf = all; mf != NULL; mf = mf->next, ++i);
+    ti = calloc(i + 1, sizeof(GTextInfo));
 
-    for ( i=0, mf=all; mf!=NULL; mf=mf->next, ++i ) {
-	temp = PickNameFromMacName(mf->featname);
-	sprintf(buf,"%3d ", mf->feature);
-	if ( temp==NULL )
-	    full = uc_copy(buf);
-	else {
-	    full = malloc((strlen(buf)+strlen(temp)+1)*sizeof(unichar_t));
-	    uc_strcpy(full,buf);
-	    utf82u_strcpy(full+u_strlen(full),temp);
-	    free(temp);
-	}
-	ti[i].text = full;
-	ti[i].userdata = mf;
+    for (i = 0, mf = all; mf != NULL; mf = mf->next, ++i)
+    {
+        temp = PickNameFromMacName(mf->featname);
+
+        snprintf(buf, sizeof(buf), "%3d ", mf->feature);
+
+        if (temp == NULL)
+            full = uc_copy(buf);
+        else
+        {
+            size_t full_size = (strlen(buf) + strlen(temp) + 1) * sizeof(unichar_t);
+            full = malloc(full_size);
+            uc_strncpy(full, buf, full_size);
+
+            size_t str_size = u_strlen(full);
+            utf82u_strncpy(full + str_size, temp, full_size - str_size);
+            free(temp);
+        }
+        ti[i].text = full;
+        ti[i].userdata = mf;
     }
-return( ti );
+    return(ti);
 }
 
 struct namedata {
@@ -697,95 +730,122 @@ struct setdata {
     GGadget *settinglist;		/* Not in this dlg, in the dlg which created us */
 };
 
-static int set_e_h(GWindow gw, GEvent *event) {
-    struct setdata *sd = GDrawGetUserData(gw);
+static int set_e_h(GWindow gw, GEvent* event)
+{
+    struct setdata* sd = GDrawGetUserData(gw);
     int i;
     int32 len;
-    GTextInfo **ti;
-    const unichar_t *ret1; unichar_t *end, *res; char *temp;
+    GTextInfo** ti;
+    const unichar_t* ret1; unichar_t* end, * res; char* temp;
     int val1, val2;
     char buf[20];
-    struct macsetting *ms;
+    struct macsetting* ms;
 
-    if ( event->type==et_close ) {
-	sd->done = true;
-	MacNameListFree(GGadgetGetUserData(GWidgetGetControl(sd->gw,CID_NameList)));
-	if ( sd->index==-1 )
-	    MacSettingListFree(sd->changing);
-    } else if ( event->type==et_char ) {
-	if ( event->u.chr.keysym == GK_F1 || event->u.chr.keysym == GK_Help ) {
-	    help("ui/dialogs/prefs.html", "#prefs-settings");
-return( true );
-	}
-return( false );
-    } else if ( event->type==et_controlevent && event->u.control.subtype == et_buttonactivate ) {
-	if ( GGadgetGetCid(event->u.control.g) == CID_Cancel ) {
-	    sd->done = true;
-	    MacNameListFree(GGadgetGetUserData(GWidgetGetControl(sd->gw,CID_NameList)));
-	    if ( sd->index==-1 )
-		MacSettingListFree(sd->changing);
-	} else if ( GGadgetGetCid(event->u.control.g) == CID_OK ) {
-	    ret1 = _GGadgetGetTitle(GWidgetGetControl(sd->gw,CID_Id));
-	    val1 = u_strtol(ret1,&end,10);
-	    if ( *end!='\0' ) {
-		ff_post_error(_("Bad Number"),_("Bad Number"));
-return( true );
-	    }
-	    ti = GGadgetGetList(sd->settinglist,&len);
-	    for ( i=0; i<len; ++i ) if ( i!=sd->index ) {
-		val2 = ((struct macsetting *) (ti[i]->userdata))->setting;
-		if ( val2==val1 ) {
-		    ff_post_error(_("This setting is already used"),_("This setting is already used"));
-return( true );
-		}
-	    }
-	    MacNameListFree(sd->changing->setname);
-	    sd->changing->setname = GGadgetGetUserData(GWidgetGetControl(sd->gw,CID_NameList));
-	    sd->changing->setting = val1;
-	    sd->changing->initially_enabled = GGadgetIsChecked(GWidgetGetControl(sd->gw,CID_On));
-	    if ( sd->changing->initially_enabled &&
-		    GGadgetIsChecked(GWidgetGetControl(GGadgetGetWindow(sd->settinglist),CID_Mutex)) ) {
-		/* If the mutually exclusive bit were set in the feature then */
-		/*  turning this guy on, means we must turn others off */
-		struct macsetting *test;
-		for ( test = sd->all; test!=NULL; test = test->next )
-		    if ( test!=sd->changing )
-			test->initially_enabled = false;
-	    }
-
-	    sprintf(buf,"%3d ", val1);
-	    temp = PickNameFromMacName(sd->changing->setname);
-	    len = strlen(temp);
-	    res = malloc( (strlen(buf)+len+3)*sizeof(unichar_t) );
-	    uc_strcpy(res,buf);
-	    utf82u_strcpy(res+u_strlen(res),temp);
-	    free(temp);
-
-	    if ( sd->index==-1 )
-		GListAddStr(sd->settinglist,res,sd->changing);
-	    else {
-		GListReplaceStr(sd->settinglist,sd->index,res,sd->changing);
-		if ( sd->all==sd->changing )
-		    sd->all = sd->changing->next;
-		else {
-		    for ( ms=sd->all ; ms!=NULL && ms->next!=sd->changing; ms=ms->next );
-		    if ( ms!=NULL ) ms->next = sd->changing->next;
-		}
-	    }
-	    sd->changing->next = NULL;
-	    if ( sd->all==NULL || sd->changing->setting<sd->all->setting ) {
-		sd->changing->next = sd->all;
-		sd->all = sd->changing;
-	    } else {
-		for ( ms=sd->all; ms->next!=NULL && ms->next->setting<sd->changing->setting; ms=ms->next );
-		sd->changing->next = ms->next;
-		ms->next = sd->changing;
-	    }
-	    GGadgetSetUserData(sd->settinglist,sd->all);
-	    sd->done = true;
-	}
+    if (event->type == et_close)
+    {
+        sd->done = true;
+        MacNameListFree(GGadgetGetUserData(GWidgetGetControl(sd->gw, CID_NameList)));
+        if (sd->index == -1)
+            MacSettingListFree(sd->changing);
     }
-return( true );
+    else if (event->type == et_char)
+    {
+        if (event->u.chr.keysym == GK_F1 || event->u.chr.keysym == GK_Help)
+        {
+            help("ui/dialogs/prefs.html", "#prefs-settings");
+            return(true);
+        }
+        return(false);
+    }
+    else if (event->type == et_controlevent && event->u.control.subtype == et_buttonactivate)
+    {
+        if (GGadgetGetCid(event->u.control.g) == CID_Cancel)
+        {
+            sd->done = true;
+            MacNameListFree(GGadgetGetUserData(GWidgetGetControl(sd->gw, CID_NameList)));
+            if (sd->index == -1)
+                MacSettingListFree(sd->changing);
+        }
+        else if (GGadgetGetCid(event->u.control.g) == CID_OK)
+        {
+            ret1 = _GGadgetGetTitle(GWidgetGetControl(sd->gw, CID_Id));
+            val1 = u_strtol(ret1, &end, 10);
+            if (*end != '\0')
+            {
+                ff_post_error(_("Bad Number"), _("Bad Number"));
+                return(true);
+            }
+            ti = GGadgetGetList(sd->settinglist, &len);
+            for (i = 0; i < len; ++i) if (i != sd->index)
+            {
+                val2 = ((struct macsetting*) (ti[i]->userdata))->setting;
+                if (val2 == val1)
+                {
+                    ff_post_error(_("This setting is already used"), _("This setting is already used"));
+                    return(true);
+                }
+            }
+            MacNameListFree(sd->changing->setname);
+            sd->changing->setname = GGadgetGetUserData(GWidgetGetControl(sd->gw, CID_NameList));
+            sd->changing->setting = val1;
+            sd->changing->initially_enabled = GGadgetIsChecked(GWidgetGetControl(sd->gw, CID_On));
+            if (sd->changing->initially_enabled &&
+                GGadgetIsChecked(GWidgetGetControl(GGadgetGetWindow(sd->settinglist), CID_Mutex)))
+            {
+                /* If the mutually exclusive bit were set in the feature then */
+                /*  turning this guy on, means we must turn others off */
+                struct macsetting* test;
+                for (test = sd->all; test != NULL; test = test->next)
+                    if (test != sd->changing)
+                        test->initially_enabled = false;
+            }
+
+            snprintf(buf, sizeof(buf), "%3d ", val1);
+
+            temp = PickNameFromMacName(sd->changing->setname);
+            len = strlen(temp);
+
+            size_t res_size = strlen(buf) + len + 3;
+
+            res = malloc(res_size * sizeof(unichar_t));
+
+            uc_strncpy(res, buf, res_size);
+
+            size_t str_size = u_strlen(res);
+            utf82u_strncpy(res + str_size, temp, res_size - str_size);
+
+            free(temp);
+
+            if (sd->index == -1)
+                GListAddStr(sd->settinglist, res, sd->changing);
+            else
+            {
+                GListReplaceStr(sd->settinglist, sd->index, res, sd->changing);
+                if (sd->all == sd->changing)
+                    sd->all = sd->changing->next;
+                else
+                {
+                    for (ms = sd->all; ms != NULL && ms->next != sd->changing; ms = ms->next);
+                    if (ms != NULL) ms->next = sd->changing->next;
+                }
+            }
+            sd->changing->next = NULL;
+            if (sd->all == NULL || sd->changing->setting < sd->all->setting)
+            {
+                sd->changing->next = sd->all;
+                sd->all = sd->changing;
+            }
+            else
+            {
+                for (ms = sd->all; ms->next != NULL && ms->next->setting < sd->changing->setting; ms = ms->next);
+                sd->changing->next = ms->next;
+                ms->next = sd->changing;
+            }
+            GGadgetSetUserData(sd->settinglist, sd->all);
+            sd->done = true;
+        }
+    }
+    return(true);
 }
 
 static char *AskSetting(struct macsetting *changing,struct macsetting *all,
@@ -829,7 +889,7 @@ static char *AskSetting(struct macsetting *changing,struct macsetting *all,
     gcd[0].gd.flags = gg_enabled|gg_visible;
     gcd[0].creator = GLabelCreate;
 
-    sprintf( buf, "%d", changing->setting );
+    snprintf( buf, sizeof(buf), "%d", changing->setting );
     label[1].text = (unichar_t *) buf;
     label[1].text_is_1byte = true;
     gcd[1].gd.label = &label[1];
@@ -1055,12 +1115,19 @@ return( true );
 		}
 	    }
 
-	    sprintf(buf,"%3d ", val1);
+	    snprintf(buf, sizeof(buf), "%3d ", val1);
+
 	    temp = PickNameFromMacName(fd->changing->featname);
 	    len = strlen(temp);
-	    res = malloc( (strlen(buf)+len+3)*sizeof(unichar_t) );
-	    uc_strcpy(res,buf);
-	    utf82u_strcpy(res+u_strlen(res),temp);
+
+        size_t res_size = (strlen(buf) + len + 3);
+	    res = malloc(res_size * sizeof(unichar_t) );
+
+	    uc_strncpy(res,buf, res_size);
+
+        size_t str_size = u_strlen(res);
+        utf82u_strncpy(res + str_size, temp, res_size - str_size);
+
 	    free(temp);
 
 	    if ( fd->index==-1 )
@@ -1130,7 +1197,7 @@ static char *AskFeature(MacFeat *changing,MacFeat *all,GGadget *list, int index)
     gcd[0].gd.flags = gg_enabled|gg_visible;
     gcd[0].creator = GLabelCreate;
 
-    sprintf( buf, "%d", changing->feature );
+    snprintf( buf, sizeof(buf), "%d", changing->feature );
     label[1].text = (unichar_t *) buf;
     label[1].text_is_1byte = true;
     gcd[1].gd.label = &label[1];

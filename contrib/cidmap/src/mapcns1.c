@@ -124,29 +124,29 @@ int main(int argc, char **argv) {
 	maxcid = cid;
 	if ( (cid>=17408 && cid<=17599) || cid==17604 || cid==17605 ) {
 	    if ( cid>=17408 && cid<=17505 )		/* proportional */
-		sprintf( buffer,"CNS1.%d.vert", cid-17408+1 );
+		snprintf( buffer, sizeof(buffer), "CNS1.%d.vert", cid-17408+1 );
 	    else if ( cid>=17506 && cid<=17599 )	/* Half width */
-		sprintf( buffer,"CNS1.%d.vert", cid-17506+13648 );
+		snprintf( buffer, sizeof(buffer), "CNS1.%d.vert", cid-17506+13648 );
 	    else if ( cid==17604 )
-		strcpy( buffer, "CNS1.17601.vert" );
+		strncpy( buffer, "CNS1.17601.vert", sizeof(buffer));
 	    else if ( cid==17605 )
-		strcpy( buffer, "CNS1.17603.vert" );
+		strncpy( buffer, "CNS1.17603.vert", sizeof(buffer));
 	    nonuni_names[cid] = strdup(buffer);
 	/* Adobe's CNS cids have the rotated and non-rotated forms intermixed */
 	} else if ( (cid>=120 && cid<=127 ) && (cid&1) ) {
-	    sprintf( buffer,"CNS1.%d.vert", cid-1 );
+	    snprintf( buffer, sizeof(buffer), "CNS1.%d.vert", cid-1 );
 	    nonuni_names[cid] = strdup(buffer);
 	} else if ( (cid>=128 && cid<=159) && (cid&2) ) {
-	    sprintf( buffer,"CNS1.%d.vert", cid-2 );
+	    snprintf( buffer, sizeof(buffer), "CNS1.%d.vert", cid-2 );
 	    nonuni_names[cid] = strdup(buffer);
 	} else if ( cid>=13648 && cid<=13741 ) {
-	    sprintf( buffer, "uni%04X.hw", (unsigned int)(cid-13648+' ') );
+	    snprintf( buffer, sizeof(buffer), "uni%04X.hw", (unsigned int)(cid-13648+' ') );
 	    nonuni_names[cid] = strdup(buffer);
 	} else if ( cid==13742 ) {
-	    strcpy( buffer, "uni203E.hw" );
+	    strncpy( buffer, "uni203E.hw", sizeof(buffer));
 	} else if ( uni==-1 ) {
     continue;
-	    sprintf( buffer,"CNS1.%d", cid );
+	    snprintf( buffer, sizeof(buffer), "CNS1.%d", cid );
 	    nonuni_names[cid] = strdup(buffer);
 	} else if ( uni>=VERTMARK ) {
 	    /* rotated */
@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
 	    used[uni] = 1;
 	    cid_2_unicode[cid] = uni;
 	} else {
-	    sprintf( buffer, "uni%04X.dup%d", (unsigned int)(uni), ++used[uni] );
+	    snprintf( buffer, sizeof(buffer), "uni%04X.dup%d", (unsigned int)(uni), ++used[uni] );
 	    nonuni_names[cid] = strdup(buffer);
 	}
 	max = cid;
@@ -165,9 +165,9 @@ int main(int argc, char **argv) {
 	    if ( cid_2_unicode[j] == cid_2_rotunicode[i] )
 	break;
 	if ( j==maxcid )
-	    sprintf( buffer, "uni%04X.vert", (unsigned int)(cid_2_rotunicode[i]) );
+	    snprintf( buffer, sizeof(buffer), "uni%04X.vert", (unsigned int)(cid_2_rotunicode[i]) );
 	else
-	    sprintf( buffer, "CNS1.%d.vert", j);
+	    snprintf( buffer, sizeof(buffer), "CNS1.%d.vert", j);
 	nonuni_names[i] = strdup(buffer);
     }
 

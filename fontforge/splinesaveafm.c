@@ -152,7 +152,7 @@ return( 0 );
 			sscanf( pt, "; L %40s %40s", second, lig)==2 ) {
 		    sc1 = SFGetChar(sf,-1,lig);
 		    if ( sc1!=NULL ) {
-			sprintf( buf2, "%s %s", name, second);
+			snprintf( buf2, sizeof(buf2), "%s %s", name, second);
 			for ( liga=sc1->possub; liga!=NULL; liga=liga->next ) {
 			    if ( liga->type == pst_ligature && strcmp(liga->u.lig.components,buf2)==0 )
 			break;
@@ -1086,14 +1086,15 @@ return( true );
 return( false );
 }
 
-int SCWorthOutputting(SplineChar *sc) {
-return( sc!=NULL &&
-	( SCDrawsSomething(sc) || sc->widthset || sc->anchor!=NULL ||
+int SCWorthOutputting(SplineChar* sc)
+{
+	return(sc != NULL &&
+		(SCDrawsSomething(sc) || sc->widthset || sc->anchor != NULL ||
 #if HANYANG
-	    sc->compositionunit ||
+			sc->compositionunit ||
 #endif
-	    sc->dependents!=NULL /*||
-	    sc->width!=sc->parent->ascent+sc->parent->descent*/ ) );
+			sc->dependents != NULL /*||
+			sc->width!=sc->parent->ascent+sc->parent->descent*/));
 }
 
 int SCHasData(SplineChar *sc) {
@@ -1348,38 +1349,61 @@ static void sortunis(int *unicode,int u) {
     }
 }
 
-static char *NameFrom(struct cc_data *this,int *unicode,int u,int uni) {
-    char *ret, *pt;
-    char buffer[60];
-    struct cc_accents *cca;
-    int i,len;
+static char* NameFrom(struct cc_data* this, int* unicode, int u, int uni)
+{
+	char* ret, * pt;
+	char buffer[60];
+	struct cc_accents* cca;
+	int i, len;
+	int buf_size = 0;
 
-    if ( uni!=-1 )
-return( copy( StdGlyphName(buffer,uni,ui_none,NULL)) );
-    if ( u!=-1 && (unicode[0]<0x370 || unicode[0]>0x3ff) ) {
-	/* Don't use the unicode decomposition to get a name for greek */
-	/*  glyphs. We'd get acute for tonos, etc. */
-	ret = malloc(4+4*u);
-	strcpy(ret,"uni");
-	pt = ret+3;
-	for ( i=0; i<u; ++i ) {
-	    sprintf( pt, "%04X", unicode[i] );
-	    pt += 4;
+	if (uni != -1)
+		return(copy(StdGlyphName(buffer, sizeof(buffer), uni, ui_none, NULL)));
+	if (u != -1 && (unicode[0] < 0x370 || unicode[0]>0x3ff))
+	{
+		/* Don't use the unicode decomposition to get a name for greek */
+		/*  glyphs. We'd get acute for tonos, etc. */
+
+		buf_size = 4 + 4 * u;
+		ret = malloc(buf_size);
+		strcpy(ret, "uni");
+		pt = ret + 3;
+		buf_size -= 3;
+
+		for (i = 0; i < u; ++i)
+		{
+			snprintf(pt, buf_size, "%04X", unicode[i]);
+			pt += 4;
+			buf_size -= 4;
+		}
+		return(ret);
 	}
-return( ret );
-    }
-    len = strlen( this->base->name ) +1;
-    for ( cca = this->accents; cca!=NULL; cca = cca->next )
-	len += strlen( cca->accent->name ) +1;
-    ret = malloc(len);
-    strcpy(ret,this->base->name);
-    pt = ret + strlen(ret);
-    for ( cca = this->accents; cca!=NULL; cca = cca->next ) {
-	*pt++ = '_';
-	strcpy(pt,cca->accent->name);
-	pt = pt + strlen(pt);
-    }
-return( ret );
+
+	len = strlen(this->base->name) + 1;
+	for (cca = this->accents; cca != NULL; cca = cca->next)
+	{
+		len += strlen(cca->accent->name) + 1;
+	}
+	
+	buf_size = len;
+	ret = malloc(len);
+	strncpy(ret, this->base->name, len);
+
+	int str_size = strlen(ret);
+	pt = ret + str_size;
+	buf_size -= str_size;
+
+	for (cca = this->accents; cca != NULL; cca = cca->next)
+	{
+		*pt++ = '_';
+		buf_size--;
+
+		strncpy(pt, cca->accent->name, buf_size);
+		int str_size = strlen(pt);
+		pt = pt + str_size;
+		buf_size -= str_size;
+	}
+	return(ret);
 }
 
 static int AfmBuildCCName(struct cc_data *this,struct cc_container *cc) {
@@ -1944,10 +1968,12 @@ static void LigatureClosure(SplineFont *sf) {
 			*lig = *l->lig;
 			lig->temporary = true;
 			lig->next = NULL;
-			lig->u.lig.components = malloc(strlen(sublig->name)+
-					strlen(l->components->next->sc->name)+
-					2);
-			sprintf(lig->u.lig.components,"%s %s",sublig->name,
+
+			int buf_size = strlen(sublig->name) +
+				strlen(l->components->next->sc->name) +
+				2;
+			lig->u.lig.components = malloc(buf_size);
+			snprintf(lig->u.lig.components, buf_size, "%s %s",sublig->name,
 				l->components->next->sc->name);
 			l3 = malloc(sizeof(LigList));
 			l3->lig = lig;

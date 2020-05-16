@@ -239,7 +239,7 @@ void OutlineDlg(FontView *fv, CharView *cv,MetricsView *mv,int isinline) {
 	gcd[i++].creator = GLabelCreate;
 	harray[k++] = &gcd[i-1];
 
-	sprintf( buffer, "%g", def_outline_width );
+	snprintf( buffer, sizeof(buffer), "%g", def_outline_width );
 	label[i].text = (unichar_t *) buffer;
 	label[i].text_is_1byte = true;
 	gcd[i].gd.label = &label[i];
@@ -260,7 +260,7 @@ void OutlineDlg(FontView *fv, CharView *cv,MetricsView *mv,int isinline) {
 	    gcd[i++].creator = GLabelCreate;
 	    harray[k++] = &gcd[i-1];
 
-	    sprintf( buffer2, "%g", def_gap_width );
+	    snprintf( buffer2, sizeof(buffer2), "%g", def_gap_width );
 	    label[i].text = (unichar_t *) buffer2;
 	    label[i].text_is_1byte = true;
 	    gcd[i].gd.label = &label[i];
@@ -431,7 +431,7 @@ void ShadowDlg(FontView *fv, CharView *cv,MetricsView *mv,int wireframe) {
 	gcd[i++].creator = GLabelCreate;
 	hvarray[k++] = &gcd[i-1];
 
-	sprintf( buffer, "%g", def_outline_width );
+	snprintf( buffer, sizeof(buffer), "%g", def_outline_width );
 	label[i].text = (unichar_t *) buffer;
 	label[i].text_is_1byte = true;
 	gcd[i].gd.label = &label[i];
@@ -449,7 +449,7 @@ void ShadowDlg(FontView *fv, CharView *cv,MetricsView *mv,int wireframe) {
 	gcd[i++].creator = GLabelCreate;
 	hvarray[k++] = &gcd[i-1];
 
-	sprintf( buffer2, "%g", def_shadow_len );
+	snprintf( buffer2, sizeof(buffer2), "%g", def_shadow_len );
 	label[i].text = (unichar_t *) buffer2;
 	label[i].text_is_1byte = true;
 	gcd[i].gd.label = &label[i];
@@ -467,7 +467,7 @@ void ShadowDlg(FontView *fv, CharView *cv,MetricsView *mv,int wireframe) {
 	gcd[i++].creator = GLabelCreate;
 	hvarray[k++] = &gcd[i-1];
 
-	sprintf( buffer3, "%g", def_sun_angle );
+	snprintf( buffer3, sizeof(buffer3), "%g", def_sun_angle );
 	label[i].text = (unichar_t *) buffer3;
 	label[i].text_is_1byte = true;
 	gcd[i].gd.label = &label[i];

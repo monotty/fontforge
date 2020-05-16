@@ -268,14 +268,16 @@ return;
 	y = 0;
     t = tan(tilt);
     if ( t<.000001 && t>-.000001 )
-	sprintf(buf,"inf%sinf", coord_sep);
+	snprintf(buf, sizeof(buf), "inf%sinf", coord_sep);
     else {
 	vp = dv/t;
 	x -= sin(dir)*vp;
 	y += cos(dir)*vp;
-	sprintf(buf,"%g%s%g", x, coord_sep, y );
+	snprintf(buf, sizeof(buf), "%g%s%g", x, coord_sep, y );
     }
-    uc_strcpy(ubuf,buf);
+    
+    uc_strncpy(ubuf,buf, sizeof(buf));
+    
     GGadgetSetTitle( GWidgetGetControl(d->gw,CID_Vanish), ubuf );
 }
 
@@ -371,7 +373,7 @@ int PointOfViewDlg(struct pov_data *pov, SplineFont *sf, int flags) {
     boxes[2].creator = GHBoxCreate;
     varray[l][0] = &boxes[2];
 
-    sprintf( xval, "%g", rint(pov->x));
+    snprintf( xval, sizeof(xval), "%g", rint(pov->x));
     label[k].text = (unichar_t *) xval;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -407,7 +409,7 @@ int PointOfViewDlg(struct pov_data *pov, SplineFont *sf, int flags) {
     boxes[3].creator = GHBoxCreate;
     varray[l][0] = &boxes[3];
 
-    sprintf( yval, "%g", rint(pov->y));
+    snprintf( yval, sizeof(yval), "%g", rint(pov->y));
     label[k].text = (unichar_t *) yval;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -426,7 +428,7 @@ int PointOfViewDlg(struct pov_data *pov, SplineFont *sf, int flags) {
     gcd[k++].creator = GLabelCreate;
     varray[l][0] = &gcd[k-1];
 
-    sprintf( zval, "%g", rint(pov->z));
+    snprintf( zval, sizeof(zval), "%g", rint(pov->z));
     label[k].text = (unichar_t *) zval;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -445,7 +447,7 @@ int PointOfViewDlg(struct pov_data *pov, SplineFont *sf, int flags) {
     gcd[k++].creator = GLabelCreate;
     varray[l][0] = &gcd[k-1];
 
-    sprintf( dval, "%g", rint(pov->d));
+    snprintf( dval, sizeof(dval), "%g", rint(pov->d));
     label[k].text = (unichar_t *) dval;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -464,7 +466,7 @@ int PointOfViewDlg(struct pov_data *pov, SplineFont *sf, int flags) {
     gcd[k++].creator = GLabelCreate;
     varray[l][0] = &gcd[k-1];
 
-    sprintf( tval, "%g", rint(pov->tilt*180/FF_PI));
+    snprintf( tval, sizeof(tval), "%g", rint(pov->tilt*180/FF_PI));
     label[k].text = (unichar_t *) tval;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -496,7 +498,7 @@ int PointOfViewDlg(struct pov_data *pov, SplineFont *sf, int flags) {
     gcd[k++].creator = GLabelCreate;
     varray[l][0] = &gcd[k-1];
 
-    sprintf( dirval, "%g", rint(pov->direction*180/FF_PI));
+    snprintf( dirval, sizeof(dirval), "%g", rint(pov->direction*180/FF_PI));
     label[k].text = (unichar_t *) dirval;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];

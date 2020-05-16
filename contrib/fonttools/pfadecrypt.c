@@ -424,7 +424,8 @@ exit(1);
 
 static void decryptagain(FILE *temp,FILE *out) {
     char rdtok[255];
-    strcpy(rdtok,"RD");
+    strncpy(rdtok,"RD", sizeof(rdtok));
+
     while ( glorpline(temp,out,rdtok));
 }
 
@@ -446,7 +447,7 @@ return;
     }
     if ( outputfile==NULL ) {
 	pt = strrchr(fontname,'/'); if ( pt==NULL ) pt = fontname; else ++pt;
-	sprintf( buffer,"%s.decrypt", pt);
+	snprintf( buffer, sizeof(buffer), "%s.decrypt", pt);
 	outputfile=buffer;
     }
     out = fopen(outputfile,"wb");

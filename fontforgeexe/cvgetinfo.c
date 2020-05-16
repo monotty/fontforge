@@ -168,9 +168,11 @@ static int GI_MatchPtChange(GGadget *g, GEvent *e) {
 	    if ( ttfFindPointInSC(ci->cv->b.sc,CVLayer((CharViewBase *) ci->cv),basept,&inbase,ci->rf)==-1 &&
 		    ttfFindPointInSC(ci->rf->sc,CVLayer((CharViewBase *) ci->cv),refpt,&inref,NULL)==-1 ) {
 		char buffer[40];
-		sprintf(buffer,"%g",(double) (inbase.x-inref.x));
+		
+		snprintf(buffer, sizeof(buffer), "%g",(double) (inbase.x-inref.x));
 		GGadgetSetTitle8(GWidgetGetControl(ci->gw,1004),buffer);
-		sprintf(buffer,"%g",(double) (inbase.y-inref.y));
+		
+		snprintf(buffer, sizeof(buffer), "%g",(double) (inbase.y-inref.y));
 		GGadgetSetTitle8(GWidgetGetControl(ci->gw,1005),buffer);
 	    }
 	}
@@ -329,7 +331,10 @@ static void RefGetInfo(CharView *cv, RefChar *ref) {
     GGadgetCreateData *varray[19], *hvarray[16], *harray1[6], *harray2[4],
 	    *harray3[7], *hvarray2[4][6];
     GTextInfo label[33];
-    char tbuf[6][40], bbbuf[4][40];
+
+	const int tb_buf_size = 40;
+    char tbuf[6][tb_buf_size], bbbuf[4][tb_buf_size];
+    //char tbuf[6][40], bbbuf[4][40];
     char basebuf[20], refbuf[20];
     char namebuf[100];
     char ubuf[40];
@@ -373,7 +378,7 @@ static void RefGetInfo(CharView *cv, RefChar *ref) {
 	j = 1;
 
 	if ( ref->sc->unicodeenc!=-1 ) {
-	    sprintf( ubuf, " Unicode: U+%04x", ref->sc->unicodeenc );
+	    snprintf( ubuf, sizeof(ubuf), " Unicode: U+%04x", ref->sc->unicodeenc );
 	    label[1].text = (unichar_t *) ubuf;
 	    label[1].text_is_1byte = true;
 	    gcd[1].gd.label = &label[1];
@@ -396,7 +401,7 @@ static void RefGetInfo(CharView *cv, RefChar *ref) {
 
 	for ( i=0; i<6; ++i ) {
 	    if ( !(i&1) ) hvarray[5*(i/2)] = GCD_Glue;
-	    sprintf(tbuf[i],"%g", (double) ref->transform[i]);
+	    snprintf(tbuf[i], tb_buf_size, "%g", (double) ref->transform[i]);
 	    label[i+j].text = (unichar_t *) tbuf[i];
 	    label[i+j].text_is_1byte = true;
 	    gcd[i+j].gd.label = &label[i+j];
@@ -461,7 +466,7 @@ static void RefGetInfo(CharView *cv, RefChar *ref) {
 	gcd[6+j++].creator = GLabelCreate;
 
 	if ( ref->point_match ) {
-	    sprintf(basebuf,"%d", ref->match_pt_base);
+	    snprintf(basebuf, sizeof(basebuf), "%d", ref->match_pt_base);
 	    label[6+j].text = (unichar_t *) basebuf;
 	    label[6+j].text_is_1byte = true;
 	    gcd[6+j].gd.label = &label[6+j];
@@ -484,7 +489,7 @@ static void RefGetInfo(CharView *cv, RefChar *ref) {
 	gcd[6+j++].creator = GLabelCreate;
 
 	if ( ref->point_match ) {
-	    sprintf(refbuf,"%d", ref->match_pt_ref);
+	    snprintf(refbuf, sizeof(refbuf), "%d", ref->match_pt_ref);
 	    label[6+j].text = (unichar_t *) refbuf;
 	    label[6+j].text_is_1byte = true;
 	    gcd[6+j].gd.label = &label[6+j];
@@ -553,7 +558,7 @@ static void RefGetInfo(CharView *cv, RefChar *ref) {
 	hvarray2[2][1] = &gcd[6+j++];
 
 	for ( i=0; i<4; ++i ) {
-	    sprintf(bbbuf[i],"%g", (double) ((&ref->bb.minx)[i]));
+	    snprintf(bbbuf[i], tb_buf_size, "%g", (double) ((&ref->bb.minx)[i]));
 	    label[6+j].text = (unichar_t *) bbbuf[i];
 	    label[6+j].text_is_1byte = true;
 	    gcd[6+j].gd.label = &label[6+j];
@@ -679,7 +684,7 @@ static void ImgGetInfo(CharView *cv, ImageList *img) {
 	memset(&gcd,0,sizeof(gcd));
 	memset(&label,0,sizeof(label));
 
-	sprintf( posbuf, _("Image at:      (%.0f,%.0f)"), (double) img->xoff,
+	snprintf( posbuf, sizeof(posbuf), _("Image at:      (%.0f,%.0f)"), (double) img->xoff,
 		(double) (img->yoff-GImageGetHeight(img->image)*img->yscale));
 	label[0].text = (unichar_t *) posbuf;
 	label[0].text_is_1byte = true;
@@ -689,7 +694,7 @@ static void ImgGetInfo(CharView *cv, ImageList *img) {
 	gcd[0].creator = GLabelCreate;
 	varray[0] = &gcd[0]; varray[1] = NULL;
 
-	sprintf( scalebuf, _("Scaled by:    (%.2f,%.2f)"), (double) img->xscale, (double) img->yscale );
+	snprintf( scalebuf, sizeof(scalebuf), _("Scaled by:    (%.2f,%.2f)"), (double) img->xscale, (double) img->yscale );
 	label[1].text = (unichar_t *) scalebuf;
 	label[1].text_is_1byte = true;
 	gcd[1].gd.label = &label[1];
@@ -698,7 +703,7 @@ static void ImgGetInfo(CharView *cv, ImageList *img) {
 	gcd[1].creator = GLabelCreate;
 	varray[2] = &gcd[1]; varray[3] = NULL;
 
-	sprintf( sizebuf, _("Image Size:  %d x %d  pixels"), (int) base->width, (int) base->height );
+	snprintf( sizebuf, sizeof(sizebuf), _("Image Size:  %d x %d  pixels"), (int) base->width, (int) base->height );
 	label[2].text = (unichar_t *) sizebuf;
 	label[2].text_is_1byte = true;
 	gcd[2].gd.label = &label[2];
@@ -885,7 +890,7 @@ static void AI_DisplayClass(GIData *ci,AnchorPoint *ap) {
 static void AI_DisplayIndex(GIData *ci,AnchorPoint *ap) {
     char buffer[12];
 
-    sprintf(buffer,"%d", ap->lig_index );
+    snprintf(buffer, sizeof(buffer), "%d", ap->lig_index );
 
     GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_LigIndex),buffer);
 }
@@ -927,20 +932,20 @@ return;
     for ( aps=ci->sc->anchor; aps!=NULL; aps=aps->next )
 	aps->selected = false;
     ap->selected = true;
-    sprintf(val,"%g",(double) ap->me.x);
+    snprintf(val, sizeof(val), "%g",(double) ap->me.x);
     uc_strcpy(uval,val);
     GGadgetSetTitle(GWidgetGetControl(ci->gw,CID_X),uval);
-    sprintf(val,"%g",(double) ap->me.y);
+    snprintf(val, sizeof(val), "%g",(double) ap->me.y);
     uc_strcpy(uval,val);
     GGadgetSetTitle(GWidgetGetControl(ci->gw,CID_Y),uval);
-    sprintf(val,"%d",ap->type==at_baselig?ap->lig_index:0);
+    snprintf(val, sizeof(val), "%d",ap->type==at_baselig?ap->lig_index:0);
     uc_strcpy(uval,val);
     GGadgetSetTitle(GWidgetGetControl(ci->gw,CID_LigIndex),uval);
     GGadgetSetEnabled(GWidgetGetControl(ci->gw,CID_LigIndex),ap->type==at_baselig);
     GGadgetSetEnabled(GWidgetGetControl(ci->gw,CID_Next),ap->next!=NULL);
     GGadgetSetEnabled(GWidgetGetControl(ci->gw,CID_Prev),ci->sc->anchor!=ap);
     if ( ap->has_ttf_pt )
-	sprintf(val,"%d",ap->ttf_pt_index);
+	snprintf(val, sizeof(val), "%d",ap->ttf_pt_index);
     else
 	val[0] = '\0';
     GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_MatchPt),val);
@@ -1157,7 +1162,7 @@ return( true );
 	if ( index>max+10 ) {
 	    char buf[20];
 	    ff_post_error(_("Too Big"),_("This index is much larger than the closest neighbor"));
-	    sprintf(buf,"%d", max+1);
+	    snprintf(buf, sizeof(buf), "%d", max+1);
 	    GGadgetSetTitle8(g,buf);
 	    index = max+1;
 	}
@@ -1289,9 +1294,10 @@ static int AI_MatchChanged(GGadget *g, GEvent *e) {
 	    pt = u_strtol(t1,&end,10);
 	    if ( *end=='\0' && ttfFindPointInSC(ci->cv->b.sc,CVLayer((CharViewBase *) ci->cv),pt,&here,NULL)==-1 ) {
 		char buffer[40];
-		sprintf(buffer,"%g",(double) here.x);
+		snprintf(buffer, sizeof(buffer), "%g",(double) here.x);
 		GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_X),buffer);
-		sprintf(buffer,"%g",(double) here.y);
+		
+		snprintf(buffer, sizeof(buffer), "%g",(double) here.y);
 		GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_Y),buffer);
 		ap->me = here;
 		ap->has_ttf_pt = true;
@@ -1897,59 +1903,79 @@ return( false );
 return( true );
 }
 
-static void mysprintf( char *buffer, char *format, real v) {
-    char *pt;
+static void my_s_printf(char* buffer, size_t buffer_size, char* format, real v)
+{
+	char* pt;
 
-    if ( v<.0001 && v>-.0001 && v!=0 )
-	sprintf( buffer, "%e", (double) v );
-    else if ( v<1 && v>0 )
-	sprintf( buffer, "%f", (double) v );
-    else if ( v<0 && v>-1 )
-	sprintf( buffer, "%.5f", (double) v );
-    else
-	sprintf( buffer, format, (double) v );
-    pt = buffer + strlen(buffer);
-    while ( pt>buffer && pt[-1]=='0' )
-	*--pt = '\0';
-    if ( pt>buffer && pt[-1]=='.' )
-	pt[-1] = '\0';
+	if (v<.0001 && v>-.0001 && v != 0)
+	{
+		snprintf(buffer, buffer_size, "%e", (double)v);
+	}
+	else if (v < 1 && v>0)
+	{
+		snprintf(buffer, buffer_size, "%f", (double)v);
+	}
+	else if (v<0 && v>-1)
+	{
+		snprintf(buffer, buffer_size, "%.5f", (double)v);
+	}
+	else
+	{
+		snprintf(buffer, buffer_size, format, (double)v);
+	}
+
+	pt = buffer + strlen(buffer);
+	while (pt > buffer && pt[-1] == '0')
+	{
+		*--pt = '\0';
+	}
+
+	if (pt > buffer && pt[-1] == '.')
+	{
+		pt[-1] = '\0';
+	}
 }
 
-static void mysprintf2( char *buffer, real v1, real v2) {
+static void my_s_printf2( char *buffer, size_t buffer_size, real v1, real v2) {
     char *pt;
 
-    mysprintf(buffer,"%.2f", v1);
-    pt = buffer+strlen(buffer);
+    my_s_printf(buffer, buffer_size, "%.2f", v1);
+
+    pt = buffer + strlen(buffer);
+
     *pt++ = ',';
-    mysprintf(pt,"%.2f", v2);
+
+    my_s_printf(pt, buffer_size, "%.2f", v2);
 }
 
 static void PIFillup(GIData *ci, int except_cid) {
-    char buffer[51];
+	// possible bug: buffer overflow
+    //char buffer[51];
+    char buffer[151];
     double dx, dy;
     double kappa, kappa2;
     int emsize;
 
-    mysprintf(buffer, "%.2f", ci->cursp->me.x );
+    my_s_printf(buffer, sizeof(buffer), "%.2f", ci->cursp->me.x );
     if ( except_cid!=CID_BaseX )
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_BaseX),buffer);
 
-    mysprintf(buffer, "%.2f", ci->cursp->me.y );
+    my_s_printf(buffer, sizeof(buffer), "%.2f", ci->cursp->me.y );
     if ( except_cid!=CID_BaseY )
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_BaseY),buffer);
 
     dx = ci->cursp->nextcp.x-ci->cursp->me.x;
     dy = ci->cursp->nextcp.y-ci->cursp->me.y;
-    mysprintf(buffer, "%.2f", dx );
+    my_s_printf(buffer, sizeof(buffer), "%.2f", dx );
     if ( except_cid!=CID_NextXOff )
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_NextXOff),buffer);
 
-    mysprintf(buffer, "%.2f", dy );
+    my_s_printf(buffer, sizeof(buffer), "%.2f", dy );
     if ( except_cid!=CID_NextYOff )
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_NextYOff),buffer);
 
     if ( except_cid!=CID_NextR ) {
-	mysprintf(buffer, "%.2f", sqrt( dx*dx+dy*dy ));
+	my_s_printf(buffer, sizeof(buffer), "%.2f", sqrt( dx*dx+dy*dy ));
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_NextR),buffer);
     }
 
@@ -1958,27 +1984,27 @@ static void PIFillup(GIData *ci, int except_cid) {
 	    dx = ci->cursp->me.x-ci->cursp->prev->from->me.x;
 	    dy = ci->cursp->me.y-ci->cursp->prev->from->me.y;
 	}
-	mysprintf(buffer, "%.1f", atan2(dy,dx)*RAD2DEG);
+	my_s_printf(buffer, sizeof(buffer), "%.1f", atan2(dy,dx)*RAD2DEG);
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_NextTheta),buffer);
     }
 
-    mysprintf2(buffer, ci->cursp->nextcp.x,ci->cursp->nextcp.y );
+    my_s_printf2(buffer, sizeof(buffer), ci->cursp->nextcp.x,ci->cursp->nextcp.y );
     GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_NextPos),buffer);
 
     GGadgetSetChecked(GWidgetGetControl(ci->gw,CID_NextDef), ci->cursp->nextcpdef );
 
     dx = ci->cursp->prevcp.x-ci->cursp->me.x;
     dy = ci->cursp->prevcp.y-ci->cursp->me.y;
-    mysprintf(buffer, "%.2f", dx );
+    my_s_printf(buffer, sizeof(buffer), "%.2f", dx );
     if ( except_cid!=CID_PrevXOff )
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_PrevXOff),buffer);
 
-    mysprintf(buffer, "%.2f", dy );
+    my_s_printf(buffer, sizeof(buffer), "%.2f", dy );
     if ( except_cid!=CID_PrevYOff )
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_PrevYOff),buffer);
 
     if ( except_cid!=CID_PrevR ) {
-	mysprintf(buffer, "%.2f", sqrt( dx*dx+dy*dy ));
+	my_s_printf(buffer, sizeof(buffer), "%.2f", sqrt( dx*dx+dy*dy ));
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_PrevR),buffer);
     }
 
@@ -1987,30 +2013,30 @@ static void PIFillup(GIData *ci, int except_cid) {
 	    dx = ci->cursp->me.x-ci->cursp->next->to->me.x;
 	    dy = ci->cursp->me.y-ci->cursp->next->to->me.y;
 	}
-	mysprintf(buffer, "%.1f", atan2(dy,dx)*RAD2DEG);
+	my_s_printf(buffer, sizeof(buffer), "%.1f", atan2(dy,dx)*RAD2DEG);
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_PrevTheta),buffer);
     }
 
-    mysprintf2(buffer, ci->cursp->prevcp.x,ci->cursp->prevcp.y );
+    my_s_printf2(buffer, sizeof(buffer), ci->cursp->prevcp.x,ci->cursp->prevcp.y );
     GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_PrevPos),buffer);
 
 
-    mysprintf2(buffer, ci->cursp->me.x,ci->cursp->me.y );
+    my_s_printf2(buffer, sizeof(buffer), ci->cursp->me.x,ci->cursp->me.y );
     GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_BasePos),buffer);
 
-    mysprintf(buffer, "%.2f", ci->cursp->nextcp.x );
+    my_s_printf(buffer, sizeof(buffer), "%.2f", ci->cursp->nextcp.x );
     if ( except_cid!=CID_NextX )
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_NextX),buffer);
 
-    mysprintf(buffer, "%.2f", ci->cursp->nextcp.y );
+    my_s_printf(buffer, sizeof(buffer), "%.2f", ci->cursp->nextcp.y );
     if ( except_cid!=CID_NextY )
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_NextY),buffer);
 
-    mysprintf(buffer, "%.2f", ci->cursp->prevcp.x );
+    my_s_printf(buffer, sizeof(buffer), "%.2f", ci->cursp->prevcp.x );
     if ( except_cid!=CID_PrevX )
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_PrevX),buffer);
 
-    mysprintf(buffer, "%.2f", ci->cursp->prevcp.y );
+    my_s_printf(buffer, sizeof(buffer), "%.2f", ci->cursp->prevcp.y );
     if ( except_cid!=CID_PrevY )
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_PrevY),buffer);
 
@@ -2035,17 +2061,17 @@ static void PIFillup(GIData *ci, int except_cid) {
     /* If we normalize by the em-size, the curvature is often more */
     /*  readable */
     if ( kappa!=CURVATURE_ERROR )
-	sprintf( buffer, _("Curvature: %g"), kappa*emsize );
+	snprintf( buffer, sizeof(buffer), _("Curvature: %g"), kappa*emsize );
     else
-	strcpy( buffer, _("Curvature: ?"));
+	strncpy( buffer, _("Curvature: ?"), sizeof(buffer));
     GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_NextCurvature),buffer);
     if ( kappa2!=CURVATURE_ERROR )
-	sprintf( buffer, _("Curvature: %g"), kappa2*emsize );
+	snprintf( buffer, sizeof(buffer), _("Curvature: %g"), kappa2*emsize );
     else
 	strncpy( buffer, _("Curvature: ?"),sizeof(buffer)-1 );
     GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_PrevCurvature),buffer);
     if ( kappa!=CURVATURE_ERROR && kappa2!=CURVATURE_ERROR )
-	sprintf( buffer, "∆: %g", (kappa-kappa2)*emsize );
+	snprintf( buffer, sizeof(buffer), "∆: %g", (kappa-kappa2)*emsize );
     else
 	strcpy( buffer, "∆: ?");
     GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_DeltaCurvature),buffer);
@@ -2077,6 +2103,9 @@ void PIChangePoint(GIData *ci) {
 
     GGadgetGetList(list,&len);
 
+	// possible bug: damaged pointers
+	//	ci->cursp->next;
+	//	ci->cursp->prev;
     PIFillup(ci,0);
 
     GGadgetSetEnabled(GWidgetGetControl(ci->gw,CID_Interpolated),
@@ -2636,10 +2665,10 @@ GTextInfo *SCHintList(SplineChar *sc,HintMask *hm) {
 	ti[i].fg = ti[i].bg = COLOR_DEFAULT;
 	ti[i].userdata = h;
 	if ( h->ghost && h->width>0 )
-	    sprintf( buffer, "H<%g,%g>",
+	    snprintf( buffer, sizeof(buffer), "H<%g,%g>",
 		    rint(h->start*100)/100+rint(h->width*100)/100, -rint(h->width*100)/100 );
 	else
-	    sprintf( buffer, "H<%g,%g>",
+	    snprintf( buffer, sizeof(buffer), "H<%g,%g>",
 		    rint(h->start*100)/100, rint(h->width*100)/100 );
 	ti[i].text = uc_copy(buffer);
 	if ( hm!=NULL && ((*hm)[i>>3]&(0x80>>(i&7))))
@@ -2650,10 +2679,10 @@ GTextInfo *SCHintList(SplineChar *sc,HintMask *hm) {
 	ti[i].fg = ti[i].bg = COLOR_DEFAULT;
 	ti[i].userdata = h;
 	if ( h->ghost && h->width>0 )
-	    sprintf( buffer, "V<%g,%g>",
+	    snprintf( buffer, sizeof(buffer), "V<%g,%g>",
 		    rint(h->start*100)/100+rint(h->width*100)/100, -rint(h->width*100)/100 );
 	else
-	    sprintf( buffer, "V<%g,%g>",
+	    snprintf( buffer, sizeof(buffer), "V<%g,%g>",
 		    rint(h->start*100)/100, rint(h->width*100)/100 );
 	ti[i].text = uc_copy(buffer);
 	if ( hm!=NULL && ((*hm)[i>>3]&(0x80>>(i&7))))
@@ -3351,14 +3380,16 @@ static void PointGetInfo(CharView *cv, SplinePoint *sp, SplinePointList *spl) {
 /* ************************************************************************** */
 
 static void SpiroFillup(GIData *ci, int except_cid) {
-    char buffer[50];
+	// possible bug: buffer overflow
+    //char buffer[50];
+    char buffer[150];
     int ty;
 
-    mysprintf(buffer, "%.2f", ci->curcp->x );
+    my_s_printf(buffer, sizeof(buffer), "%.2f", ci->curcp->x );
     if ( except_cid!=CID_BaseX )
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_BaseX),buffer);
 
-    mysprintf(buffer, "%.2f", ci->curcp->y );
+    my_s_printf(buffer, sizeof(buffer), "%.2f", ci->curcp->y );
     if ( except_cid!=CID_BaseY )
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_BaseY),buffer);
 

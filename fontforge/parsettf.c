@@ -3608,42 +3608,62 @@ return( fdselect );
 }
 
 
-static char *intarray2str(int *array, int size) {
-    int i,j;
-    char *pt, *ret;
+static char* intarray2str(int* array, int size)
+{
+	int i, j;
+	char* pt, * ret;
 
-    for ( i=size-1; i>=0 && array[i]==0; --i );
-    if ( i==-1 )
-return( NULL );
-    ret = pt = malloc((i+1)*12+12);
-    *pt++ = '[';
-    for ( j=0; j<=i; ++j ) {
-	sprintf( pt, "%d ", array[j]);
-	pt += strlen(pt);
-    }
-    pt[-1]=']';
-return( ret );
+	for (i = size - 1; i >= 0 && array[i] == 0; --i);
+	if (i == -1)
+	{
+		return(NULL);
+	}
+
+	int buf_size = (i + 1) * 12 + 12;
+	ret = pt = malloc(buf_size);
+
+	*pt++ = '[';
+	buf_size--;
+
+	for (j = 0; j <= i; ++j)
+	{
+		snprintf(pt, buf_size, "%d ", array[j]);
+		int str_size = strlen(pt);
+		pt += str_size;
+		buf_size -= str_size;
+	}
+	pt[-1] = ']';
+	return(ret);
 }
 
-static char *realarray2str(real *array, int size, int must_be_even) {
-    int i,j;
-    char *pt, *ret;
+static char* realarray2str(real* array, int size, int must_be_even)
+{
+	int i, j;
+	char* pt, * ret;
 
-    for ( i=size-1; i>=0 && array[i]==0; --i );
-    if ( i==-1 )
-return( NULL );
-    if ( i==0 && array[0]==1234567 ) /* Special marker for a null array */
-return( copy( "[]" ));
-    if ( must_be_even && !(i&1) && array[i]<0 )
-	++i;			/* Someone gave us a bluevalues of [-20 0] and we reported [-20] */
-    ret = pt = malloc((i+1)*20+12);
-    *pt++ = '[';
-    for ( j=0; j<=i; ++j ) {
-	sprintf( pt, "%g ", (double) array[j]);
-	pt += strlen(pt);
-    }
-    pt[-1]=']';
-return( ret );
+	for (i = size - 1; i >= 0 && array[i] == 0; --i);
+	if (i == -1)
+		return(NULL);
+	if (i == 0 && array[0] == 1234567) /* Special marker for a null array */
+		return(copy("[]"));
+	if (must_be_even && !(i & 1) && array[i] < 0)
+		++i;			/* Someone gave us a bluevalues of [-20 0] and we reported [-20] */
+	
+	int buf_size = (i + 1) * 20 + 12;
+	ret = pt = malloc(buf_size);
+
+	*pt++ = '[';
+	buf_size--;
+
+	for (j = 0; j <= i; ++j)
+	{
+		snprintf(pt, buf_size, "%g ", (double)array[j]);
+		int str_size = strlen(pt);
+		pt += str_size;
+		buf_size -= str_size;
+	}
+	pt[-1] = ']';
+	return(ret);
 }
 
 static void privateadd(struct psdict *private,char *key,char *value) {
@@ -3653,19 +3673,24 @@ return;
     private->values[private->next++] = value;
 }
 
-static void privateaddint(struct psdict *private,char *key,int val) {
-    char buf[20];
-    if ( val==0 )
-return;
-    sprintf( buf,"%d", val );
-    privateadd(private,key,copy(buf));
+static void privateaddint(struct psdict* private, char* key, int val)
+{
+	char buf[20];
+
+	if (val == 0)
+	{
+		return;
+	}
+
+	snprintf(buf, sizeof(buf), "%d", val);
+	privateadd(private, key, copy(buf));
 }
 
 static void privateaddintarray(struct psdict *private,char *key,int val) {
     char buf[20];
     if ( val==0 )
 return;
-    sprintf( buf,"[%d]", val );
+    snprintf( buf, sizeof(buf), "[%d]", val );
     privateadd(private,key,copy(buf));
 }
 
@@ -3673,7 +3698,7 @@ static void privateaddreal(struct psdict *private,char *key,double val,double de
     char buf[40];
     if ( val==def )
 return;
-    sprintf( buf,"%g", val );
+    snprintf( buf, sizeof(buf), "%g", val );
     privateadd(private,key,copy(buf));
 }
 
@@ -3715,7 +3740,7 @@ static SplineFont *cffsffillup(struct topdicts *subdict, char **strings,
     sf->fontname = utf8_verify_copy(getstrid(subdict->sid_fontname,strings,scnt,info));
     if ( sf->fontname==NULL ) {
 	char buffer[40];
-	sprintf(buffer,"UntitledSubFont_%d", ++nameless );
+	snprintf(buffer, sizeof(buffer), "UntitledSubFont_%d", ++nameless );
 	sf->fontname = copy(buffer);
     }
 
@@ -4433,7 +4458,7 @@ static void ApplyVariationSequenceSubtable(FILE *ttf,uint32 vs_map,
 		    if ( curgid<info->glyph_cnt && curgid>=0 &&
 			    (sc=info->chars[curgid])!=NULL && sc->name==NULL ) {
 			char buffer[32];
-			sprintf(buffer, "u%04X.vs%04X", uni, vs_data[i].vs );
+			snprintf(buffer, sizeof(buffer), "u%04X.vs%04X", uni, vs_data[i].vs );
 			sc->name = copy(buffer);
 		    }
 		} else {
@@ -4528,7 +4553,7 @@ static int PickCMap(struct cmap_encs *cmap_encs,int enccnt,int def) {
 	if ( encname==NULL )
 	    encname = cmap_encs[i].enc->enc_name;
 
-	sprintf(buffer,"%d (%s) %d %s %s  %s",
+	snprintf(buffer, sizeof(buffer), "%d (%s) %d %s %s  %s",
 		cmap_encs[i].platform,
 		    cmap_encs[i].platform==0 ? _("Unicode") :
 		    cmap_encs[i].platform==1 ? _("Apple") :
@@ -5192,10 +5217,12 @@ static void readttfpostnames(FILE *ttf,struct ttfinfo *info) {
 
     /* Give ourselves an xuid, just in case they want to convert to PostScript*/
     /*  (even type42)							      */
-    if ( xuid!=NULL && info->fd==NULL && info->xuid==NULL ) {
-	info->xuid = malloc(strlen(xuid)+20);
-	sprintf(info->xuid,"[%s %d]", xuid, (rand()&0xffffff));
-    }
+	if (xuid != NULL && info->fd == NULL && info->xuid == NULL)
+	{
+		int buf_size = strlen(xuid) + 20;
+		info->xuid = malloc(buf_size);
+		snprintf(info->xuid, buf_size, "[%s %d]", xuid, (rand() & 0xffffff));
+	}
 
     if ( info->postscript_start!=0 ) {
 	bounds = info->postscript_start + info->postscript_length;
@@ -5313,7 +5340,7 @@ static void readttfpostnames(FILE *ttf,struct ttfinfo *info) {
 	    /* Do this later */;
 	    name = NULL;
 	} else {
-	    name = StdGlyphName(buffer,info->chars[i]->unicodeenc,info->uni_interp,NULL);
+	    name = StdGlyphName(buffer, sizeof(buffer), info->chars[i]->unicodeenc,info->uni_interp,NULL);
 	    if ( anynames ) {
 		for ( j=0; j<info->glyph_cnt; ++j ) {
 		    if ( info->chars[j]!=NULL && j!=i && info->chars[j]->name!=NULL ) {
@@ -5352,12 +5379,12 @@ static void readttfpostnames(FILE *ttf,struct ttfinfo *info) {
 	if ( info->chars[i]->name!=NULL )
     continue;
 	if ( info->ordering!=NULL )
-	    sprintf(buffer, "%.20s-%d", info->ordering, i );
+	    snprintf(buffer, sizeof(buffer), "%.20s-%d", info->ordering, i );
 	else if ( info->map!=NULL && info->map->backmap[i]!=-1 )
-	    sprintf(buffer, "nounicode.%d.%d.%x", info->platform, info->specific,
+	    snprintf(buffer, sizeof(buffer), "nounicode.%d.%d.%x", info->platform, info->specific,
 		    (int) info->map->backmap[i] );
 	else
-	    sprintf( buffer, "glyph%d", i );
+	    snprintf( buffer, sizeof(buffer), "glyph%d", i );
 	info->chars[i]->name = copy(buffer);
 	ff_progress_next();
     }
@@ -6021,9 +6048,9 @@ return;
     }
     if ( sf->subfontcnt!=0 || sf->version!=NULL ) {
 	if ( sf->subfontcnt!=0 )
-	    sprintf( versionbuf, "Version %f", sf->cidversion );
+	    snprintf( versionbuf, sizeof(versionbuf), "Version %f", sf->cidversion );
 	else
-	    sprintf(versionbuf,"Version %.20s ", sf->version);
+	    snprintf(versionbuf, sizeof(versionbuf), "Version %.20s ", sf->version);
 	if ( english->names[ttf_version]!=NULL &&
 		strcmp(english->names[ttf_version],versionbuf)==0 ) {
 	    free(english->names[ttf_version]);

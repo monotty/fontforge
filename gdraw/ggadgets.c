@@ -1332,10 +1332,14 @@ return((g->funcs->is_list_item_selected)(g,pos));
 return( 0 );
 }
 
-int32 GGadgetGetFirstListSelectedItem(GGadget *g) {
-    if ( g->funcs->get_first_selection!=NULL )
-return((g->funcs->get_first_selection)(g));
-return( -1 );
+int32 GGadgetGetFirstListSelectedItem(GGadget* g)
+{
+    if (g->funcs->get_first_selection != NULL)
+    {
+        return((g->funcs->get_first_selection)(g));
+    }
+
+    return(-1);
 }
 
 void GGadgetScrollListToPos(GGadget *g,int32 pos) {

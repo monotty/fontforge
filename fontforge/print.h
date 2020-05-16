@@ -118,7 +118,7 @@ extern struct printdefaults {
 extern void PI_Init(PI *pi,FontViewBase *fv,SplineChar *sc);
 extern void DoPrinting(PI *pi,char *filename);
 extern int PdfDumpGlyphResources(PI *pi,SplineChar *sc);
-extern void makePatName(char *buffer,
+extern void makePatName(char *buffer, size_t buffer_size,
 	RefChar *ref,SplineChar *sc,int layer,int isstroke,int isgrad);
 
 extern unichar_t *PrtBuildDef(SplineFont *sf, void *tf, void (*langsyscallback)(void *tf, int end, uint32 script, uint32 lang));

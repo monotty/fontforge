@@ -813,19 +813,30 @@ static int _Export(SplineChar *sc,BDFChar *bc,int layer) {
 		_format==6?"xbm":_format==7?"bmp":"png";
 #if defined( __CygWin ) || defined(__Mac)
     /* Windows file systems are not case conscious */
-    { char *pt, *bpt, *end;
-    bpt = buffer; end = buffer+40;
-    for ( pt=sc->name; *pt!='\0' && bpt<end; ) {
-	if ( isupper( *pt ))
-	    *bpt++ = '$';
-	*bpt++ = *pt++;
-    }
-    sprintf( bpt, "_%.40s.%s", sc->parent->fontname, ext);
-    }
+	{ 
+        char* pt, * bpt, * end;
+        size_t buf_size = sizeof(buffer);
+
+	    bpt = buffer; end = buffer + 40;
+	    for (pt = sc->name; *pt != '\0' && bpt < end; )
+	    {
+	    	if (isupper(*pt))
+	    	{
+	    		*bpt++ = '$';
+                buf_size--;
+	    	}
+
+	    	*bpt++ = *pt++;
+            buf_size--;
+	    }
+
+	    snprintf(bpt, buf_size, "_%.40s.%s", sc->parent->fontname, ext);
+	}
 #else
-    sprintf( buffer, "%.40s_%.40s.%s", sc->name, sc->parent->fontname, ext);
+    snprintf( buffer, sizeof(buffer), "%.40s_%.40s.%s", sc->name, sc->parent->fontname, ext);
 #endif
-    uc_strcpy(ubuf,buffer);
+    uc_strncpy(ubuf,buffer, sizeof(buffer));
+
     GGadgetSetTitle(gcd[0].ret,ubuf);
     GFileChooserGetChildren(gcd[0].ret,&pulldown,&files,&tf);
     GWidgetIndicateFocusGadget(tf);

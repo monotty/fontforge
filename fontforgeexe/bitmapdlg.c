@@ -158,30 +158,60 @@ static int CB_Cancel(GGadget *g, GEvent *e) {
 return( true );
 }
 
-static unichar_t *GenText(int32 *sizes,real scale) {
+static unichar_t* GenText(int32* sizes, real scale)
+{
     int i;
-    char *cret, *pt;
-    unichar_t *uret;
+    char* cret, * pt;
+    unichar_t* uret;
 
-    for ( i=0; sizes[i]!=0; ++i );
-    pt = cret = malloc(i*10+1);
-    for ( i=0; sizes[i]!=0; ++i ) {
-	if ( pt!=cret ) *pt++ = ',';
-	sprintf(pt,"%.1f",(double) ((sizes[i]&0xffff)*scale) );
-	pt += strlen(pt);
-	if ( pt[-1]=='0' && pt[-2]=='.' ) {
-	    pt -= 2;
-	    *pt = '\0';
-	}
-	if ( (sizes[i]>>16)!=1 ) {
-	    sprintf(pt,"@%d", (int) (sizes[i]>>16) );
-	    pt += strlen(pt);
-	}
+    for (i = 0; sizes[i] != 0; ++i)
+    {
+        ;
     }
-    *pt = '\0';
+
+    int buf_size = i * 10 + 1;
+    pt = cret = malloc(buf_size);
+
+    for (i = 0; sizes[i] != 0; ++i)
+    {
+        if (pt != cret)
+        {
+            *pt++ = ',';
+            buf_size--;
+        }
+
+        snprintf(pt, buf_size, "%.1f", (double)((sizes[i] & 0xffff) * scale));
+        
+        int str_size= strlen(pt);
+        pt += str_size;
+        buf_size -= str_size;
+        
+        if (pt[-1] == '0' && pt[-2] == '.')
+        {
+            pt -= 2;
+            buf_size += 2;
+
+            *pt = '\0';
+        }
+
+        if ((sizes[i] >> 16) != 1)
+        {
+            snprintf(pt, buf_size, "@%d", (int)(sizes[i] >> 16));
+            //pt += strlen(pt);
+            int str_size = strlen(pt);
+            pt += str_size;
+            buf_size -= str_size;
+        }
+    }
+
+    if (buf_size > 0)
+    {
+        *pt = '\0';
+    }
+
     uret = uc_copy(cret);
     free(cret);
-return( uret );
+    return(uret);
 }
 
 static void _CB_TextChange(CreateBitmapData *bd, GGadget *g) {

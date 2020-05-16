@@ -445,7 +445,7 @@ static char *getPfaEditPrefs(void) {
 return( prefs );
     if ( getFontForgeUserDir(Config)==NULL )
 return( NULL );
-    sprintf(buffer,"%s/prefs", getFontForgeUserDir(Config));
+    snprintf(buffer, sizeof(buffer), "%s/prefs", getFontForgeUserDir(Config));
     prefs = copy(buffer);
 return( prefs );
 }
@@ -665,7 +665,7 @@ static void DefaultXUID(void) {
     gettimeofday(&tv,NULL);
     g_random_set_seed(tv.tv_usec+1);
     r2 = g_random_int();
-    sprintf( buffer, "1021 %d %d", r1, r2 );
+    snprintf( buffer, sizeof(buffer), "1021 %d %d", r1, r2 );
     if (xuid != NULL) free(xuid);
     xuid = copy(buffer);
 }

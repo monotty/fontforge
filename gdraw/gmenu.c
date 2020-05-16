@@ -194,7 +194,7 @@ translate_shortcut (int i, char *modifier)
   char *temp;
   TRACE("translate_shortcut(top) i:%d modifier:%s\n", i, modifier );
 
-  sprintf (buffer, "Flag0x%02x", 1 << i);
+  snprintf (buffer, sizeof(buffer), "Flag0x%02x", 1 << i);
   temp = dgettext (GMenuGetShortcutDomain (), buffer);
 
   if (strcmp (temp, buffer) != 0)
@@ -209,92 +209,108 @@ translate_shortcut (int i, char *modifier)
 
 
 
-static void _shorttext(int shortcut, int short_mask, unichar_t *buf) {
-    unichar_t *pt = buf;
+static void _shorttext(int shortcut, int short_mask, unichar_t* buf, size_t buf_size)
+{
+    unichar_t* pt = buf;
+    int pt_size = buf_size / sizeof(buf[0]);
+
     static int initted = false;
-    struct { int mask; char *modifier; } mods[8] = {
-	{ ksm_shift, H_("Shift+") },
-	{ ksm_capslock, H_("CapsLk+") },
-	{ ksm_control, H_("Ctrl+") },
-	{ ksm_meta, H_("Alt+") },
-	{ 0x10, H_("Flag0x10+") },
-	{ 0x20, H_("Flag0x20+") },
-	{ 0x40, H_("Flag0x40+") },
-	{ 0x80, H_("Flag0x80+") }
-	};
+    struct { int mask; char* modifier; } mods[8] = {
+    { ksm_shift, H_("Shift+") },
+    { ksm_capslock, H_("CapsLk+") },
+    { ksm_control, H_("Ctrl+") },
+    { ksm_meta, H_("Alt+") },
+    { 0x10, H_("Flag0x10+") },
+    { 0x20, H_("Flag0x20+") },
+    { 0x40, H_("Flag0x40+") },
+    { 0x80, H_("Flag0x80+") }
+    };
     int i;
     char buffer[32];
 
-    uc_strcpy(pt,"xx⎇");
+    uc_strncpy(pt, "xx⎇", pt_size);
+
     pt += u_strlen(pt);
-    *pt = '\0';
+    pt_size -= pt - buf;
+
+    if (pt_size > 0)
+    {
+        *pt = '\0';
+    }
+
     return;
 
-    if ( !initted )
+    if (!initted)
     {
-	/* char *temp; */
-	for ( i=0; i<8; ++i )
-	{
-	    /* sprintf( buffer,"Flag0x%02x", 1<<i ); */
-	    /* temp = dgettext(GMenuGetShortcutDomain(),buffer); */
-	    /* if ( strcmp(temp,buffer)!=0 ) */
-	    /* 	mods[i].modifier = temp; */
-	    /* else */
-	    /* 	mods[i].modifier = dgettext(GMenuGetShortcutDomain(),mods[i].modifier); */
+        /* char *temp; */
+        for (i = 0; i < 8; ++i)
+        {
+            /* snprintf( buffer,"Flag0x%02x", 1<<i ); */
+            /* temp = dgettext(GMenuGetShortcutDomain(),buffer); */
+            /* if ( strcmp(temp,buffer)!=0 ) */
+            /* 	mods[i].modifier = temp; */
+            /* else */
+            /* 	mods[i].modifier = dgettext(GMenuGetShortcutDomain(),mods[i].modifier); */
 
-          if (mac_menu_icons)
-	  {
-	      TRACE("mods[i].mask: %s\n", mods[i].modifier );
+            if (mac_menu_icons)
+            {
+                TRACE("mods[i].mask: %s\n", mods[i].modifier);
 
-              if (mods[i].mask == ksm_cmdmacosx)
-		  mods[i].modifier = "⌘";
-              else if (mods[i].mask == ksm_control)
-		  mods[i].modifier = "⌃";
-              else if (mods[i].mask == ksm_meta)
-		  mods[i].modifier = "⎇";
-              else if (mods[i].mask == ksm_shift)
-		  mods[i].modifier = "⇧";
-              else
-		  mods[i].modifier = translate_shortcut (i, mods[i].modifier);
-	  }
-	  else
-	  {
-              translate_shortcut (i, mods[i].modifier);
-	  }
-
-
+                if (mods[i].mask == ksm_cmdmacosx)
+                    mods[i].modifier = "⌘";
+                else if (mods[i].mask == ksm_control)
+                    mods[i].modifier = "⌃";
+                else if (mods[i].mask == ksm_meta)
+                    mods[i].modifier = "⎇";
+                else if (mods[i].mask == ksm_shift)
+                    mods[i].modifier = "⇧";
+                else
+                    mods[i].modifier = translate_shortcut (i, mods[i].modifier);
+            }
+            else
+            {
+                translate_shortcut (i, mods[i].modifier);
+            }
 
 
-	}
-	/* It used to be that the Command key was available to X on the mac */
-	/*  but no longer. So we used to use it, but we can't now */
-	/* It's sort of available. X11->Preferences->Input->Enable Keyboard shortcuts under X11 needs to be OFF */
-	/* if ( strcmp(mods[2].modifier,"Ctl+")==0 ) */
-	    /* mods[2].modifier = keyboard!=kb_mac?"Ctl+":"Cmd+"; */
-	if ( strcmp(mods[3].modifier,"Alt+")==0 )
-	    mods[3].modifier = keyboard==kb_ibm?"Alt+":keyboard==kb_mac?"Opt+":keyboard==kb_ppc?"Cmd+":"Meta+";
+
+
+        }
+        /* It used to be that the Command key was available to X on the mac */
+        /*  but no longer. So we used to use it, but we can't now */
+        /* It's sort of available. X11->Preferences->Input->Enable Keyboard shortcuts under X11 needs to be OFF */
+        /* if ( strcmp(mods[2].modifier,"Ctl+")==0 ) */
+            /* mods[2].modifier = keyboard!=kb_mac?"Ctl+":"Cmd+"; */
+        if (strcmp(mods[3].modifier, "Alt+") == 0)
+            mods[3].modifier = keyboard == kb_ibm ? "Alt+" : keyboard == kb_mac ? "Opt+" : keyboard == kb_ppc ? "Cmd+" : "Meta+";
     }
 
 
-    if ( shortcut==0 ) {
-	*pt = '\0';
-return;
+    if (shortcut == 0)
+    {
+        *pt = '\0';
+        return;
     }
 
-    for ( i=7; i>=0 ; --i ) {
-	if ( short_mask&(1<<i) ) {
-	    uc_strcpy(pt,mods[i].modifier);
-	    pt += u_strlen(pt);
-	}
+    for (i = 7; i >= 0; --i)
+    {
+        if (short_mask & (1 << i))
+        {
+            uc_strcpy(pt, mods[i].modifier);
+            pt += u_strlen(pt);
+        }
     }
 
 
-    if ( shortcut>=0xff00 && GDrawKeysyms[shortcut-0xff00] ) {
-    	cu_strcpy(buffer,GDrawKeysyms[shortcut-0xff00]);
-    	utf82u_strcpy(pt,dgettext(GMenuGetShortcutDomain(),buffer));
-    } else {
-    	*pt++ = islower(shortcut)?toupper(shortcut):shortcut;
-    	*pt = '\0';
+    if (shortcut >= 0xff00 && GDrawKeysyms[shortcut - 0xff00])
+    {
+        cu_strcpy(buffer, GDrawKeysyms[shortcut - 0xff00]);
+        utf82u_strcpy(pt, dgettext(GMenuGetShortcutDomain(), buffer));
+    }
+    else
+    {
+        *pt++ = islower(shortcut) ? toupper(shortcut) : shortcut;
+        *pt = '\0';
     }
 }
 
@@ -584,7 +600,7 @@ static int GMenuDrawMenuLine(struct gmenu *m, GMenuItem *mi, int y,GWindow pixma
 	GMenuDrawArrow(m,ybase,r2l);
     else
     {
-	_shorttext(mi->shortcut,0,shortbuf);
+	_shorttext(mi->shortcut,0,shortbuf, sizeof(shortbuf));
 	uint16 short_mask = mi->short_mask;
 
 	/* TRACE("m->menubar: %p\n", m->menubar ); */

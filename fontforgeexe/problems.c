@@ -266,7 +266,7 @@ return;
 	    p->explaining==_("This glyph is mapped to a unicode code point which is different from its name.") ) {
 	char buf[100]; const char *newname;
 	SplineChar *foundsc;
-	newname = StdGlyphName(buf,p->sc->unicodeenc,p->sc->parent->uni_interp,p->sc->parent->for_new_glyphs);
+	newname = StdGlyphName(buf, sizeof(buf), p->sc->unicodeenc,p->sc->parent->uni_interp,p->sc->parent->for_new_glyphs);
 	foundsc = SFHashName(p->sc->parent,newname);
 	if ( foundsc==NULL ) {
 	    free(p->sc->name);
@@ -620,7 +620,7 @@ return;
     } else if ( found==expected )
 	buf[0]='\0';
     else {
-	sprintf(buf,_("Found %1$.4g, expected %2$.4g"), (double) found, (double) expected );
+	snprintf(buf, sizeof(buf), _("Found %1$.4g, expected %2$.4g"), (double) found, (double) expected );
     }
     p->found = found; p->expected = expected;
     GGadgetSetTitle8(p->explainvals,buf);
@@ -3139,7 +3139,7 @@ void FindProblems(FontView *fv,CharView *cv, SplineChar *sc) {
     pgcd[1].creator = GCheckBoxCreate;
     pharray1[0] = &pgcd[1];
 
-    sprintf(xnbuf,"%g",xval);
+    snprintf(xnbuf, sizeof(xnbuf), "%g",xval);
     plabel[2].text = (unichar_t *) xnbuf;
     plabel[2].text_is_1byte = true;
     pgcd[2].gd.label = &plabel[2];
@@ -3169,7 +3169,7 @@ void FindProblems(FontView *fv,CharView *cv, SplineChar *sc) {
     pgcd[3].creator = GCheckBoxCreate;
     pharray2[0] = &pgcd[3];
 
-    sprintf(ynbuf,"%g",yval);
+    snprintf(ynbuf, sizeof(ynbuf), "%g",yval);
     plabel[4].text = (unichar_t *) ynbuf;
     plabel[4].text_is_1byte = true;
     pgcd[4].gd.label = &plabel[4];
@@ -3247,7 +3247,7 @@ void FindProblems(FontView *fv,CharView *cv, SplineChar *sc) {
     pgcd[9].creator = GLabelCreate;
     pharray3[0] = GCD_HPad10; pharray3[1] = &pgcd[9];
 
-    sprintf( irrel, "%g", irrelevantfactor*100 );
+    snprintf( irrel, sizeof(irrel), "%g", irrelevantfactor*100 );
     plabel[10].text = (unichar_t *) irrel;
     plabel[10].text_is_1byte = true;
     pgcd[10].gd.label = &plabel[10];
@@ -3383,7 +3383,7 @@ void FindProblems(FontView *fv,CharView *cv, SplineChar *sc) {
     pagcd[5].creator = GCheckBoxCreate;
     paharray[0] = &pagcd[5];
 
-    sprintf( pmax, "%d", pointsmax );
+    snprintf( pmax, sizeof(pmax), "%d", pointsmax );
     palabel[6].text = (unichar_t *) pmax;
     palabel[6].text_is_1byte = true;
     pagcd[6].gd.label = &palabel[6];
@@ -3478,7 +3478,7 @@ void FindProblems(FontView *fv,CharView *cv, SplineChar *sc) {
     rfgcd[4].creator = GCheckBoxCreate;
     rfharray[0] = &rfgcd[4];
 
-    sprintf( rmax, "%d", refdepthmax );
+    snprintf( rmax, sizeof(rmax), "%d", refdepthmax );
     rflabel[5].text = (unichar_t *) rmax;
     rflabel[5].text_is_1byte = true;
     rfgcd[5].gd.label = &rflabel[5];
@@ -3569,7 +3569,7 @@ void FindProblems(FontView *fv,CharView *cv, SplineChar *sc) {
     hgcd[2].creator = GCheckBoxCreate;
     hharray1[0] = &hgcd[2];
 
-    sprintf(widthbuf,"%g",widthval);
+    snprintf(widthbuf, sizeof(widthbuf), "%g",widthval);
     hlabel[3].text = (unichar_t *) widthbuf;
     hlabel[3].text_is_1byte = true;
     hgcd[3].gd.label = &hlabel[3];
@@ -3632,7 +3632,7 @@ void FindProblems(FontView *fv,CharView *cv, SplineChar *sc) {
     hgcd[6].creator = GCheckBoxCreate;
     hharray3[0] = &hgcd[6];
 
-    sprintf( hmax, "%d", hintsmax );
+    snprintf( hmax, sizeof(hmax), "%d", hintsmax );
     hlabel[7].text = (unichar_t *) hmax;
     hlabel[7].text_is_1byte = true;
     hgcd[7].gd.label = &hlabel[7];
@@ -3757,7 +3757,7 @@ void FindProblems(FontView *fv,CharView *cv, SplineChar *sc) {
 	bbymax_val = bbymin_val = bbxmax_val /* = bbxmin_val */= vadvancewidth = advancewidth = 0;
     }
 
-    sprintf(yymaxbuf,"%g", bbymax_val!=0 ? bbymax_val : sf->ascent);
+    snprintf(yymaxbuf, sizeof(yymaxbuf), "%g", bbymax_val!=0 ? bbymax_val : sf->ascent);
     bblabel[1].text = (unichar_t *) yymaxbuf;
     bblabel[1].text_is_1byte = true;
     bbgcd[1].gd.label = &bblabel[1];
@@ -3781,7 +3781,7 @@ void FindProblems(FontView *fv,CharView *cv, SplineChar *sc) {
     bbgcd[2].gd.cid = CID_BBYMin;
     bbgcd[2].creator = GCheckBoxCreate;
 
-    sprintf(yyminbuf,"%g", bbymin_val!=0 ? bbymin_val : -sf->descent);
+    snprintf(yyminbuf, sizeof(yyminbuf), "%g", bbymin_val!=0 ? bbymin_val : -sf->descent);
     bblabel[3].text = (unichar_t *) yyminbuf;
     bblabel[3].text_is_1byte = true;
     bbgcd[3].gd.label = &bblabel[3];
@@ -3804,7 +3804,7 @@ void FindProblems(FontView *fv,CharView *cv, SplineChar *sc) {
     bbgcd[4].gd.cid = CID_BBXMax;
     bbgcd[4].creator = GCheckBoxCreate;
 
-    sprintf(xxmaxbuf,"%g", bbxmax_val!=0 ? bbxmax_val : (double) (sf->ascent+sf->descent));
+    snprintf(xxmaxbuf, sizeof(xxmaxbuf), "%g", bbxmax_val!=0 ? bbxmax_val : (double) (sf->ascent+sf->descent));
     bblabel[5].text = (unichar_t *) xxmaxbuf;
     bblabel[5].text_is_1byte = true;
     bbgcd[5].gd.label = &bblabel[5];
@@ -3827,7 +3827,7 @@ void FindProblems(FontView *fv,CharView *cv, SplineChar *sc) {
     bbgcd[6].gd.cid = CID_BBXMin;
     bbgcd[6].creator = GCheckBoxCreate;
 
-    sprintf(xxminbuf,"%g",bbxmin_val);
+    snprintf(xxminbuf, sizeof(xxminbuf), "%g",bbxmin_val);
     bblabel[7].text = (unichar_t *) xxminbuf;
     bblabel[7].text_is_1byte = true;
     bbgcd[7].gd.label = &bblabel[7];
@@ -3853,7 +3853,7 @@ void FindProblems(FontView *fv,CharView *cv, SplineChar *sc) {
 
     if ( ( ssc = SFGetChar(sf,' ',NULL))!=NULL )
 	advancewidthval = ssc->width;
-    sprintf(awidthbuf,"%g",advancewidthval);
+    snprintf(awidthbuf, sizeof(awidthbuf), "%g",advancewidthval);
     bblabel[9].text = (unichar_t *) awidthbuf;
     bblabel[9].text_is_1byte = true;
     bbgcd[9].gd.label = &bblabel[9];
@@ -3878,7 +3878,7 @@ void FindProblems(FontView *fv,CharView *cv, SplineChar *sc) {
     bbgcd[10].creator = GCheckBoxCreate;
 
     if ( vadvancewidth==0 ) vadvancewidth = sf->ascent+sf->descent;
-    sprintf(vawidthbuf,"%g",vadvancewidthval);
+    snprintf(vawidthbuf, sizeof(vawidthbuf), "%g",vadvancewidthval);
     bblabel[11].text = (unichar_t *) vawidthbuf;
     bblabel[11].text_is_1byte = true;
     bbgcd[11].gd.label = &bblabel[11];
@@ -4091,7 +4091,7 @@ void FindProblems(FontView *fv,CharView *cv, SplineChar *sc) {
     mgcd[4].creator = GLabelCreate;
     mharray2[0] = &mgcd[4];
 
-    sprintf(nearbuf,"%g",near);
+    snprintf(nearbuf, sizeof(nearbuf), "%g",near);
     mlabel[5].text = (unichar_t *) nearbuf;
     mlabel[5].text_is_1byte = true;
     mgcd[5].gd.label = &mlabel[5];
@@ -5383,7 +5383,7 @@ return;
     wattrs.mask = wam_events|wam_cursor|wam_utf8_wtitle|wam_undercursor|wam_isdlg;
     wattrs.event_masks = -1;
     wattrs.cursor = ct_mypointer;
-    sprintf( buffer, _("Validation of %.100s"), sf->fontname );
+    snprintf( buffer, sizeof(buffer), _("Validation of %.100s"), sf->fontname );
     wattrs.utf8_window_title = buffer;
     wattrs.is_dlg = true;
     wattrs.undercursor = 1;

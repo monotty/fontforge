@@ -294,68 +294,99 @@ static void FVCreateWidth( void *_fv,SplineChar* _sc,void (*doit)(CreateWidthDat
     GDrawSetVisible(cwd.gw,false);
 }
 
-static void BCDefWidthVal(char *buf,BDFChar *bc, FontView *fv, enum widthtype wtype) {
-    IBounds bb;
+static void BCDefWidthVal(char* buf, size_t buf_size, BDFChar* bc, FontView* fv, enum widthtype wtype)
+{
+	IBounds bb;
 
-    if ( wtype==wt_width )
-	sprintf( buf, "%d", bc->width );
-    else if ( wtype==wt_vwidth )
-	sprintf( buf, "%d", fv->show->pixelsize );
-    else {
-	BDFCharFindBounds(bc,&bb);
-	if ( wtype==wt_lbearing )
-	    sprintf( buf, "%d", bb.minx );
-	else if ( wtype==wt_rbearing )
-	    sprintf( buf, "%d", bc->width-bb.maxx-1 );
+	if (wtype == wt_width)
+	{
+		snprintf(buf, buf_size, "%d", bc->width);
+	}
+	else if (wtype == wt_vwidth)
+	{
+		snprintf(buf, buf_size, "%d", fv->show->pixelsize);
+	}
 	else
-	    sprintf( buf, "%d", (int) rint( (bc->width-bb.maxx-1 + bb.minx)/2 ));
-    }
+	{
+		BDFCharFindBounds(bc, &bb);
+		if (wtype == wt_lbearing)
+		{
+			snprintf(buf, buf_size, "%d", bb.minx);
+		}
+		else if (wtype == wt_rbearing)
+		{
+			snprintf(buf, buf_size, "%d", bc->width - bb.maxx - 1);
+		}
+		else
+		{
+			snprintf(buf, buf_size, "%d", (int)rint((bc->width - bb.maxx - 1 + bb.minx) / 2));
+		}
+	}
 }
 
-static void SCDefWidthVal(char *buf,SplineChar *sc, enum widthtype wtype) {
-    DBounds bb;
+static void SCDefWidthVal(char* buf, size_t buf_size, SplineChar* sc, enum widthtype wtype)
+{
+	DBounds bb;
 
-    if ( wtype==wt_width )
-	sprintf( buf, "%d", sc->width );
-    else if ( wtype==wt_vwidth )
-	sprintf( buf, "%d", sc->vwidth );
-    else {
-	SplineCharFindBounds(sc,&bb);
-	if ( wtype==wt_lbearing )
-	    sprintf( buf, "%.4g", (double) bb.minx );
-	else if ( wtype==wt_rbearing )
-	    sprintf( buf, "%.4g", sc->width-(double) bb.maxx );
+	if (wtype == wt_width)
+	{
+		snprintf(buf, buf_size, "%d", sc->width);
+	}
+	else if (wtype == wt_vwidth)
+	{
+		snprintf(buf, buf_size, "%d", sc->vwidth);
+	}
 	else
-	    sprintf( buf, "%.4g", rint( (sc->width-(double) bb.maxx + (double) bb.minx)/2 ) );
-    }
+	{
+		SplineCharFindBounds(sc, &bb);
+		if (wtype == wt_lbearing)
+		{
+			snprintf(buf, buf_size, "%.4g", (double)bb.minx);
+		}
+		else if (wtype == wt_rbearing)
+		{
+			snprintf(buf, buf_size, "%.4g", sc->width - (double)bb.maxx);
+		}
+		else
+		{
+			snprintf(buf, buf_size, "%.4g", rint((sc->width - (double)bb.maxx + (double)bb.minx) / 2));
+		}
+	}
 }
 
-void FVSetWidth(FontView *fv,enum widthtype wtype) {
-    char buffer[12];
-    int em = fv->b.sf->ascent + fv->b.sf->descent;
-    int i, gid;
+void FVSetWidth(FontView* fv, enum widthtype wtype)
+{
+	char buffer[12];
+	int em = fv->b.sf->ascent + fv->b.sf->descent;
+	int i, gid;
 
-    if ( !fv->b.sf->onlybitmaps || fv->b.sf->bitmaps==NULL ) {
-	sprintf(buffer,"%d",wtype==wt_width?6*em/10:wtype==wt_vwidth?em: em/10 );
-	for ( i=0; i<fv->b.map->enccount; ++i ) if ( fv->b.selected[i] && (gid=fv->b.map->map[i])!=-1 && fv->b.sf->glyphs[gid]!=NULL ) {
-	    SCDefWidthVal(buffer,fv->b.sf->glyphs[gid],wtype);
-	break;
+	if (!fv->b.sf->onlybitmaps || fv->b.sf->bitmaps == NULL)
+	{
+		snprintf(buffer, sizeof(buffer), "%d", wtype == wt_width ? 6 * em / 10 : wtype == wt_vwidth ? em : em / 10);
+
+		for (i = 0; i < fv->b.map->enccount; ++i) if (fv->b.selected[i] && (gid = fv->b.map->map[i]) != -1 && fv->b.sf->glyphs[gid] != NULL)
+		{
+			SCDefWidthVal(buffer, sizeof(buffer), fv->b.sf->glyphs[gid], wtype);
+			break;
+		}
 	}
-    } else {
-	int size = fv->show->pixelsize;
-	sprintf(buffer,"%d",wtype==wt_width?6*size/10:wtype==wt_vwidth?size: size/10 );
-	for ( i=0; i<fv->b.map->enccount; ++i ) if ( fv->b.selected[i] && (gid=fv->b.map->map[i])!=-1 && fv->show->glyphs[gid]!=NULL ) {
-	    BCDefWidthVal(buffer,fv->show->glyphs[gid],fv,wtype);
-	break;
+	else
+	{
+		int size = fv->show->pixelsize;
+		snprintf(buffer, sizeof(buffer), "%d", wtype == wt_width ? 6 * size / 10 : wtype == wt_vwidth ? size : size / 10);
+		for (i = 0; i < fv->b.map->enccount; ++i) if (fv->b.selected[i] && (gid = fv->b.map->map[i]) != -1 && fv->show->glyphs[gid] != NULL)
+		{
+			BCDefWidthVal(buffer, sizeof(buffer), fv->show->glyphs[gid], fv, wtype);
+			break;
+		}
 	}
-    }
-    FVCreateWidth(fv,0,FVDoit,wtype,buffer);
+	FVCreateWidth(fv, 0, FVDoit, wtype, buffer);
 }
 
 void CVSetWidth(CharView *cv,enum widthtype wtype) {
     char buf[10];
 
-    SCDefWidthVal(buf,cv->b.sc,wtype);
+    SCDefWidthVal(buf, sizeof(buf), cv->b.sc,wtype);
     FVCreateWidth(cv,cv->b.sc,CVDoit,wtype,buf);
 }
 
@@ -363,7 +394,7 @@ void CVSetWidth(CharView *cv,enum widthtype wtype) {
 void GenericVSetWidth(FontView *fv,SplineChar* sc,enum widthtype wtype) {
     char buf[10];
 
-    SCDefWidthVal(buf,sc,wtype);
+    SCDefWidthVal(buf, sizeof(buf), sc,wtype);
     FVCreateWidth(fv,sc,GenericVDoit,wtype,buf);
 }
 

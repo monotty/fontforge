@@ -267,36 +267,45 @@ return( gv );
     }
 }
 
-static char *GV_ToString(struct glyphvariants *gv) {
+static char* GV_ToString(struct glyphvariants* gv)
+{
     int i, len;
-    char buffer[80], *str;
+    char buffer[80], * str;
 
-    if ( gv==NULL || gv->part_cnt==0 )
-return( NULL );
-    for ( i=len=0; i<gv->part_cnt; ++i ) {
-	len += strlen(gv->parts[i].component);
-	sprintf( buffer, ":%d:%d:%d:%d ", gv->parts[i].is_extender,
-		gv->parts[i].startConnectorLength,
-		gv->parts[i].endConnectorLength,
-		gv->parts[i].fullAdvance);
-	len += strlen( buffer );
+    if (gv == NULL || gv->part_cnt == 0)
+        return(NULL);
+    for (i = len = 0; i < gv->part_cnt; ++i)
+    {
+        len += strlen(gv->parts[i].component);
+        snprintf(buffer, sizeof(buffer), ":%d:%d:%d:%d ", gv->parts[i].is_extender,
+            gv->parts[i].startConnectorLength,
+            gv->parts[i].endConnectorLength,
+            gv->parts[i].fullAdvance);
+        len += strlen(buffer);
     }
-    str = malloc(len+1);
-    for ( i=len=0; i<gv->part_cnt; ++i ) {
-	strcpy(str+len,gv->parts[i].component);
-	len += strlen(gv->parts[i].component);
-	sprintf( buffer, ":%d:%d:%d:%d ", gv->parts[i].is_extender,
-		gv->parts[i].startConnectorLength,
-		gv->parts[i].endConnectorLength,
-		gv->parts[i].fullAdvance);
-	strcpy(str+len,buffer);
-	len += strlen( buffer );
+
+    size_t str_size = len + 1;
+    str = malloc(str_size);
+
+    for (i = len = 0; i < gv->part_cnt; ++i)
+    {
+        strncpy(str + len, gv->parts[i].component, str_size - len);
+
+        len += strlen(gv->parts[i].component);
+        snprintf(buffer, sizeof(buffer), ":%d:%d:%d:%d ", gv->parts[i].is_extender,
+            gv->parts[i].startConnectorLength,
+            gv->parts[i].endConnectorLength,
+            gv->parts[i].fullAdvance);
+
+        strncpy(str + len, buffer, str_size - len);
+        
+        len += strlen(buffer);
     }
-    if ( len!=0 )
-	str[len-1] = '\0';
+    if (len != 0)
+        str[len - 1] = '\0';
     else
-	*str = '\0';
-return( str );
+        *str = '\0';
+    return(str);
 }
 
 static int SF_NameListCheck(SplineFont *sf,char *list) {
@@ -367,7 +376,8 @@ static void MATH_Init(MathDlg *math) {
 	GGadget *tf = GWidgetGetControl(math->gw,2*i+1);
 	int16 *pos = (int16 *) (((char *) (math->math)) + math_constants_descriptor[i].offset );
 
-	sprintf( buffer, "%d", *pos );
+	snprintf( buffer, sizeof(buffer), "%d", *pos );
+
 	GGadgetSetTitle8(tf,buffer);
 	if ( math_constants_descriptor[i].devtab_offset >= 0 ) {
 	    GGadget *tf2 = GWidgetGetControl(math->gw,2*i+2);

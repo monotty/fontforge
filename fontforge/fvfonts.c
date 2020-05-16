@@ -917,7 +917,7 @@ SplineChar *SFGetOrMakeChar(SplineFont *sf, int unienc, const char *name ) {
 	    sc->name = copy(name);
 	else {
 	    char buffer[40];
-	    sprintf(buffer,"glyph%d", sf->glyphcnt);
+	    snprintf(buffer, sizeof(buffer), "glyph%d", sf->glyphcnt);
 	    sc->name = copy(buffer);
 	}
 	SFAddGlyphAndEncode(sf,sc,NULL,-1);
@@ -1497,14 +1497,24 @@ static void LayerInterpolate(Layer *to,Layer *base,Layer *other,real amount,Spli
 	to->stroke_pen.brush.opacity = WIDTH_INHERITED;
     else if ( base->stroke_pen.brush.opacity>=0 && other->stroke_pen.brush.opacity>=0 )
 	to->stroke_pen.brush.opacity = base->stroke_pen.brush.opacity + amount*(other->stroke_pen.brush.opacity-base->stroke_pen.brush.opacity);
-    else
-	LogError(_("Different settings on whether to inherit stroke opacity in layer %d of %s\n"), lc, sc->name );
-    if ( base->stroke_pen.width<0 && other->stroke_pen.width<0 )
-	to->stroke_pen.width = WIDTH_INHERITED;
-    else if ( base->stroke_pen.width>=0 && other->stroke_pen.width>=0 )
-	to->stroke_pen.width = base->stroke_pen.width + amount*(other->stroke_pen.width-base->stroke_pen.width);
-    else
-	LogError(_("Different settings on whether to inherit stroke width in layer %d of %s\n"), lc, sc->name );
+	else
+	{
+		LogError(_("Different settings on whether to inherit stroke opacity in layer %d of %s\n"), lc, sc->name);
+	}
+
+	if (base->stroke_pen.width < 0 && other->stroke_pen.width < 0)
+	{
+		to->stroke_pen.width = WIDTH_INHERITED;
+	}
+	else if (base->stroke_pen.width >= 0 && other->stroke_pen.width >= 0)
+	{
+		to->stroke_pen.width = base->stroke_pen.width + amount * (other->stroke_pen.width - base->stroke_pen.width);
+	}
+	else
+	{
+		LogError(_("Different settings on whether to inherit stroke width in layer %d of %s\n"), lc, sc->name);
+	}
+
     if ( base->stroke_pen.linecap==other->stroke_pen.linecap )
 	to->stroke_pen.linecap = base->stroke_pen.linecap;
     else

@@ -2083,45 +2083,52 @@ return;
 }
 
 /* cleanup may be: -1 => lines become lines, 0 => simplify & retain slopes, 1=> simplify and discard slopes, 2=>discard extrema */
-SplineSet *SplineCharSimplify(SplineChar *sc,SplineSet *head,
-	struct simplifyinfo *smpl) {
-    SplineSet *spl, *prev, *snext;
-    int anysel=0, wassingleton;
+SplineSet* SplineCharSimplify(SplineChar* sc, SplineSet* head,
+	struct simplifyinfo* smpl)
+{
+	SplineSet* spl, * prev, * snext;
+	int anysel = 0, wassingleton;
 
-    if ( smpl->check_selected_contours ) {
-	for ( spl = head; spl!=NULL && !anysel; spl = spl->next ) {
-	    anysel = PointListIsSelected(spl);
+	if (smpl->check_selected_contours)
+	{
+		for (spl = head; spl != NULL && !anysel; spl = spl->next)
+		{
+			anysel = PointListIsSelected(spl);
+		}
 	}
-    }
 
-    prev = NULL;
-    for ( spl = head; spl!=NULL; spl = snext ) {
-	snext = spl->next;
-	if ( !anysel || PointListIsSelected(spl)) {
-	    wassingleton = spl->first->prev==spl->first->next &&
-		    (spl->first->prev==NULL ||
-		     (spl->first->noprevcp && spl->first->nonextcp));
-	    SplinePointListSimplify(sc,spl,smpl);
-	    /* remove any singleton points */
-	    if (( !wassingleton ||
-		    (smpl->flags!=sf_cleanup && (smpl->flags&sf_rmsingletonpoints))) &&
-		   spl->first->prev==spl->first->next &&
-		   (spl->first->prev==NULL ||
-		     (spl->first->noprevcp && spl->first->nonextcp))) {
-		if ( prev==NULL )
-		    head = snext;
-		else
-		    prev->next = snext;
-		spl->next = NULL;
-		SplinePointListMDFree(sc,spl);
-	    } else
-		prev = spl;
+	prev = NULL;
+	for (spl = head; spl != NULL; spl = snext)
+	{
+		snext = spl->next;
+		if (!anysel || PointListIsSelected(spl))
+		{
+			wassingleton = spl->first->prev == spl->first->next &&
+				(spl->first->prev == NULL ||
+					(spl->first->noprevcp && spl->first->nonextcp));
+			SplinePointListSimplify(sc, spl, smpl);
+			/* remove any singleton points */
+			if ((!wassingleton ||
+				(smpl->flags != sf_cleanup && (smpl->flags & sf_rmsingletonpoints))) &&
+				spl->first->prev == spl->first->next &&
+				(spl->first->prev == NULL ||
+					(spl->first->noprevcp && spl->first->nonextcp)))
+			{
+				if (prev == NULL)
+					head = snext;
+				else
+					prev->next = snext;
+				spl->next = NULL;
+				SplinePointListMDFree(sc, spl);
+			}
+			else
+				prev = spl;
+		}
 	}
-    }
-    SplineSetsRemoveAnnoyingExtrema(head,.3);
-    SPLCategorizePoints(head);
-    /* printf( "nocnt=%d totcnt=%d curdif=%d incr=%d\n", nocnt_cnt, totcnt_cnt, curdiff_cnt, incr_cnt ); */ /* Debug!!! */
-return( head );
+	SplineSetsRemoveAnnoyingExtrema(head, .3);
+	SPLCategorizePoints(head);
+	/* printf( "nocnt=%d totcnt=%d curdif=%d incr=%d\n", nocnt_cnt, totcnt_cnt, curdiff_cnt, incr_cnt ); */ /* Debug!!! */
+	return(head);
 }
 
 /* If the start point of a contour to be the left most point on it.  If there */
@@ -2892,12 +2899,14 @@ void SplineCharAddExtrema(SplineChar *sc, SplineSet *head,enum ae_type between_s
 	    SplineSetAddExtrema(sc,ss,between_selected,emsize);
 }
 
-char *GetNextUntitledName(void) {
-    static int untitled_cnt=1;
-    char buffer[80];
+char* GetNextUntitledName(void)
+{
+	static int untitled_cnt = 1;
+	char buffer[80];
 
-    sprintf( buffer, "Untitled%d", untitled_cnt++ );
-return( copy(buffer));
+	snprintf(buffer, sizeof(buffer), "Untitled%d", untitled_cnt++);
+
+	return(copy(buffer));
 }
 
 SplineFont *SplineFontEmpty(void) {
@@ -2938,47 +2947,64 @@ SplineFont *SplineFontEmpty(void) {
 return( sf );
 }
 
-SplineFont *SplineFontBlank(int charcnt) {
-    SplineFont *sf;
-    char buffer[200];
-    time_t now;
-    struct tm *tm;
-    const char *author = GetAuthor();
+SplineFont* SplineFontBlank(int charcnt)
+{
+	SplineFont* sf;
+	char buffer[200];
+	time_t now;
+	struct tm* tm;
+	const char* author = GetAuthor();
 
-    sf = SplineFontEmpty();
-    sf->fontname = GetNextUntitledName();
-    sf->fullname = copy(sf->fontname);
-    sf->familyname = copy(sf->fontname);
-    sprintf( buffer, "%s.sfd", sf->fontname);
-    sf->origname = ToAbsolute(buffer);
-    sf->weight = copy("Regular");
-    now = GetTime();
-    if (!getenv("SOURCE_DATE_EPOCH")) {
-	tm = localtime(&now);
-    } else {
-	tm = gmtime(&now);
-    }
-    if ( author!=NULL )
-	sprintf( buffer, "Copyright (c) %d, %.50s", tm->tm_year+1900, author );
-    else
-	sprintf( buffer, "Copyright (c) %d, Anonymous", tm->tm_year+1900 );
-    sf->copyright = copy(buffer);
-    if ( xuid!=NULL ) {
-	sf->xuid = malloc(strlen(xuid)+20);
-	sprintf(sf->xuid,"[%s %d]", xuid, (rand()&0xffffff));
-    }
-    sprintf( buffer, "%d-%d-%d: Created with FontForge (http://fontforge.org)", tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday );
-    sf->comments = copy(buffer);
-    sf->version = copy("001.000");
-    sf->ascent = rint(new_em_size*.8); sf->descent = new_em_size-sf->ascent;
-    sf->upos = -rint(new_em_size*.1); sf->uwidth = rint(new_em_size*.05);		/* defaults for cff */
-    sf->glyphcnt = 0;
-    sf->glyphmax = charcnt;
-    sf->glyphs = calloc(charcnt,sizeof(SplineChar *));
-    sf->pfminfo.fstype = -1;
-    sf->pfminfo.stylemap = -1;
-    sf->use_typo_metrics = true;
-return( sf );
+	sf = SplineFontEmpty();
+	sf->fontname = GetNextUntitledName();
+	sf->fullname = copy(sf->fontname);
+	sf->familyname = copy(sf->fontname);
+	
+	snprintf(buffer, sizeof(buffer), "%s.sfd", sf->fontname);
+	
+	sf->origname = ToAbsolute(buffer);
+	sf->weight = copy("Regular");
+	now = GetTime();
+	if (!getenv("SOURCE_DATE_EPOCH"))
+	{
+		tm = localtime(&now);
+	}
+	else
+	{
+		tm = gmtime(&now);
+	}
+
+	if (author != NULL)
+	{
+		snprintf(buffer, sizeof(buffer), "Copyright (c) %d, %.50s", tm->tm_year + 1900, author);
+	}
+	else
+	{
+		snprintf(buffer, sizeof(buffer), "Copyright (c) %d, Anonymous", tm->tm_year + 1900);
+	}
+
+	sf->copyright = copy(buffer);
+	if (xuid != NULL)
+	{
+		int buff_size = strlen(xuid) + 20;
+		sf->xuid = malloc(buff_size);
+		snprintf(sf->xuid, buff_size, "[%s %d]", xuid, (rand() & 0xffffff));
+	}
+	
+	snprintf(buffer, sizeof(buffer), "%d-%d-%d: Created with FontForge (http://fontforge.org)",
+		tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
+
+	sf->comments = copy(buffer);
+	sf->version = copy("001.000");
+	sf->ascent = rint(new_em_size * .8); sf->descent = new_em_size - sf->ascent;
+	sf->upos = -rint(new_em_size * .1); sf->uwidth = rint(new_em_size * .05);		/* defaults for cff */
+	sf->glyphcnt = 0;
+	sf->glyphmax = charcnt;
+	sf->glyphs = calloc(charcnt, sizeof(SplineChar*));
+	sf->pfminfo.fstype = -1;
+	sf->pfminfo.stylemap = -1;
+	sf->use_typo_metrics = true;
+	return(sf);
 }
 
 SplineFont *SplineFontNew(void) {
@@ -2996,34 +3022,60 @@ SplineFont *SplineFontNew(void) {
 return( sf );
 }
 
-static void SFChangeXUID(SplineFont *sf, int random) {
-    char *pt, *new, *npt;
-    int val;
+static void SFChangeXUID(SplineFont* sf, int random)
+{
+	char* pt, * new, * npt;
+	int val;
 
-    if ( sf->xuid==NULL )
-return;
-    pt = strrchr(sf->xuid,' ');
-    if ( pt==NULL )
-	pt = strchr(sf->xuid,'[');
-    if ( pt==NULL )
-	pt = sf->xuid;
-    else
-	++pt;
-    if ( random )
-	val = rand()&0xffffff;
-    else {
-	val = strtol(pt,NULL,10);
-	val = (val+1)&0xffffff;
-    }
+	if (sf->xuid == NULL)
+	{
+		return;
+	}
 
-    new = malloc(pt-sf->xuid+12);
-    strncpy(new,sf->xuid,pt-sf->xuid);
-    npt = new + (pt-sf->xuid);
-    if ( npt==new ) *npt++ = '[';
-    sprintf(npt, "%d]", val );
-    free(sf->xuid); sf->xuid = new;
-    sf->changed = true;
-    sf->changed_since_xuidchanged = false;
+	pt = strrchr(sf->xuid, ' ');
+	
+	if (pt == NULL)
+	{
+		pt = strchr(sf->xuid, '[');
+	}
+
+	if (pt == NULL)
+	{
+		pt = sf->xuid;
+	}
+	else
+	{
+		++pt;
+	}
+
+	if (random)
+	{
+		val = rand() & 0xffffff;
+	}
+	else
+	{
+		val = strtol(pt, NULL, 10);
+		val = (val + 1) & 0xffffff;
+	}
+
+	int buff_size = pt - sf->xuid + 12;
+	new = malloc(buff_size);
+	
+	strncpy(new, sf->xuid, pt - sf->xuid);
+	npt = new + (pt - sf->xuid);
+	buff_size -= (pt - sf->xuid);
+
+	if (npt == new)
+	{
+		*npt++ = '[';
+		buff_size--;
+	}
+
+	snprintf(npt, buff_size, "%d]", val);
+
+	free(sf->xuid); sf->xuid = new;
+	sf->changed = true;
+	sf->changed_since_xuidchanged = false;
 }
 
 void SFIncrementXUID(SplineFont *sf) {
@@ -4032,167 +4084,254 @@ return( NULL );
 return( ret );
 }
 
-static int _SplinePointListIsClockwise(const SplineSet *spl, int max_depth) {
-    EIList el;
-    EI *active=NULL, *apt, *pr, *e;
-    int i, winding,change,waschange, cnt;
-    SplineChar dummy;
-    SplineSet *next;
-    Layer layers[2];
-    int cw_cnt=0, ccw_cnt=0, l_cw_cnt, l_ccw_cnt, lines_processed = 0;
+static int _SplinePointListIsClockwise(const SplineSet* spl, int max_depth)
+{
+	EIList el;
+	EI* active = NULL, * apt, * pr, * e;
+	int i, winding, change, waschange, cnt;
+	SplineChar dummy;
+	SplineSet* next;
+	Layer layers[2];
+	int cw_cnt = 0, ccw_cnt = 0, l_cw_cnt, l_ccw_cnt, lines_processed = 0;
 
-    memset(&el,'\0',sizeof(el));
-    memset(&dummy,'\0',sizeof(dummy));
-    memset(layers,0,sizeof(layers));
-    el.layer = ly_fore;
-    dummy.layers = layers;
-    dummy.layer_cnt = 2;
-    dummy.layers[ly_fore].splines = (SplineSet *) spl;
-    dummy.name = "Clockwise Test";
-    next = spl->next; ((SplineSet *) spl)->next = NULL;
-    ELFindEdges(&dummy,&el);
-    if ( el.coordmax[1]-el.coordmin[1] > 1.e6 ) {
-	LogError( _("Warning: Unreasonably big splines. They will be ignored.\n") );
-	((SplineSet *) spl)->next = next;
-return( -1 );
-    }
-    el.major = 1;
-    ELOrder(&el,el.major);
+	memset(&el, '\0', sizeof(el));
+	memset(&dummy, '\0', sizeof(dummy));
+	memset(layers, 0, sizeof(layers));
 
-    waschange = false;
-    for ( i=0; i<el.cnt ; ++i ) {
-	l_cw_cnt = l_ccw_cnt = 0;
-	active = EIActiveEdgesRefigure(&el,active,i,1,&change);
-	for ( apt=active, cnt=0; apt!=NULL; apt = apt->aenext , ++cnt );
-	// "Scan line" skip conditions:
-	//   Edge starts or ends on this line
-	//   Edge starts or ends on the following line
-	//   Odd number of edges on this line
-	//   On or immediately after a line marked "change" by EIAER
-	if ( el.ordered[i]!=NULL || el.ends[i] || cnt&1 ||
-		waschange || change ||
-		(i!=el.cnt-1 && (el.ends[i+1] || el.ordered[i+1])) ) {
-	    waschange = change;
-	    continue;
+	el.layer = ly_fore;
+	dummy.layers = layers;
+	dummy.layer_cnt = 2;
+	dummy.layers[ly_fore].splines = (SplineSet*)spl;
+	dummy.name = "Clockwise Test";
+	next = spl->next; ((SplineSet*)spl)->next = NULL;
+	
+	ELFindEdges(&dummy, &el);
+	
+	if (el.coordmax[1] - el.coordmin[1] > 1.e6)
+	{
+		LogError(_("Warning: Unreasonably big splines. They will be ignored.\n"));
+		((SplineSet*)spl)->next = next;
+		return(-1);
 	}
-	waschange = change;
-	for ( apt=active; apt!=NULL; apt = e) {
-	    if ( EISkipExtremum(apt,i+el.low,1)) {
-		e = apt->aenext->aenext;
-		continue;
-	    }
-	    if ( apt->up )
-		++l_cw_cnt;
-	    else
-		++l_ccw_cnt;
-	    if ( (cw_cnt + l_cw_cnt)!=0 && (ccw_cnt + l_ccw_cnt)!=0 ) {
-		((SplineSet *) spl)->next = next;
-		return( -1 );
-	    }
-	    winding = apt->up?1:-1;
-	    for ( pr=apt, e=apt->aenext; e!=NULL && winding!=0; pr=e, e=e->aenext ) {
-		if ( EISkipExtremum(e,i+el.low,1)) {
-		    e = e->aenext;
-	    continue;
+
+	el.major = 1;
+	ELOrder(&el, el.major);
+
+	waschange = false;
+	for (i = 0; i < el.cnt; ++i)
+	{
+		l_cw_cnt = l_ccw_cnt = 0;
+		active = EIActiveEdgesRefigure(&el, active, i, 1, &change);
+
+		for (apt = active, cnt = 0; apt != NULL; apt = apt->aenext)
+		{
+			++cnt;
 		}
-		if ( pr->up!=e->up ) {
-		    if ( (winding<=0 && !e->up) || (winding>0 && e->up )) {
-			// This is an erroneous condition... but I don't think
-			// it can actually happen with a single contour. I
-			// think it is more likely this means a rounding error
-			// and a problem in my algorithm
-			l_cw_cnt = l_ccw_cnt = 0;
-			break;
-		    }
-		    winding += (e->up?1:-1);
-		} else if ( EISameLine(pr,e,i+el.low,1) )
-		    // This just continues the line and doesn't change count
-		    ;
-		else {
-		    if ( (winding<=0 && !e->up) || (winding>0 && e->up )) {
-			l_cw_cnt = l_ccw_cnt = 0;
-			break;
-		    }
-		    winding += (e->up?1:-1);
+		// "Scan line" skip conditions:
+		//   Edge starts or ends on this line
+		//   Edge starts or ends on the following line
+		//   Odd number of edges on this line
+		//   On or immediately after a line marked "change" by EIAER
+		if (el.ordered[i] != NULL || el.ends[i] || cnt & 1 || waschange || change ||
+			(i != el.cnt - 1 && (el.ends[i + 1] || el.ordered[i + 1])))
+		{
+			waschange = change;
+			continue;
 		}
-	    }
+
+		waschange = change;
+		for (apt = active; apt != NULL; apt = e)
+		{
+			if (EISkipExtremum(apt, i + el.low, 1))
+			{
+				e = apt->aenext->aenext;
+				continue;
+			}
+
+			if (apt->up)
+			{
+				++l_cw_cnt;
+			}
+			else
+			{
+				++l_ccw_cnt;
+			}
+
+			if ((cw_cnt + l_cw_cnt) != 0 && 
+				(ccw_cnt + l_ccw_cnt) != 0)
+			{
+				((SplineSet*)spl)->next = next;
+				return(-1);
+			}
+
+			winding = apt->up ? 1 : -1;
+			for (pr = apt, e = apt->aenext; e != NULL && winding != 0; pr = e, e = e->aenext)
+			{
+				if (EISkipExtremum(e, i + el.low, 1))
+				{
+					e = e->aenext;
+					continue;
+				}
+
+				if (pr->up != e->up)
+				{
+					if ((winding <= 0 && !e->up) || (winding > 0 && e->up))
+					{
+						// This is an erroneous condition... but I don't think
+						// it can actually happen with a single contour. I
+						// think it is more likely this means a rounding error
+						// and a problem in my algorithm
+						l_cw_cnt = l_ccw_cnt = 0;
+						break;
+					}
+					winding += (e->up ? 1 : -1);
+				}
+				else if (EISameLine(pr, e, i + el.low, 1))
+				{	// This just continues the line and doesn't change count
+					;
+				}
+				else
+				{
+					if ((winding <= 0 && !e->up) || 
+						(winding > 0 && e->up))
+					{
+						l_cw_cnt = l_ccw_cnt = 0;
+						break;
+					}
+
+					winding += (e->up ? 1 : -1);
+				}
+			}
+		}
+
+		cw_cnt += l_cw_cnt;
+		ccw_cnt += l_ccw_cnt;
+		if (l_cw_cnt != 0 || 
+			l_ccw_cnt != 0)
+		{
+			++lines_processed;
+		}
 	}
-	cw_cnt += l_cw_cnt;
-	ccw_cnt += l_ccw_cnt;
-	if ( l_cw_cnt!=0 || l_ccw_cnt!=0 )
-	    ++lines_processed;
-    }
-    free(el.ordered);
-    free(el.ends);
-    ElFreeEI(&el);
 
-    ((SplineSet *) spl)->next = next;
+	free(el.ordered);
+	free(el.ends);
+	ElFreeEI(&el);
 
-    if (    ( lines_processed > 4 && ((float) lines_processed / el.cnt) > .33 )
-         || ( max_depth && lines_processed > 0 ) ) {
-	if ( cw_cnt!=0 && ccw_cnt==0 )
-	    return true;
-	else if ( cw_cnt==0 && ccw_cnt!=0 )
-	    return false;
-	else
-	    return -1;
-    }
+	((SplineSet*)spl)->next = next;
 
-    return -2;
+	if ((lines_processed > 4 && ((float)lines_processed / el.cnt) > .33)
+		|| (max_depth && lines_processed > 0))
+	{
+		if (cw_cnt != 0 && 
+			ccw_cnt == 0)
+		{
+			return true;
+		}
+		else if (cw_cnt == 0 && 
+				 ccw_cnt != 0)
+		{
+			return false;
+		}
+		else
+		{
+			return -1;
+		}
+	}
+
+	return -2;
 }
 
-int SplinePointListIsClockwise(const SplineSet *spl) {
-    SplineSet *cpy;
-    const SplineSet *pass;
-    SplinePoint *sp;
-    int r, depth=0, mag=1, y, ymin=INT_MAX, ymax=INT_MIN, pt_cnt=0;
+int SplinePointListIsClockwise(const SplineSet* spl)
+{
+	SplineSet* cpy;
+	const SplineSet* pass;
+	SplinePoint* sp;
+	int r, depth = 0, mag = 1, y, ymin = INT_MAX, ymax = INT_MIN, pt_cnt = 0;
 
-    while ( depth<3 ) {
-	if ( mag!=1 ) {
-	    cpy = SplinePointListCopy1(spl);
-	    real trans[6] = { mag, 0.0, 0.0, mag, 0.0, 0.0 };
-	    SplinePointListTransformExtended(cpy,trans,tpt_AllPoints,
-	                                     tpmask_dontTrimValues);
-	    pass = cpy;
-	} else {
-	    cpy = NULL;
-	    pass = spl;
+	while (depth < 3)
+	{
+		if (mag != 1)
+		{
+			cpy = SplinePointListCopy1(spl);
+			real trans[6] = { mag, 0.0, 0.0, mag, 0.0, 0.0 };
+			SplinePointListTransformExtended(cpy, trans, tpt_AllPoints, tpmask_dontTrimValues);
+			pass = cpy;
+		}
+		else
+		{
+			cpy = NULL;
+			pass = spl;
+		}
+
+		r = _SplinePointListIsClockwise(pass, depth == 2);
+		
+		if (cpy != NULL)
+		{
+			SplinePointListFree(cpy);
+		}
+
+		if (r >= -1)
+		{
+			return r;
+		}
+
+		// Bad run, prepare for next
+		if (depth == 0)
+		{
+			// Check for open or single-point splines and
+			// further magnify small splines
+			for (sp = spl->first; ; )
+			{
+				if (sp->next == NULL)
+				{
+					return -1; // Open Spline
+				}
+
+				++pt_cnt;
+				y = floor(sp->me.y);
+
+				if (y < ymin)
+				{
+					ymin = y;
+				}
+
+				y = ceil(sp->me.y);
+				
+				if (y > ymax)
+				{
+					ymax = y;
+				}
+
+				sp = sp->next->to;
+
+				if (sp == spl->first)
+				{
+					break;
+				}
+			}
+
+			if (pt_cnt == 1)
+			{
+				return -1; // Single point spline
+			}
+
+			y = ymax - ymin + 1;
+			
+			if (y < pt_cnt + 7)
+			{
+				mag = (int)(7 + pt_cnt) / y;
+			}
+		}
+
+		mag *= 3;
+		++depth;
 	}
-	r = _SplinePointListIsClockwise(pass, depth==2);
-	if ( cpy!=NULL )
-	    SplinePointListFree(cpy);
-	if ( r>=-1 )
-	    return r;
-	// Bad run, prepare for next
-	if ( depth==0 ) {
-	    // Check for open or single-point splines and
-	    // further magnify small splines
-	    for ( sp = spl->first; ; ) {
-		if ( sp->next==NULL )
-		    return -1; // Open Spline
-		++pt_cnt;
-		y = floor(sp->me.y);
-		if ( y < ymin )
-		    ymin = y;
-		y = ceil(sp->me.y);
-		if ( y > ymax )
-		    ymax = y;
-		sp = sp->next->to;
-		if ( sp==spl->first )
-		    break;
-	    }
-	    if ( pt_cnt==1 )
-		return -1; // Single point spline
-	    y = ymax - ymin + 1;
-	    if ( y < pt_cnt + 7 )
-		mag = (int) (7 + pt_cnt)/y;
-	}
-	mag *= 3;
-	++depth;
-    }
-    mag /= 3;
-    LogError( _("Warning: SplinePointListIsClockwise found no usable line even at %dx magnification.\n"), mag );
-    return -1;
+
+	mag /= 3;
+	LogError(_("Warning: SplinePointListIsClockwise found "
+		"no usable line even at %dx magnification.\n"), mag);
+
+	return -1;
 }
 
 /* Since this function now deals with 4 arbitrarily selected points, */

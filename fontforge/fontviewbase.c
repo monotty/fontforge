@@ -177,57 +177,81 @@ return;
     }
 }
 
-void FVCopyFgtoBg(FontViewBase *fv) {
-    int i, gid;
-
-    for ( i=0; i<fv->map->enccount; ++i )
-	if ( fv->selected[i] && (gid = fv->map->map[i])!=-1 &&
-		fv->sf->glyphs[gid]!=NULL )
-	    SCCopyLayerToLayer(fv->sf->glyphs[gid],fv->active_layer,ly_back,true);
+void FVCopyFgtoBg(FontViewBase* fv)
+{
+	for (int i = 0; i < fv->map->enccount; ++i)
+	{
+		int gid;
+		if (fv->selected[i]
+			&& (gid = fv->map->map[i]) != -1
+			&& fv->sf->glyphs[gid] != NULL)
+		{
+			SCCopyLayerToLayer(fv->sf->glyphs[gid], fv->active_layer, ly_back, true);
+		}
+	}
 }
 
-void FVUnlinkRef(FontViewBase *fv) {
-    int i,layer, first, last, gid;
-    SplineChar *sc;
-    RefChar *rf, *next;
-    BDFFont *bdf;
-    BDFChar *bdfc;
-    BDFRefChar *head, *cur;
+void FVUnlinkRef(FontViewBase* fv)
+{
+	int i, layer, first, last, gid;
+	SplineChar* sc;
+	RefChar* rf, * next;
+	BDFFont* bdf;
+	BDFChar* bdfc;
+	BDFRefChar* head, * cur;
 
-    for ( i=0; i<fv->map->enccount; ++i ) if ( fv->selected[i] &&
-	    (gid = fv->map->map[i])!=-1 && (sc = fv->sf->glyphs[gid])!=NULL) {
-	if (( fv->active_bitmap==NULL || !onlycopydisplayed ) && 
-		sc->layers[fv->active_layer].refs!=NULL) {
-	    SCPreserveLayer(sc,fv->active_layer,false);
-	    if ( sc->parent->multilayer ) {
-		first = ly_fore;
-		last = sc->layer_cnt-1;
-	    } else
-		first = last = fv->active_layer;
-	    for ( layer=first; layer<=last; ++layer ) {
-		for ( rf=sc->layers[layer].refs; rf!=NULL ; rf=next ) {
-		    next = rf->next;
-		    SCRefToSplines(sc,rf,layer);
-		}
-	    }
-	    SCCharChangedUpdate( sc,fv->active_layer );
-	}
+	for (i = 0; i < fv->map->enccount; ++i)
+	{
+		if (fv->selected[i]
+			&& (gid = fv->map->map[i]) != -1
+			&& (sc = fv->sf->glyphs[gid]) != NULL)
+		{
+			if ((fv->active_bitmap == NULL || !onlycopydisplayed) 
+				&& sc->layers[fv->active_layer].refs != NULL)
+			{
+				SCPreserveLayer(sc, fv->active_layer, false);
+				if (sc->parent->multilayer)
+				{
+					first = ly_fore;
+					last = sc->layer_cnt - 1;
+				}
+				else
+					first = last = fv->active_layer;
+				for (layer = first; layer <= last; ++layer)
+				{
+					for (rf = sc->layers[layer].refs; rf != NULL; rf = next)
+					{
+						next = rf->next;
+						SCRefToSplines(sc, rf, layer);
+					}
+				}
+				SCCharChangedUpdate(sc, fv->active_layer);
+			}
 
-	for ( bdf = fv->sf->bitmaps; bdf!=NULL; bdf=bdf->next ) {
-	    if ( bdf != fv->active_bitmap && onlycopydisplayed )
-	continue;
-	
-	    bdfc = gid==-1 || gid>=bdf->glyphcnt? NULL : bdf->glyphs[gid];
-	    if ( bdfc != NULL && bdfc->refs != NULL ) {
-		BCMergeReferences( bdfc,bdfc,0,0 );
-		for ( head = bdfc->refs; head != NULL; ) {
-		    cur = head; head = cur->next; free( cur );
+			for (bdf = fv->sf->bitmaps; bdf != NULL; bdf = bdf->next)
+			{
+				if (bdf != fv->active_bitmap && onlycopydisplayed)
+				{
+					continue;
+				}
+
+				bdfc = gid == -1 || gid >= bdf->glyphcnt ? NULL : bdf->glyphs[gid];
+
+				if (bdfc != NULL && bdfc->refs != NULL)
+				{
+					BCMergeReferences(bdfc, bdfc, 0, 0);
+
+					for (head = bdfc->refs; head != NULL; )
+					{
+						cur = head; head = cur->next; free(cur);
+					}
+
+					bdfc->refs = NULL;
+					BCCharChangedUpdate(bdfc);
+				}
+			}
 		}
-		bdfc->refs = NULL;
-		BCCharChangedUpdate(bdfc);
-	    }
 	}
-    }
 }
 
 void FVUndo(FontViewBase *fv) {
@@ -832,27 +856,37 @@ void FVTransFunc(void *_fv,real transform[6],int otype, BVTFunc *bvts,
     }
 }
 
-void FVReencode(FontViewBase *fv,Encoding *enc) {
-    EncMap *map;
+void FVReencode(FontViewBase* fv, Encoding* enc)
+{
+	EncMap* map;
 
-    if ( enc==&custom )
-	fv->map->enc = &custom;
-    else {
-	map = EncMapFromEncoding(fv->sf,enc);
-	fv->selected = realloc(fv->selected,map->enccount);
-	memset(fv->selected,0,map->enccount);
-	EncMapFree(fv->map);
-	if (fv->sf != NULL && fv->map == fv->sf->map) { fv->sf->map = map; }
-	fv->map = map;
-    }
-    if ( fv->normal!=NULL ) {
-	EncMapFree(fv->normal);
-	if (fv->sf != NULL && fv->normal == fv->sf->map) { fv->sf->map = NULL; }
-	fv->normal = NULL;
-    }
-    SFReplaceEncodingBDFProps(fv->sf,fv->map);
-    FVSetTitle(fv);
-    FontViewReformatOne(fv);
+	if (enc == &custom)
+		fv->map->enc = &custom;
+	else
+	{
+		map = EncMapFromEncoding(fv->sf, enc);
+		fv->selected = realloc(fv->selected, map->enccount);
+		memset(fv->selected, 0, map->enccount);
+		EncMapFree(fv->map);
+		if (fv->sf != NULL && fv->map == fv->sf->map)
+		{
+			fv->sf->map = map;
+		}
+
+		fv->map = map;
+	}
+	if (fv->normal != NULL)
+	{
+		EncMapFree(fv->normal);
+		if (fv->sf != NULL && fv->normal == fv->sf->map)
+		{
+			fv->sf->map = NULL;
+		}
+		fv->normal = NULL;
+	}
+	SFReplaceEncodingBDFProps(fv->sf, fv->map);
+	FVSetTitle(fv);
+	FontViewReformatOne(fv);
 }
 
 void FVOverlap(FontViewBase *fv,enum overlap_type ot) {
@@ -1331,17 +1365,23 @@ return;
     }
 }
 
-void FVClearHints(FontViewBase *fv) {
-    int i, gid;
+void FVClearHints(FontViewBase* fv)
+{
+	for (int i = 0; i < fv->map->enccount; ++i)
+	{
+		int gid;
 
-    for ( i=0; i<fv->map->enccount; ++i ) if ( fv->selected[i] &&
-	    (gid = fv->map->map[i])!=-1 && SCWorthOutputting(fv->sf->glyphs[gid]) ) {
-	SplineChar *sc = fv->sf->glyphs[gid];
-	sc->manualhints = true;
-	SCPreserveHints(sc,fv->active_layer);
-	SCClearHints(sc);
-	SCUpdateAll(sc);
-    }
+		if (fv->selected[i] 
+			&& (gid = fv->map->map[i]) != -1 
+			&& SCWorthOutputting(fv->sf->glyphs[gid]))
+		{
+			SplineChar* sc = fv->sf->glyphs[gid];
+			sc->manualhints = true;
+			SCPreserveHints(sc, fv->active_layer);
+			SCClearHints(sc);
+			SCUpdateAll(sc);
+		}
+	}
 }
 
 FontViewBase *ViewPostScriptFont(const char *filename,int openflags) {
@@ -1782,75 +1822,92 @@ void FVRevertBackup(FontViewBase *fv) {
     _FVRevert(fv,true);
 }
 
-void FVRevertGlyph(FontViewBase *fv) {
-    int i, gid;
-    int nc_state = -1;
-    SplineFont *sf = fv->sf;
-    SplineChar *sc, *tsc;
-    SplineChar temp;
-    Undoes **undoes;
-    int layer, lc;
-    EncMap *map = fv->map;
-    CharViewBase *cvs;
-    int alayer = ly_fore;
+void FVRevertGlyph(FontViewBase* fv)
+{
+	int i, gid;
+	int nc_state = -1;
+	SplineFont* sf = fv->sf;
+	SplineChar* sc, * tsc;
+	SplineChar temp;
+	Undoes** undoes;
+	int layer, lc;
+	EncMap* map = fv->map;
+	CharViewBase* cvs;
+	int alayer = ly_fore;
 
-    if ( fv->sf->sfd_version<2 )
-	ff_post_error(_("Old sfd file"),_("This font comes from an old format sfd file. Not all aspects of it can be reverted successfully."));
+	if (fv->sf->sfd_version < 2)
+		ff_post_error(_("Old sfd file"), _("This font comes from an old format sfd file. Not all aspects of it can be reverted successfully."));
 
-    for ( i=0; i<map->enccount; ++i ) if ( fv->selected[i] && (gid=map->map[i])!=-1 && sf->glyphs[gid]!=NULL ) {
-	tsc = sf->glyphs[gid];
-	if ( tsc->namechanged ) {
-	    if ( nc_state==-1 ) {
-		ff_post_error(_("Glyph Name Changed"),_("The name of glyph %.40s has changed. This is what I use to find the glyph in the file, so I cannot revert this glyph.\n(You will not be warned for subsequent glyphs.)"),tsc->name);
-		nc_state = 0;
-	    }
-	} else {
-	    sc = SFDReadOneChar(sf,tsc->name);
-	    if ( sc==NULL ) {
-		ff_post_error(_("Can't Find Glyph"),_("The glyph, %.80s, can't be found in the sfd file"),tsc->name);
-		tsc->namechanged = true;
-	    } else {
-		SCPreserveState(tsc,true);
-		SCPreserveBackground(tsc);
-		if ( tsc->views!=NULL )
-		    alayer = CVLayer(tsc->views);
-		temp = *tsc;
-		tsc->dependents = NULL;
-		lc = tsc->layer_cnt;
-		undoes = malloc(lc*sizeof(Undoes *));
-		for ( layer=0; layer<lc; ++layer ) {
-		    undoes[layer] = tsc->layers[layer].undoes;
-		    tsc->layers[layer].undoes = NULL;
+	for (i = 0; i < map->enccount; ++i)
+	{
+		if (fv->selected[i] && (gid = map->map[i]) != -1 && sf->glyphs[gid] != NULL)
+		{
+			tsc = sf->glyphs[gid];
+			if (tsc->namechanged)
+			{
+				if (nc_state == -1)
+				{
+					ff_post_error(_("Glyph Name Changed"), _("The name of glyph %.40s has changed. This is what I use to find the glyph in the file, so I cannot revert this glyph.\n(You will not be warned for subsequent glyphs.)"), tsc->name);
+					nc_state = 0;
+				}
+			}
+			else
+			{
+				sc = SFDReadOneChar(sf, tsc->name);
+				if (sc == NULL)
+				{
+					ff_post_error(_("Can't Find Glyph"), _("The glyph, %.80s, can't be found in the sfd file"), tsc->name);
+					tsc->namechanged = true;
+				}
+				else
+				{
+					SCPreserveState(tsc, true);
+					SCPreserveBackground(tsc);
+					if (tsc->views != NULL)
+						alayer = CVLayer(tsc->views);
+					temp = *tsc;
+					tsc->dependents = NULL;
+					lc = tsc->layer_cnt;
+					undoes = malloc(lc * sizeof(Undoes*));
+					for (layer = 0; layer < lc; ++layer)
+					{
+						undoes[layer] = tsc->layers[layer].undoes;
+						tsc->layers[layer].undoes = NULL;
+					}
+					SplineCharFreeContents(tsc);
+					*tsc = *sc;
+					chunkfree(sc, sizeof(SplineChar));
+					tsc->parent = sf;
+					tsc->dependents = temp.dependents;
+					tsc->views = temp.views;
+					for (layer = 0; layer < lc && layer < tsc->layer_cnt; ++layer)
+						tsc->layers[layer].undoes = undoes[layer];
+					for (; layer < lc; ++layer)
+						UndoesFree(undoes[layer]);
+					free(undoes);
+					/* tsc->changed = temp.changed; */
+					/* tsc->orig_pos = temp.orig_pos; */
+					for (cvs = tsc->views; cvs != NULL; cvs = cvs->next)
+					{
+						cvs->layerheads[dm_back] = &tsc->layers[ly_back];
+						cvs->layerheads[dm_fore] = &tsc->layers[ly_fore];
+						if (sf->multilayer)
+						{
+							if (alayer != ly_back)
+								cvs->layerheads[dm_fore] = &tsc->layers[alayer];
+						}
+						else
+						{
+							if (alayer != ly_fore)
+								cvs->layerheads[dm_back] = &tsc->layers[alayer];
+						}
+					}
+					RevertedGlyphReferenceFixup(tsc, sf);
+					_SCCharChangedUpdate(tsc, alayer, false);
+				}
+			}
 		}
-		SplineCharFreeContents(tsc);
-		*tsc = *sc;
-		chunkfree(sc,sizeof(SplineChar));
-		tsc->parent = sf;
-		tsc->dependents = temp.dependents;
-		tsc->views = temp.views;
-		for ( layer = 0; layer<lc && layer<tsc->layer_cnt; ++layer )
-		    tsc->layers[layer].undoes = undoes[layer];
-		for ( ; layer<lc; ++layer )
-		    UndoesFree(undoes[layer]);
-		free(undoes);
-		/* tsc->changed = temp.changed; */
-		/* tsc->orig_pos = temp.orig_pos; */
-		for ( cvs=tsc->views; cvs!=NULL; cvs= cvs->next ) {
-		    cvs->layerheads[dm_back] = &tsc->layers[ly_back];
-		    cvs->layerheads[dm_fore] = &tsc->layers[ly_fore];
-		    if ( sf->multilayer ) {
-			if ( alayer!=ly_back )
-			    cvs->layerheads[dm_fore] = &tsc->layers[alayer];
-		    } else {
-			if ( alayer!=ly_fore )
-			    cvs->layerheads[dm_back] = &tsc->layers[alayer];
-		    }
-		}
-		RevertedGlyphReferenceFixup(tsc, sf);
-		_SCCharChangedUpdate(tsc,alayer,false);
-	    }
 	}
-    }
 }
 
 void FVClearSpecialData(FontViewBase *fv) {
@@ -2144,4 +2201,3 @@ struct mv_interface *mv_interface = &noui_mv;
 void FF_SetMVInterface(struct mv_interface *mvi) {
     mv_interface = mvi;
 }
-

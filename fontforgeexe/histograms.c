@@ -446,9 +446,9 @@ static void HistExpose(GWindow pixmap, struct hist_dlg *hist) {
     GDrawPopClip(pixmap,&old);
 
     GDrawSetFont(pixmap,hist->font);
-    sprintf(buf,"%d",hist->hoff);
+    snprintf(buf, sizeof(buf), "%d",hist->hoff);
     GDrawDrawText8(pixmap,0,height+2+hist->as, buf,-1,0x000000);
-    sprintf(buf,"%d",hist->hoff+hist->hwidth/hist->barwidth);
+    snprintf(buf, sizeof(buf), "%d",hist->hoff+hist->hwidth/hist->barwidth);
     GDrawDrawText8(pixmap,size.width-GDrawGetText8Width(pixmap,buf,-1),height+2+hist->as,
 	    buf,-1,0x000000);
 }
@@ -463,7 +463,7 @@ static void HistRExpose(GWindow pixmap, struct hist_dlg *hist) {
     height = size.height-hist->fh-2;
     yscale = (4*height/5.0)/(hist->h->max-0);
 
-    sprintf(buf,"%d",hist->h->max);
+    snprintf(buf, sizeof(buf), "%d",hist->h->max);
     GDrawDrawText8(pixmap,1,height-rint(hist->h->max*yscale),
 	    buf,-1,0x000000);
 }
@@ -478,7 +478,7 @@ static void HistLExpose(GWindow pixmap, struct hist_dlg *hist) {
     height = size.height-hist->fh-2;
     yscale = (4*height/5.0)/(hist->h->max-0);
 
-    sprintf(buf,"%d",hist->h->max);
+    snprintf(buf, sizeof(buf), "%d",hist->h->max);
     GDrawDrawText8(pixmap,size.width-GDrawGetText8Width(pixmap,buf,-1)-1,height-rint(hist->h->max*yscale),
 	    buf,-1,0x000000);
 }
@@ -851,7 +851,7 @@ void SFHistogram(SplineFont *sf,int layer, struct psdict *private, uint8 *select
     gcd[i++].creator = GLabelCreate;
     hvctls[0][0] = &gcd[i-1];
 
-    sprintf(binsize,"%d", hist.sum_around);
+    snprintf(binsize, sizeof(binsize), "%d", hist.sum_around);
     label[i].text = (unichar_t *) binsize;
     label[i].text_is_1byte = true;
     gcd[i].gd.label = &label[i];
@@ -869,7 +869,7 @@ void SFHistogram(SplineFont *sf,int layer, struct psdict *private, uint8 *select
     gcd[i++].creator = GLabelCreate;
     hvctls[0][2] = &gcd[i-1];
 
-    sprintf(barwidth,"%d", hist.barwidth);
+    snprintf(barwidth, sizeof(barwidth), "%d", hist.barwidth);
     label[i].text = (unichar_t *) barwidth;
     label[i].text_is_1byte = true;
     gcd[i].gd.label = &label[i];

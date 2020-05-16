@@ -185,31 +185,35 @@ static void BC_CharChangedUpdate(BDFChar *bc) {
 	BC_CharChangedUpdate(dlist->bc);
 }
 
-static char *BVMakeTitles(BitmapView *bv, BDFChar *bc,char *buf) {
-    char *title;
-    SplineChar *sc;
-    BDFFont *bdf = bv->bdf;
-    char *uniname;
+static char* BVMakeTitles(BitmapView* bv, BDFChar* bc, char* buf, size_t buf_size)
+{
+    char* title;
+    SplineChar* sc;
+    BDFFont* bdf = bv->bdf;
+    char* uniname;
 
     sc = bc->sc;
-/* GT: This is the title for a window showing a bitmap character */
-/* GT: It will look something like: */
-/* GT:  exclam at 33 size 12 from Arial */
-/* GT: $1 is the name of the glyph */
-/* GT: $2 is the glyph's encoding */
-/* GT: $3 is the pixel size of the bitmap font */
-/* GT: $4 is the font name */
-    sprintf(buf,_("%1$.80s at %2$d size %3$d from %4$.80s"),
-	    sc!=NULL ? sc->name : "<Nameless>", bv->enc, bdf->pixelsize, sc==NULL ? "" : sc->parent->fontname);
+    /* GT: This is the title for a window showing a bitmap character */
+    /* GT: It will look something like: */
+    /* GT:  exclam at 33 size 12 from Arial */
+    /* GT: $1 is the name of the glyph */
+    /* GT: $2 is the glyph's encoding */
+    /* GT: $3 is the pixel size of the bitmap font */
+    /* GT: $4 is the font name */
+    snprintf(buf, buf_size, _("%1$.80s at %2$d size %3$d from %4$.80s"),
+        sc != NULL ? sc->name : "<Nameless>", bv->enc, bdf->pixelsize, sc == NULL ? "" : sc->parent->fontname);
+    
     title = copy(buf);
 
     /* Enhance 'buf' description with Nameslist.txt unicode name definition */
-    if ( (uniname=unicode_name(sc->unicodeenc))!=NULL ) {
-	strcat(buf, " ");
-	strcpy(buf+strlen(buf), uniname);
-	free(uniname);
+    if ((uniname = unicode_name(sc->unicodeenc)) != NULL)
+    {
+        strcat(buf, " ");
+        int str_size = strlen(buf);
+        strncpy(buf + str_size, uniname, buf_size - str_size);
+        free(uniname);
     }
-    return( title );
+    return(title);
 }
 
 void BVChangeBC(BitmapView *bv, BDFChar *bc, int fitit ) {
@@ -227,7 +231,7 @@ void BVChangeBC(BitmapView *bv, BDFChar *bc, int fitit ) {
 	BVNewScale(bv);
     BVRefreshImage(bv);
 
-    title = BVMakeTitles(bv,bc,buf);
+    title = BVMakeTitles(bv,bc,buf, sizeof(buf));
     GDrawSetWindowTitles8(bv->gw,buf,title);
     free(title);
 
@@ -650,8 +654,9 @@ static void BVDrawRefName(BitmapView *bv,GWindow pixmap,BDFRefChar *ref,int fg) 
     char *refinfo;
     IBounds bb;
 
-    refinfo = malloc(strlen(ref->bdfc->sc->name) +  30);
-    sprintf(refinfo,"%s XOff: %d YOff: %d", ref->bdfc->sc->name, ref->xoff, ref->yoff);
+    int refinfo_size = strlen(ref->bdfc->sc->name) + 30;
+    refinfo = malloc(refinfo_size);
+    snprintf(refinfo, refinfo_size, "%s XOff: %d YOff: %d", ref->bdfc->sc->name, ref->xoff, ref->yoff);
 
     bb.minx = ref->bdfc->xmin + ref->xoff;
     bb.maxx = ref->bdfc->xmax + ref->xoff;
@@ -827,12 +832,12 @@ static void BVInfoDrawText(BitmapView *bv, GWindow pixmap ) {
     r.y = bv->mbh; r.height = 36 /* bv->infoh-1 */;
     GDrawFillRect(pixmap,&r,bg);
 
-    sprintf(buffer,"%d%s%d", bv->info_x, coord_sep, bv->info_y );
+    snprintf(buffer, sizeof(buffer), "%d%s%d", bv->info_x, coord_sep, bv->info_y );
     buffer[11] = '\0';
     GDrawDrawText8(pixmap,bv->infoh+RPT_DATA,ybase,buffer,-1,GDrawGetDefaultForeground(NULL));
 
     if ( bv->active_tool!=cvt_none ) {
-	sprintf(buffer,"%d%s%d", bv->info_x-bv->pressed_x, coord_sep, bv->info_y-bv->pressed_y );
+	snprintf(buffer, sizeof(buffer), "%d%s%d", bv->info_x-bv->pressed_x, coord_sep, bv->info_y-bv->pressed_y );
 	buffer[11] = '\0';
 	GDrawDrawText8(pixmap,bv->infoh+RPT_DATA,ybase+bv->sfh+10,buffer,-1,GDrawGetDefaultForeground(NULL));
     }
@@ -1788,10 +1793,10 @@ static void BVMenuSetWidth(GWindow gw,struct gmenuitem *mi,GEvent *g) {
     if ( !bv->bdf->sf->onlybitmaps )
 return;
     if ( mi->mid==MID_SetWidth ) {
-	sprintf( buffer,"%d",bv->bc->width);
+	snprintf( buffer, sizeof(buffer), "%d",bv->bc->width);
 	ret = gwwv_ask_string(_("Set Width..."),buffer,_("Set Width..."));
     } else {
-	sprintf( buffer,"%d",bv->bc->vwidth);
+	snprintf( buffer, sizeof(buffer), "%d",bv->bc->vwidth);
 	ret = gwwv_ask_string(_("Set Vertical Width..."),buffer,_("Set Vertical Width..."));
     }
     if ( ret==NULL )
@@ -1962,7 +1967,7 @@ static int askfraction(int *xoff, int *yoff) {
     char *ret, *end, *end2;
     int xv, yv;
 
-    sprintf( buffer, "%d:%d", lastx, lasty );
+    snprintf( buffer, sizeof(buffer), "%d:%d", lastx, lasty );
     ret = ff_ask_string(_("Skew"),buffer,_("Skew Ratio"));
     if ( ret==NULL )
 return( 0 );
@@ -2371,7 +2376,7 @@ BitmapView *BitmapViewCreate(BDFChar *bc, BDFFont *bdf, FontView *fv, int enc) {
     wattrs.mask = wam_events|wam_cursor|wam_utf8_wtitle|wam_utf8_ititle;
     wattrs.event_masks = ~(1<<et_charup);
     wattrs.cursor = ct_pointer;
-    wattrs.utf8_icon_title = BVMakeTitles(bv,bc,buf);
+    wattrs.utf8_icon_title = BVMakeTitles(bv,bc,buf, sizeof(buf));
     wattrs.utf8_window_title = buf;
     wattrs.icon = icon;
     if ( wattrs.icon )

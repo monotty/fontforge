@@ -790,51 +790,59 @@ int FONFontDump(char *filename,SplineFont *sf, int32 *sizes,int resol,
     fntarray = (FILE **)malloc(num_files*sizeof(FILE *));
     file_lens = (int *)malloc(num_files*sizeof(int));
 
-    for ( i=0; sizes[i]!=0; ++i ) {
-	for ( bdf=sf->bitmaps; bdf!=NULL &&
-		(bdf->pixelsize!=(sizes[i]&0xffff) || BDFDepth(bdf)!=(sizes[i]>>16));
-		bdf=bdf->next );
-	if ( bdf==NULL ) {
-	    ff_post_notice(_("Missing Bitmap"),_("Attempt to save a pixel size that has not been created (%d@%d)"),
-		    sizes[i]&0xffff, sizes[i]>>16);
-	    for ( j=0; j<i; ++j )
-		fclose(fntarray[j]);
+    for (i = 0; sizes[i] != 0; ++i)
+    {
+        for (bdf = sf->bitmaps; bdf != NULL &&
+            (bdf->pixelsize != (sizes[i] & 0xffff) || BDFDepth(bdf) != (sizes[i] >> 16));
+            bdf = bdf->next);
+        if (bdf == NULL)
+        {
+            ff_post_notice(_("Missing Bitmap"), _("Attempt to save a pixel size that has not been created (%d@%d)"),
+                sizes[i] & 0xffff, sizes[i] >> 16);
+            for (j = 0; j < i; ++j)
+                fclose(fntarray[j]);
             free(file_lens);
-	    free(fntarray);
-return( false );
-	}
-	fntarray[i] = GFileTmpfile();
-	if ( !_FntFontDump(fntarray[i],bdf,map,resol) ) {
-	    for ( j=0; j<=i; ++j )
-		fclose(fntarray[j]);
+            free(fntarray);
+            return(false);
+        }
+        fntarray[i] = GFileTmpfile();
+        if (!_FntFontDump(fntarray[i], bdf, map, resol))
+        {
+            for (j = 0; j <= i; ++j)
+                fclose(fntarray[j]);
             free(file_lens);
-	    free(fntarray);
-return( false );
-	}
-	ff_progress_next_stage();
+            free(fntarray);
+            return(false);
+        }
+        ff_progress_next_stage();
 
-	rewind(fntarray[i]);
-	lgetushort(fntarray[i]);
-	file_lens[i] = lgetlong(fntarray[i]);
-	fseek(fntarray[i], 0x44, SEEK_SET);
-	point_size = lgetushort(fntarray[i]);
-	dpi[0] = lgetushort(fntarray[i]);
-	dpi[1] = lgetushort(fntarray[i]);
-	fseek(fntarray[i], 0x69, SEEK_SET);
-	off = lgetlong(fntarray[i]);
-	fseek(fntarray[i], off, SEEK_SET);
+        rewind(fntarray[i]);
+        lgetushort(fntarray[i]);
+        file_lens[i] = lgetlong(fntarray[i]);
+        fseek(fntarray[i], 0x44, SEEK_SET);
+        point_size = lgetushort(fntarray[i]);
+        dpi[0] = lgetushort(fntarray[i]);
+        dpi[1] = lgetushort(fntarray[i]);
+        fseek(fntarray[i], 0x69, SEEK_SET);
+        off = lgetlong(fntarray[i]);
+        fseek(fntarray[i], off, SEEK_SET);
         cp = name;
-        while((c = fgetc(fntarray[i])) != 0 && c != EOF)
+        while ((c = fgetc(fntarray[i])) != 0 && c != EOF)
             *cp++ = c;
-	*cp = '\0';
-	rewind(fntarray[i]);
+        *cp = '\0';
+        rewind(fntarray[i]);
 
         fontdir_len += 0x74 + strlen(name) + 1;
-        if(i == 0) {
-            sprintf(non_resident_name, "FONTRES 100,%d,%d : %s %d", dpi[0], dpi[1], name, point_size);
-            strcpy(resident_name, name);
-        } else {
-            sprintf(non_resident_name + strlen(non_resident_name), ",%d", point_size);
+        if (i == 0)
+        {
+            snprintf(non_resident_name, sizeof(non_resident_name), "FONTRES 100,%d,%d : %s %d", dpi[0], dpi[1], name, point_size);
+            strncpy(resident_name, name, sizeof(resident_name));
+        }
+        else
+        {
+            int str_size = strlen(non_resident_name);
+            snprintf(non_resident_name + str_size, sizeof(non_resident_name) - str_size, 
+                ",%d", point_size);
         }
     }
 

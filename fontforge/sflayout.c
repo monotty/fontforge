@@ -1294,11 +1294,14 @@ char *SFDefaultImage(SplineFont *sf,char *filename) {
 	static int cnt=0;
 	char *dir = getenv("TMPDIR");
 	if ( dir==NULL ) dir = P_tmpdir;
-	filename = malloc(strlen(dir)+strlen(sf->fontname)+100);
+
+	int filename_size = strlen(dir) + strlen(sf->fontname) + 100;
+	filename = malloc(filename_size);
+
 #ifdef _NO_LIBPNG
-	sprintf( filename, "%s/ff-preview-%s-%d-%d.bmp", dir, sf->fontname, getpid(), ++cnt );
+	snprintf( filename, filename_size, "%s/ff-preview-%s-%d-%d.bmp", dir, sf->fontname, getpid(), ++cnt );
 #else
-	sprintf( filename, "%s/ff-preview-%s-%d-%d.png", dir, sf->fontname, getpid(), ++cnt );
+	snprintf( filename, filename_size, "%s/ff-preview-%s-%d-%d.png", dir, sf->fontname, getpid(), ++cnt );
 #endif
     }
     FontImage(sf,filename,NULL,-1,-1);

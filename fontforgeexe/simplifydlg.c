@@ -172,7 +172,7 @@ int SimplifyDlg(SplineFont *sf, struct simplifyinfo *smpl) {
     gcd[k++].creator = GLabelCreate;
     harray1[0] = &gcd[k-1];
 
-    sprintf( buffer, "%.3g", olderr_rat*sim.em_size );
+    snprintf( buffer, sizeof(buffer), "%.3g", olderr_rat*sim.em_size );
     label[k].text = (unichar_t *) buffer;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -269,7 +269,7 @@ int SimplifyDlg(SplineFont *sf, struct simplifyinfo *smpl) {
     gcd[k++].creator = GLabelCreate;
     harray2[0] = GCD_HPad10; harray2[1] = &gcd[k-1];
 
-    sprintf( buffer2, "%.3g", oldsmooth_tan );
+    snprintf( buffer2, sizeof(buffer2), "%.3g", oldsmooth_tan );
     label[k].text = (unichar_t *) buffer2;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -334,7 +334,7 @@ int SimplifyDlg(SplineFont *sf, struct simplifyinfo *smpl) {
     gcd[k++].creator = GLabelCreate;
     harray4[0][0] = GCD_HPad10; harray4[0][1] = &gcd[k-1];
 
-    sprintf( buffer3, "%.3g", oldlinefixup_rat*sim.em_size );
+    snprintf( buffer3, sizeof(buffer3), "%.3g", oldlinefixup_rat*sim.em_size );
     label[k].text = (unichar_t *) buffer3;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -374,7 +374,7 @@ int SimplifyDlg(SplineFont *sf, struct simplifyinfo *smpl) {
     gcd[k++].creator = GLabelCreate;
     harray4[2][0] = GCD_HPad10; harray4[2][1] = &gcd[k-1];
 
-    sprintf( buffer4, "%.3g", oldlinelenmax_rat*sim.em_size );
+    snprintf( buffer4, sizeof(buffer4), "%.3g", oldlinelenmax_rat*sim.em_size );
     label[k].text = (unichar_t *) buffer4;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];

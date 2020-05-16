@@ -410,19 +410,19 @@ static int PageSetup(PD *pi) {
     txtarray[0][0] = &gcd[7];
 
     if ( pi->pi.pagewidth==595 && pi->pi.pageheight==792 )
-	strcpy(pb,"US Letter");		/* Pick a name, this is the default case */
+	strncpy(pb,"US Letter", sizeof(pb));		/* Pick a name, this is the default case */
     else if ( pi->pi.pagewidth==612 && pi->pi.pageheight==792 )
-	strcpy(pb,"US Letter");
+	strncpy(pb,"US Letter", sizeof(pb));
     else if ( pi->pi.pagewidth==612 && pi->pi.pageheight==1008 )
-	strcpy(pb,"US Legal");
+	strncpy(pb,"US Legal", sizeof(pb));
     else if ( pi->pi.pagewidth==595 && pi->pi.pageheight==842 )
-	strcpy(pb,"A4");
+	strncpy(pb,"A4", sizeof(pb));
     else if ( pi->pi.pagewidth==842 && pi->pi.pageheight==1191 )
-	strcpy(pb,"A3");
+	strncpy(pb,"A3", sizeof(pb));
     else if ( pi->pi.pagewidth==708 && pi->pi.pageheight==1000 )
-	strcpy(pb,"B4");
+	strncpy(pb,"B4", sizeof(pb));
     else
-	sprintf(pb,"%dx%d mm", (int) (pi->pi.pagewidth*25.4/72),(int) (pi->pi.pageheight*25.4/72));
+	snprintf(pb, sizeof(pb), "%dx%d mm", (int) (pi->pi.pagewidth*25.4/72),(int) (pi->pi.pageheight*25.4/72));
     label[8].text = (unichar_t *) pb;
     label[8].text_is_1byte = true;
     gcd[8].gd.label = &label[8];
@@ -447,7 +447,7 @@ static int PageSetup(PD *pi) {
     gcd[9].creator = GLabelCreate;
     txtarray[0][2] = &gcd[9];
 
-    sprintf(buf,"%d",pi->pi.copies);
+    snprintf(buf, sizeof(buf), "%d",pi->pi.copies);
     label[10].text = (unichar_t *) buf;
     label[10].text_is_1byte = true;
     gcd[10].gd.label = &label[10];
@@ -685,7 +685,7 @@ return(true);
 return(true);
 
 	    if ( pi->pi.printtype==pt_file || pi->pi.printtype==pt_pdf ) {
-		sprintf(buf,"pr-%.90s.%s", pi->pi.mainsf->fontname,
+		snprintf(buf, sizeof(buf), "pr-%.90s.%s", pi->pi.mainsf->fontname,
 			pi->pi.printtype==pt_file?"ps":"pdf");
 		ret = gwwv_save_filename(_("Print To File..."),buf,
 			pi->pi.printtype==pt_pdf?"*.pdf":"*.ps");
@@ -912,7 +912,7 @@ static void DSP_ChangeFontCallback(void *context,SplineFont *sf,enum sftf_fontty
 
     GGadgetSetChecked(GWidgetGetControl(di->gw,CID_AA),aa);
 
-    sprintf(buf,"%d",size);
+    snprintf(buf, sizeof(buf), "%d",size);
     GGadgetSetTitle8(GWidgetGetControl(di->gw,CID_Size),buf);
 
     {
@@ -980,7 +980,7 @@ static void DSP_ChangeFontCallback(void *context,SplineFont *sf,enum sftf_fontty
 	ti[i] = calloc( 1,sizeof(GTextInfo));
 	ti[i]->fg = ti[i]->bg = COLOR_DEFAULT;
 	if ( (tags[i]>>24)<' ' || (tags[i]>>24)>0x7e )
-	    sprintf( buf, "<%d,%d>", tags[i]>>16, tags[i]&0xffff );
+	    snprintf( buf, sizeof(buf), "<%d,%d>", tags[i]>>16, tags[i]&0xffff );
 	else {
 	    buf[0] = tags[i]>>24; buf[1] = tags[i]>>16; buf[2] = tags[i]>>8; buf[3] = tags[i]; buf[4] = 0;
 	}
@@ -1069,8 +1069,8 @@ return( true );
 	    for ( i=CID_pfb; i<=CID_nohints; ++i )
 		GGadgetSetEnabled(GWidgetGetControl(di->gw,i),false);
 	    if ( best!=NULL ) {
-		sprintf( size, "%d", best->pixelsize );
-		uc_strcpy(usize,size);
+		snprintf( size, sizeof(size), "%d", best->pixelsize );
+		uc_strncpy(usize,size, sizeof(size));
 		GGadgetSetTitle(GWidgetGetControl(di->gw,CID_Size),usize);
 	    }
 	    pick = true;
@@ -1123,8 +1123,9 @@ return( true );
 	    }
 	    if ( best!=NULL ) {
 		char size[12]; unichar_t usize[12];
-		sprintf( size, "%d", best->pixelsize );
-		uc_strcpy(usize,size);
+		snprintf( size, sizeof(size), "%d", best->pixelsize );
+		uc_strncpy(usize,size, sizeof(size));
+
 		GGadgetSetTitle(GWidgetGetControl(di->gw,CID_Size),usize);
 	    }
 	    DSP_SetFont(di,false);
@@ -1135,72 +1136,94 @@ return( true );
 return( true );
 }
 
-static int DSP_SizeChanged(GGadget *g, GEvent *e) {
-    if ( e->type==et_controlevent && e->u.control.subtype == et_textfocuschanged &&
-	    !e->u.control.u.tf_focus.gained_focus ) {
-	PD *di = GDrawGetUserData(GGadgetGetWindow(g));
-	int err=false;
-	int size = GetInt8(di->gw,CID_Size,_("_Size:"),&err);
-	if ( err || size<4 )
-return( true );
-	if ( GWidgetGetControl(di->gw,CID_SampleText)==NULL )
-return( true );		/* Happens during startup */
-	if ( GGadgetIsChecked(GWidgetGetControl(di->gw,CID_bitmap)) ) {
-	    GTextInfo *sel = GGadgetGetListItemSelected(GWidgetGetControl(di->gw,CID_Font));
-	    SplineFont *sf;
-	    BDFFont *bdf, *best=NULL;
-	    int aa = GGadgetIsChecked(GWidgetGetControl(di->gw,CID_AA));
-	    if ( sel==NULL )
-return( true );
-	    sf = sel->userdata;
-	    for ( bdf = sf->bitmaps; bdf!=NULL; bdf=bdf->next ) {
-		if ( bdf->pixelsize==size ) {
-		    if (( bdf->clut && aa ) || ( bdf->clut==NULL && !aa )) {
-			best = bdf;
-	    break;
-		    }
-		    best = bdf;
+static int DSP_SizeChanged(GGadget* g, GEvent* e)
+{
+	if (e->type == et_controlevent && e->u.control.subtype == et_textfocuschanged &&
+		!e->u.control.u.tf_focus.gained_focus)
+	{
+		PD* di = GDrawGetUserData(GGadgetGetWindow(g));
+		int err = false;
+		int size = GetInt8(di->gw, CID_Size, _("_Size:"), &err);
+		if (err || size < 4)
+			return(true);
+		if (GWidgetGetControl(di->gw, CID_SampleText) == NULL)
+			return(true);		/* Happens during startup */
+		if (GGadgetIsChecked(GWidgetGetControl(di->gw, CID_bitmap)))
+		{
+			GTextInfo* sel = GGadgetGetListItemSelected(GWidgetGetControl(di->gw, CID_Font));
+			SplineFont* sf;
+			BDFFont* bdf, * best = NULL;
+			int aa = GGadgetIsChecked(GWidgetGetControl(di->gw, CID_AA));
+			if (sel == NULL)
+				return(true);
+			sf = sel->userdata;
+			for (bdf = sf->bitmaps; bdf != NULL; bdf = bdf->next)
+			{
+				if (bdf->pixelsize == size)
+				{
+					if ((bdf->clut && aa) || (bdf->clut == NULL && !aa))
+					{
+						best = bdf;
+						break;
+					}
+					best = bdf;
+				}
+			}
+			if (best == NULL)
+			{
+				char buf[100], * pt = buf, * end = buf + sizeof(buf) - 10;
+				size_t pt_size = sizeof(buf);
+
+				unichar_t ubuf[12];
+				int lastsize = 0;
+				for (bdf = sf->bitmaps; bdf != NULL && pt < end; bdf = bdf->next)
+				{
+					if (bdf->pixelsize != lastsize)
+					{
+						snprintf(pt, pt_size, "%d,", bdf->pixelsize);
+						lastsize = bdf->pixelsize;
+
+						size_t str_size = strlen(pt);
+						pt += str_size;
+						pt_size -= str_size;
+					}
+				}
+				if (pt != buf)
+				{
+					pt[-1] = '\0';
+				}
+
+				ff_post_error(_("Bad Size"), _("Requested bitmap size not available in font. Font supports %s"), buf);
+				best = DSP_BestMatchDlg(di);
+				if (best != NULL)
+				{
+					snprintf(buf, sizeof(buf), "%d", best->pixelsize);
+					uc_strncpy(ubuf, buf, sizeof(buf));
+
+					GGadgetSetTitle(GWidgetGetControl(di->gw, CID_Size), ubuf);
+					size = best->pixelsize;
+				}
+			}
+			if (best == NULL)
+				return(true);
+			GGadgetSetChecked(GWidgetGetControl(di->gw, CID_AA), best->clut != NULL);
+			DSP_SetFont(di, false);
 		}
-	    }
-	    if ( best==NULL ) {
-		char buf[100], *pt=buf, *end=buf+sizeof(buf)-10;
-		unichar_t ubuf[12];
-		int lastsize = 0;
-		for ( bdf=sf->bitmaps; bdf!=NULL && pt<end; bdf=bdf->next ) {
-		    if ( bdf->pixelsize!=lastsize ) {
-			sprintf( pt, "%d,", bdf->pixelsize );
-			lastsize = bdf->pixelsize;
-			pt += strlen(pt);
-		    }
-		}
-		if ( pt!=buf )
-		    pt[-1] = '\0';
-		ff_post_error(_("Bad Size"),_("Requested bitmap size not available in font. Font supports %s"),buf);
-		best = DSP_BestMatchDlg(di);
-		if ( best!=NULL ) {
-		    sprintf( buf, "%d", best->pixelsize);
-		    uc_strcpy(ubuf,buf);
-		    GGadgetSetTitle(GWidgetGetControl(di->gw,CID_Size),ubuf);
-		    size = best->pixelsize;
-		}
-	    }
-	    if ( best==NULL )
-return(true);
-	    GGadgetSetChecked(GWidgetGetControl(di->gw,CID_AA),best->clut!=NULL );
-	    DSP_SetFont(di,false);
-	} else
-	    SFTFSetSize(GWidgetGetControl(di->gw,CID_SampleText),-1,-1,size);
-    } else if ( e->type==et_controlevent && e->u.control.subtype == et_textchanged ) {
-	/* Don't change the font on each change to the text field, that might */
-	/*  look rather odd. But wait until we think they may have finished */
-	/*  typing. Either when they change the focus (above) or when they */
-	/*  just don't do anything for a while */
-	PD *di = GDrawGetUserData(GGadgetGetWindow(g));
-	if ( di->sizechanged!=NULL )
-	    GDrawCancelTimer(di->sizechanged);
-	di->sizechanged = GDrawRequestTimer(di->gw,600,0,NULL);
-    }
-return( true );
+		else
+			SFTFSetSize(GWidgetGetControl(di->gw, CID_SampleText), -1, -1, size);
+	}
+	else if (e->type == et_controlevent && e->u.control.subtype == et_textchanged)
+	{
+		/* Don't change the font on each change to the text field, that might */
+		/*  look rather odd. But wait until we think they may have finished */
+		/*  typing. Either when they change the focus (above) or when they */
+		/*  just don't do anything for a while */
+		PD* di = GDrawGetUserData(GGadgetGetWindow(g));
+		if (di->sizechanged != NULL)
+			GDrawCancelTimer(di->sizechanged);
+		di->sizechanged = GDrawRequestTimer(di->gw, 600, 0, NULL);
+	}
+	return(true);
 }
 
 static void DSP_SizeChangedTimer(PD *di) {
@@ -1261,7 +1284,7 @@ static void DSP_JustResized(PD *di) {
 
     di->resized = NULL;
     if ( lastdpi!=0 && widthfield!=NULL ) {
-	sprintf( buffer, "%d", (int) rint( sample->inner.width*72/lastdpi ));
+	snprintf( buffer, sizeof(buffer), "%d", (int) rint( sample->inner.width*72/lastdpi ));
 	GGadgetSetTitle8(widthfield,buffer);
     }
 }
@@ -1350,9 +1373,10 @@ static int DSP_RadioSet(GGadget *g, GEvent *e) {
 		GGadgetSetEnabled(GWidgetGetControl(di->gw,CID_AA),flags&gg_enabled);
 		GGadgetSetChecked(GWidgetGetControl(di->gw,CID_AA),flags&gg_cb_on);
 		if ( best!=NULL ) {
-		    sprintf( size, "%g",
+		    snprintf( size, sizeof(size), "%g",
 			    rint(best->pixelsize*72.0/SFTFGetDPI(GWidgetGetControl(di->gw,CID_SampleText))) );
-		    uc_strcpy(usize,size);
+		    uc_strncpy(usize,size, sizeof(size));
+
 		    GGadgetSetTitle(GWidgetGetControl(di->gw,CID_Size),usize);
 		}
 	    }
@@ -1492,7 +1516,7 @@ static int DSP_TextChanged(GGadget *g, GEvent *e) {
 	}
 
 	if ( di->insert_text && lastdpi!=0) {
-	    sprintf( buffer,_("Text Width:%4d"), (int) rint(li->xmax*72.0/lastdpi));
+	    snprintf( buffer, sizeof(buffer), _("Text Width:%4d"), (int) rint(li->xmax*72.0/lastdpi));
 	    GGadgetSetTitle8(GWidgetGetControl(di->gw,CID_ActualWidth),buffer);
 	}
     }
@@ -1656,9 +1680,9 @@ return;
     harray[0] = &gcd[2];
 
     if ( bestbdf !=NULL && ( !hasfreetype || sf->onlybitmaps ))
-	sprintf( buf, "%d", bestbdf->pixelsize );
+	snprintf( buf, sizeof(buf), "%d", bestbdf->pixelsize );
     else
-	strcpy(buf,"12");
+	strncpy(buf,"12", sizeof(buf));
     label[3].text = (unichar_t *) buf;
     label[3].text_is_1byte = true;
     gcd[3].gd.label = &label[3];
@@ -1851,7 +1875,7 @@ return;
     if ( lastdpi==0 )
 	lastdpi = GDrawPointsToPixels(NULL,72);
     dpi = lastdpi;
-    sprintf( dpibuf, "%d", dpi );
+    snprintf( dpibuf, sizeof(dpibuf), "%d", dpi );
     label[16].text = (unichar_t *) dpibuf;
     label[16].text_is_1byte = true;
     gcd[16].gd.label = &label[16];
@@ -1888,7 +1912,7 @@ return;
 	gcd[18].gd.popup_msg = _("The text will wrap to a new line after this many em-units");
 	gcd[18].creator = GLabelCreate;
 
-	sprintf( widthbuf, "%d", width );
+	snprintf( widthbuf, sizeof(widthbuf), "%d", width );
 	label[19].text = (unichar_t *) widthbuf;
 	label[19].text_is_1byte = true;
 	gcd[19].gd.label = &label[19];
@@ -1979,7 +2003,7 @@ return;
 	pgcd[3].creator = GLabelCreate;
 	ptarray[0] = &pgcd[3];
 
-	sprintf(sizebuf,"%d",active->pi.pointsize);
+	snprintf(sizebuf, sizeof(sizebuf), "%d",active->pi.pointsize);
 	plabel[4].text = (unichar_t *) sizebuf;
 	plabel[4].text_is_1byte = true;
 	pgcd[4].gd.label = &plabel[4];
@@ -2074,10 +2098,10 @@ return;
 
 	if ( fit_to_path==NULL ) {
 	    tgcd[1].gd.flags = 0;
-	    strcpy(pathlen,"0");
+	    strncpy(pathlen,"0", sizeof(pathlen));
 	} else {
 	    tgcd[1].gd.flags = gg_visible | gg_enabled;
-	    sprintf(pathlen, _("Path Length: %g"), PathLength(fit_to_path));
+	    snprintf(pathlen, sizeof(pathlen), _("Path Length: %g"), PathLength(fit_to_path));
 	}
 	tlabel[1].text = (unichar_t *) pathlen;
 	tlabel[1].text_is_1byte = true;

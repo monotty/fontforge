@@ -555,10 +555,10 @@ static void AnchorD_DrawPos(AnchorDlg *a) {
     char buffer[20];
     unichar_t ubuf[20];
 
-    sprintf( buffer, "%g", (double) a->apos.x );
+    snprintf( buffer, sizeof(buffer), "%g", (double) a->apos.x );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(a->gw,CID_X),ubuf);
-    sprintf( buffer, "%g", (double) a->apos.y );
+    snprintf( buffer, sizeof(buffer), "%g", (double) a->apos.y );
     uc_strcpy(ubuf,buffer);
     GGadgetSetTitle(GWidgetGetControl(a->gw,CID_Y),ubuf);
 
@@ -794,7 +794,7 @@ static int AnchorD_DisplaySizeChanged(GGadget *g, GEvent *e) {
 	    if ( a->xadjust.corrections!=NULL &&
 		    pixelsize>=a->xadjust.first_pixel_size &&
 		    pixelsize<=a->xadjust.last_pixel_size ) {
-		sprintf( buffer, "%d", a->xadjust.corrections[
+		snprintf( buffer, sizeof(buffer), "%d", a->xadjust.corrections[
 			pixelsize-a->xadjust.first_pixel_size]);
 		uc_strcpy(ubuf,buffer);
 	    }
@@ -803,7 +803,7 @@ static int AnchorD_DisplaySizeChanged(GGadget *g, GEvent *e) {
 	    if ( a->yadjust.corrections!=NULL &&
 		    pixelsize>=a->yadjust.first_pixel_size &&
 		    pixelsize<=a->yadjust.last_pixel_size ) {
-		sprintf( buffer, "%d", a->yadjust.corrections[
+		snprintf( buffer, sizeof(buffer), "%d", a->yadjust.corrections[
 			pixelsize-a->yadjust.first_pixel_size]);
 		uc_strcpy(ubuf,buffer);
 	    }
@@ -907,7 +907,7 @@ static void AnchorD_SetDevTabs(AnchorDlg *a) {
 	GTextInfo **ti = malloc((len+1)*sizeof(GTextInfo *));
 	for ( i=0; i<len; ++i ) {
 	    ti[i] = calloc(1,sizeof(GTextInfo));
-	    sprintf( buffer, "%d", i+min );
+	    snprintf( buffer, sizeof(buffer), "%d", i+min );
 	    ti[i]->text = uc_copy(buffer);
 	    ti[i]->fg = ti[i]->bg = COLOR_DEFAULT;
 	}
@@ -918,7 +918,7 @@ static void AnchorD_SetDevTabs(AnchorDlg *a) {
     if ( a->xadjust.corrections!=NULL &&
 	    a->pixelsize>=a->xadjust.first_pixel_size &&
 	    a->pixelsize<=a->xadjust.last_pixel_size ) {
-	sprintf( buffer, "%d", a->xadjust.corrections[
+	snprintf( buffer, sizeof(buffer), "%d", a->xadjust.corrections[
 		a->pixelsize-a->xadjust.first_pixel_size]);
 	uc_strcpy(ubuf,buffer);
     }
@@ -927,7 +927,7 @@ static void AnchorD_SetDevTabs(AnchorDlg *a) {
     if ( a->yadjust.corrections!=NULL &&
 	    a->pixelsize>=a->yadjust.first_pixel_size &&
 	    a->pixelsize<=a->yadjust.last_pixel_size ) {
-	sprintf( buffer, "%d", a->yadjust.corrections[
+	snprintf( buffer, sizeof(buffer), "%d", a->yadjust.corrections[
 		a->pixelsize-a->yadjust.first_pixel_size]);
 	uc_strcpy(ubuf,buffer);
     }
@@ -963,9 +963,9 @@ return( true );
     a->ap = ap;
     a->sc = sc;
     a->apos = ap->me;
-    sprintf( buf, "%d", (int) rint(ap->me.x) );
+    snprintf( buf, sizeof(buf), "%d", (int) rint(ap->me.x) );
     GGadgetSetTitle8(GWidgetGetControl(a->gw,CID_X),buf);
-    sprintf( buf, "%d", (int) rint(ap->me.y) );
+    snprintf( buf, sizeof(buf), "%d", (int) rint(ap->me.y) );
     GGadgetSetTitle8(GWidgetGetControl(a->gw,CID_Y),buf);
 
     AnchorD_FindComplements(a);
@@ -1249,7 +1249,7 @@ void AnchorControl(SplineChar *sc,AnchorPoint *ap,int layer) {
     gcd[k++].creator = GLabelCreate;
     hvarray[hv++] = &gcd[k-1]; hvarray[hv++] = GCD_ColSpan;
 
-    sprintf( buffer, "%d", a.pixelsize );
+    snprintf( buffer, sizeof(buffer), "%d", a.pixelsize );
     label[k].text = (unichar_t *) buffer;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -1291,7 +1291,7 @@ void AnchorControl(SplineChar *sc,AnchorPoint *ap,int layer) {
     gcd[k++].creator = GLabelCreate;
     hvarray[hv++] = &gcd[k-1]; hvarray[hv++] = GCD_ColSpan;
 
-    sprintf( xbuf, "%d", (int) rint(ap->me.x) );
+    snprintf( xbuf, sizeof(xbuf), "%d", (int) rint(ap->me.x) );
     label[k].text = (unichar_t *) xbuf;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -1337,7 +1337,7 @@ void AnchorControl(SplineChar *sc,AnchorPoint *ap,int layer) {
     gcd[k++].creator = GLabelCreate;
     hvarray[hv++] = &gcd[k-1]; hvarray[hv++] = GCD_ColSpan;
 
-    sprintf( ybuf, "%d", (int) rint(ap->me.y) );
+    snprintf( ybuf, sizeof(ybuf), "%d", (int) rint(ap->me.y) );
     label[k].text = (unichar_t *) ybuf;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];

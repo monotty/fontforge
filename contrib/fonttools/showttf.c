@@ -2197,7 +2197,7 @@ static void readttfpost(FILE *ttf, FILE *util, struct ttfinfo *info) {
 		/* Keep it */;
 	    else if ( info->glyph_unicode[i]!=0 && info->glyph_unicode[i]!=0xffff ) {
 		char buffer[40];
-		sprintf(buffer,">U+%04X<", info->glyph_unicode[i]);
+		snprintf(buffer, sizeof(buffer), ">U+%04X<", info->glyph_unicode[i]);
 		info->glyph_names[i] = strdup(buffer);
 	    }
 	}

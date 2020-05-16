@@ -512,11 +512,11 @@ static void BdfP_Expose(struct bdf_dlg *bd, GWindow pixmap) {
 	    GDrawDrawText8(pixmap,bd->value_x+2,i*(bd->fh+1)+bd->as,bdf->props[i+cur->top_prop].u.str,-1,MAIN_FOREGROUND);
 	  break;
 	  case prt_int:
-	    sprintf( buffer, "%d", bdf->props[i+cur->top_prop].u.val );
+	    snprintf( buffer, sizeof(buffer), "%d", bdf->props[i+cur->top_prop].u.val );
 	    GDrawDrawText8(pixmap,bd->value_x+2,i*(bd->fh+1)+bd->as,buffer,-1,MAIN_FOREGROUND);
 	  break;
 	  case prt_uint:
-	    sprintf( buffer, "%u", (unsigned) bdf->props[i+cur->top_prop].u.val );
+	    snprintf( buffer, sizeof(buffer), "%u", (unsigned) bdf->props[i+cur->top_prop].u.val );
 	    GDrawDrawText8(pixmap,bd->value_x+2,i*(bd->fh+1)+bd->as,buffer,-1,MAIN_FOREGROUND);
 	  break;
 	}
@@ -646,7 +646,7 @@ return;
 	    if ( (bdf->props[line].type&~prt_property) == prt_int ||
 		    (bdf->props[line].type&~prt_property) == prt_uint ) {
 		char buffer[40];
-		sprintf( buffer,"%d",bdf->props[line].u.val );
+		snprintf( buffer, sizeof(buffer), "%d",bdf->props[line].u.val );
 		GGadgetSetTitle8(bd->tf,buffer);
 	    } else
 		GGadgetSetTitle8(bd->tf,bdf->props[line].u.str );
@@ -748,9 +748,9 @@ return;
     ti = calloc((i+1),sizeof(GTextInfo));
     for ( bdf = sf->bitmaps, i=0; bdf!=NULL; bdf=bdf->next, ++i ) {
 	if ( bdf->clut==NULL )
-	    sprintf( buffer, "%d", bdf->pixelsize );
+	    snprintf( buffer, sizeof(buffer), "%d", bdf->pixelsize );
 	else
-	    sprintf( buffer, "%d@%d", bdf->pixelsize, BDFDepth(bdf));
+	    snprintf( buffer, sizeof(buffer), "%d@%d", bdf->pixelsize, BDFDepth(bdf));
 	ti[i].text = (unichar_t *) copy(buffer);
 	ti[i].text_is_1byte = true;
     }

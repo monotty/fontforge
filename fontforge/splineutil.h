@@ -169,6 +169,9 @@ extern void RefCharsFree(RefChar *ref);
 extern void SCCategorizePoints(SplineChar *sc);
 extern void SCMakeDependent(SplineChar *dependent, SplineChar *base);
 extern void SCRefToSplines(SplineChar *sc, RefChar *rf, int layer);
+
+extern void SCCopySplinesFromRef(RefChar* rf, SplineChar* sc, int layer);
+
 extern void SCReinstanciateRefChar(SplineChar *sc, RefChar *rf, int layer);
 extern void SCRemoveDependent(SplineChar *dependent, RefChar *rf, int layer);
 extern void SCRemoveDependents(SplineChar *dependent);

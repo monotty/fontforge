@@ -1914,8 +1914,10 @@ return;
 			tag[4] = '\0';
 			pt = tag;
 		    }
-		    str = malloc(strlen(basename)+strlen(pt)+2);
-		    sprintf(str,"%s.%s", basename, pt );
+
+			int str_size = strlen(basename) + strlen(pt) + 2;
+		    str = malloc(str_size);
+		    snprintf(str, str_size, "%s.%s", basename, pt );
 		    info->chars[which]->name = str;
 		}
 	    }
@@ -3058,9 +3060,11 @@ return;
 	info->mark_classes = ClassToNames(info,info->mark_class_cnt,mclasses,info->glyph_cnt);
 	info->mark_class_names = malloc(info->mark_class_cnt*sizeof(char *));
 	info->mark_class_names[0] = NULL;
-	for ( i=1; i<info->mark_class_cnt; ++i ) {
-	    info->mark_class_names[i] = malloc((strlen(format_spec)+10));
-	    sprintf( info->mark_class_names[i], format_spec, i );
+	for (i = 1; i < info->mark_class_cnt; ++i)
+	{
+		int str_size = strlen(format_spec) + 10;
+		info->mark_class_names[i] = malloc(str_size);
+		snprintf(info->mark_class_names[i], str_size, format_spec, i);
 	}
 	free(mclasses);
     }
@@ -3077,16 +3081,21 @@ return;
 	    info->mark_sets = malloc(info->mark_set_cnt*sizeof(char *));
 	    info->mark_set_names = malloc(info->mark_set_cnt*sizeof(char *));
 	    info->mark_set_names[0] = NULL;
-	    for ( i=0; i<info->mark_set_cnt; ++i ) {
-		info->mark_set_names[i] = malloc((strlen(format_spec)+10));
-		sprintf( info->mark_set_names[i], format_spec, i );
-		if ( offsets[i]!=0 ) {
-		    glyphs = getCoverageTable(ttf,info->gdef_start+mas+offsets[i],info);
-		    info->mark_sets[i] = GlyphsToNames(info,glyphs,true);
-		    free(glyphs);
-		} else
-		    info->mark_sets[i] = NULL;		/* Should not happen */
-	    }
+		for (i = 0; i < info->mark_set_cnt; ++i)
+		{
+			int str_size = strlen(format_spec) + 10;
+			info->mark_set_names[i] = malloc(str_size);
+			snprintf(info->mark_set_names[i], str_size, format_spec, i);
+
+			if (offsets[i] != 0)
+			{
+				glyphs = getCoverageTable(ttf, info->gdef_start + mas + offsets[i], info);
+				info->mark_sets[i] = GlyphsToNames(info, glyphs, true);
+				free(glyphs);
+			}
+			else
+				info->mark_sets[i] = NULL;		/* Should not happen */
+		}
 	    free(offsets);
 	}
     }
@@ -3326,8 +3335,11 @@ return( subs[nest_index] );
 /* GT: and the %d is n, where this lookup is the n'th defined for this state */
 /* GT: machine */
     format = _("%s nested-substitutions %d");
-    name = malloc(strlen(parent->lookup_name)+strlen(format)+10);
-    sprintf( name, format, parent->lookup_name, nest_index );
+
+	int str_size = strlen(parent->lookup_name) + strlen(format) + 10;
+    name = malloc(str_size);
+    snprintf( name, str_size, format, parent->lookup_name, nest_index );
+
     otl->lookup_name = name;
     otl->subtables->subtable_name = strconcat3(name," ",_("subtable"));
     OTLAppend(info,otl,false);
@@ -3586,7 +3598,9 @@ return( info->badgids[i] );
 	info->badgids = realloc(info->badgids,(info->badgid_max += 20)*sizeof(SplineChar *));
     fake = SplineCharCreate(2);
     fake->orig_pos = badgid;
-    sprintf( name, "Out-Of-Range-GID-%d", badgid );
+    
+	snprintf( name, sizeof(name), "Out-Of-Range-GID-%d", badgid );
+
     fake->name = copy(name);
     fake->widthset = true;		/* So it doesn't just vanish on us */
     fake->width = fake->vwidth = info->emsize;
@@ -5408,7 +5422,7 @@ return( NULL );
 		    else if ( i==1 && pcnt==3 )
 			ext = "mid";
 		    else {
-			sprintf( ebuf, "%cpart%d", isv?'v':'h', i );
+			snprintf( ebuf, sizeof(ebuf), "%cpart%d", isv?'v':'h', i );
 			ext = ebuf;
 		    }
 		    snprintf(buffer,sizeof(buffer),"%.30s.%s",

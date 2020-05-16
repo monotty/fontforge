@@ -913,89 +913,129 @@ static int Group_ToSelection(GGadget *g, GEvent *e) {
 return( true );
 }
 
-static int Group_FromSelection(GGadget *g, GEvent *e) {
-    if ( e->type==et_controlevent && e->u.control.subtype == et_buttonactivate ) {
-	struct groupdlg *grp = GDrawGetUserData(GGadgetGetWindow(g));
-	SplineFont *sf = grp->fv->b.sf;
-	FontView *fv = grp->fv;
-	unichar_t *vals, *pt;
-	int i, len, max, gid, k;
-	SplineChar *sc, dummy;
-	char buffer[20];
+static int Group_FromSelection(GGadget* g, GEvent* e)
+{
+    if (e->type == et_controlevent && e->u.control.subtype == et_buttonactivate)
+    {
+        struct groupdlg* grp = GDrawGetUserData(GGadgetGetWindow(g));
+        SplineFont* sf = grp->fv->b.sf;
+        FontView* fv = grp->fv;
+        unichar_t* vals, * pt;
+        int i, len, max, gid, k;
+        SplineChar* sc, dummy;
+        char buffer[20];
 
-	if ( GGadgetIsChecked(grp->idname) ) {
-	    for ( i=len=max=0; i<fv->b.map->enccount; ++i ) if ( fv->b.selected[i]) {
-		gid = fv->b.map->map[i];
-		if ( gid!=-1 && sf->glyphs[gid]!=NULL )
-		    sc = sf->glyphs[gid];
-		else
-		    sc = SCBuildDummy(&dummy,sf,fv->b.map,i);
-		len += strlen(sc->name)+1;
-		if ( fv->b.selected[i]>max ) max = fv->b.selected[i];
-	    }
-	    pt = vals = malloc((len+1)*sizeof(unichar_t));
-	    *pt = '\0';
-	    for ( i=len=max=0; i<fv->b.map->enccount; ++i ) if ( fv->b.selected[i]) {
-		gid = fv->b.map->map[i];
-		if ( gid!=-1 && sf->glyphs[gid]!=NULL )
-		    sc = sf->glyphs[gid];
-		else
-		    sc = SCBuildDummy(&dummy,sf,fv->b.map,i);
-		uc_strcpy(pt,sc->name);
-		pt += u_strlen(pt);
-		*pt++ = ' ';
-	    }
-	    if ( pt>vals ) pt[-1]='\0';
-	} else {
-	    vals = NULL;
-	    for ( k=0; k<2; ++k ) {
-		int last=-2, start=-2;
-		len = 0;
-		for ( i=len=max=0; i<fv->b.map->enccount; ++i ) if ( fv->b.selected[i]) {
-		    gid = fv->b.map->map[i];
-		    if ( gid!=-1 && sf->glyphs[gid]!=NULL )
-			sc = sf->glyphs[gid];
-		    else
-			sc = SCBuildDummy(&dummy,sf,fv->b.map,i);
-		    if ( sc->unicodeenc==-1 )
-		continue;
-		    if ( sc->unicodeenc==last+1 )
-			last = sc->unicodeenc;
-		    else {
-			if ( last!=-2 ) {
-			    if ( start!=last )
-				sprintf( buffer, "U+%04X-U+%04X ", start, last );
-			    else
-				sprintf( buffer, "U+%04X ", start );
-			    if ( vals!=NULL )
-				uc_strcpy(vals+len,buffer);
-			    len += strlen(buffer);
-			}
-			start = last = sc->unicodeenc;
-		    }
-		}
-		if ( last!=-2 ) {
-		    if ( start!=last )
-			sprintf( buffer, "U+%04X-U+%04X ", start, last );
-		    else
-			sprintf( buffer, "U+%04X ", start );
-		    if ( vals!=NULL )
-			uc_strcpy(vals+len,buffer);
-		    len += strlen(buffer);
-		}
-		if ( !k )
-		    vals = malloc((len+1)*sizeof(unichar_t));
-		else if ( len!=0 )
-		    vals[len-1] = '\0';
-		else
-		    *vals = '\0';
-	    }
-	}
+        if (GGadgetIsChecked(grp->idname))
+        {
+            for (i = len = max = 0; i < fv->b.map->enccount; ++i) if (fv->b.selected[i])
+            {
+                gid = fv->b.map->map[i];
+                if (gid != -1 && sf->glyphs[gid] != NULL)
+                    sc = sf->glyphs[gid];
+                else
+                    sc = SCBuildDummy(&dummy, sf, fv->b.map, i);
+                len += strlen(sc->name) + 1;
+                if (fv->b.selected[i] > max) max = fv->b.selected[i];
+            }
 
-	GGadgetSetTitle(grp->glyphs,vals);
-	free(vals);
+            size_t pt_size = (len + 1) * sizeof(unichar_t);
+
+            pt = vals = malloc(pt_size);
+            *pt = '\0';
+
+            for (i = len = max = 0; i < fv->b.map->enccount; ++i) if (fv->b.selected[i])
+            {
+                gid = fv->b.map->map[i];
+                
+                if (gid != -1 && sf->glyphs[gid] != NULL)
+                    sc = sf->glyphs[gid];
+                else
+                    sc = SCBuildDummy(&dummy, sf, fv->b.map, i);
+                
+                uc_strncpy(pt, sc->name, pt_size);
+
+                size_t str_size = u_strlen(pt);
+                pt += str_size;
+                pt_size -= str_size;
+
+                *pt++ = ' ';
+                pt_size--;
+            }
+            if (pt > vals) pt[-1] = '\0';
+        }
+        else
+        {
+            vals = NULL;
+            size_t vals_size = 0;
+            for (k = 0; k < 2; ++k)
+            {
+                int last = -2, start = -2;
+                len = 0;
+                for (i = len = max = 0; i < fv->b.map->enccount; ++i) if (fv->b.selected[i])
+                {
+                    gid = fv->b.map->map[i];
+                    if (gid != -1 && sf->glyphs[gid] != NULL)
+                        sc = sf->glyphs[gid];
+                    else
+                        sc = SCBuildDummy(&dummy, sf, fv->b.map, i);
+                    if (sc->unicodeenc == -1)
+                        continue;
+                    if (sc->unicodeenc == last + 1)
+                        last = sc->unicodeenc;
+                    else
+                    {
+                        if (last != -2)
+                        {
+                            if (start != last)
+                                snprintf(buffer, sizeof(buffer), "U+%04X-U+%04X ", start, last);
+                            else
+                                snprintf(buffer, sizeof(buffer), "U+%04X ", start);
+                            
+                            if (vals != NULL)
+                            {
+                                uc_strncpy(vals + len, buffer, vals_size - len);
+                            }
+
+                            len += strlen(buffer);
+                        }
+                        start = last = sc->unicodeenc;
+                    }
+                }
+
+                if (last != -2)
+                {
+                    if (start != last)
+                        snprintf(buffer, sizeof(buffer), "U+%04X-U+%04X ", start, last);
+                    else
+                        snprintf(buffer, sizeof(buffer), "U+%04X ", start);
+                    
+                    if (vals != NULL)
+                    {
+                        uc_strncpy(vals + len, buffer, vals_size - len);
+                    }
+
+                    len += strlen(buffer);
+                }
+
+                if (!k)
+                {
+                    vals = malloc(vals_size = (len + 1) * sizeof(unichar_t));
+                }
+                else if (len != 0)
+                {
+                    vals[len - 1] = '\0';
+                }
+                else
+                {
+                    *vals = '\0';
+                }
+            }
+        }
+
+        GGadgetSetTitle(grp->glyphs, vals);
+        free(vals);
     }
-return( true );
+    return(true);
 }
 
 static int Group_AddColor(GGadget *g, GEvent *e) {
@@ -1024,8 +1064,10 @@ static int Group_AddColor(GGadget *g, GEvent *e) {
 
 	if ( set ) {
 	    char buffer[40]; unichar_t ubuf[40];
-	    sprintf(buffer," color=#%06x", xcol );
-	    uc_strcpy(ubuf,buffer);
+	    snprintf(buffer, sizeof(buffer), " color=#%06x", xcol );
+
+	    uc_strncpy(ubuf,buffer, sizeof(buffer));
+
 	    GTextFieldReplace(grp->glyphs,ubuf);
 	    if ( grp->showchange==NULL )
 		GroupShowChange(grp);
@@ -1455,29 +1497,32 @@ static int GroupSelCnt(Group *group, Group **first, Group **second) {
 return( cnt );
 }
 
-static char *EncNameFromGroups(Group *group) {
-    Group *first = NULL, *second = NULL;
-    int cnt = GroupSelCnt(group,&first,&second);
-    char *prefix = P_("Group","Groups",cnt);
-    char *ret;
+static char* EncNameFromGroups(Group* group)
+{
+    Group* first = NULL, * second = NULL;
+    int cnt = GroupSelCnt(group, &first, &second);
+    char* prefix = P_("Group", "Groups", cnt);
+    char* ret;
+    size_t ret_size;
 
-    switch ( cnt ) {
-      case 0:
-return( copy( _("No Groups")) );
-      case 1:
-	ret = malloc(strlen(prefix) + strlen(first->name) + 3 );
-	sprintf( ret, "%s: %s", prefix, first->name);
-      break;
-      case 2:
-	ret = malloc(strlen(prefix) + strlen(first->name) + strlen(second->name) + 5 );
-	sprintf( ret, "%s: %s, %s", prefix, first->name, second->name );
-      break;
-      default:
-	ret = malloc(strlen(prefix) + strlen(first->name) + strlen(second->name) + 9 );
-	sprintf( ret, "%s: %s, %s ...", prefix, first->name, second->name );
-      break;
+    switch (cnt)
+    {
+        case 0:
+            return(copy(_("No Groups")));
+        case 1:
+            ret = malloc(ret_size = strlen(prefix) + strlen(first->name) + 3);
+            snprintf(ret, ret_size, "%s: %s", prefix, first->name);
+            break;
+        case 2:
+            ret = malloc(ret_size = strlen(prefix) + strlen(first->name) + strlen(second->name) + 5);
+            snprintf(ret, ret_size, "%s: %s, %s", prefix, first->name, second->name);
+            break;
+        default:
+            ret = malloc(ret_size = strlen(prefix) + strlen(first->name) + strlen(second->name) + 9);
+            snprintf(ret, ret_size, "%s: %s, %s ...", prefix, first->name, second->name);
+            break;
     }
-return( ret );
+    return(ret);
 }
 
 static void EncodeToGroups(FontView *fv,Group *group, int compacted) {
