@@ -180,22 +180,48 @@ static char* rpl(const char* src, const char* find, const char* rpl)
 	int found_cnt = 0;
 	int flen = strlen(find);
 
-	for (pt = src; *pt; )
+	// looking for the number of occurrences
+	//for (pt = src; *pt; )
+	pt = src; 
+	while(*pt)
 	{
-		while (isspace(*pt)) ++pt;
+		while (isspace(*pt))
+		{
+			++pt;
+		}
+
 		if (*pt == '\0')
+		{
 			break;
-		for (start = pt; !isspace(*pt) && *pt != '\0'; ++pt);
+		}
+
+		// take next word
+		//for (start = pt; !isspace(*pt) && *pt != '\0'; ++pt);
+		start = pt;
+		while(!isspace(*pt) && *pt != '\0')
+		{
+			++pt;
+		}
+
 		if (pt - start == flen && strncmp(find, start, flen) == 0)
+		{
 			++found_cnt;
+		}
 	}
+
+	// nothing found
 	if (found_cnt == 0)
+	{
 		return(copy(src));
+	}
 
-	int buf_size = strlen(src) + found_cnt * (strlen(rpl) - flen) + 1;
-	rpt = ret = malloc(buf_size);
+	int buf_size = strlen(src) + found_cnt * (strlen(rpl) - flen);
+	//rpt = ret = malloc(buf_size); //todo possible bug: strlen(rpt) - overflow
+	rpt = ret = calloc(buf_size + 1, 1);
 
-	for (pt = src; *pt; )
+	//for (pt = src; *pt; )
+	pt = src;
+	while(*pt)
 	{
 		while (isspace(*pt))
 		{
@@ -208,25 +234,26 @@ static char* rpl(const char* src, const char* find, const char* rpl)
 			break;
 		}
 
+		// take next word
 		for (start = pt; !isspace(*pt) && *pt != '\0'; )
 		{
 			++pt;
 		}
+		int word_size = pt - start;
 
-		if (pt - start == flen && strncmp(find, start, flen) == 0)
+		if (word_size == flen && strncmp(find, start, flen) == 0)
 		{
 			strncpy(rpt, rpl, buf_size);
 
 			int str_size = strlen(rpt);
 			rpt += str_size;
 			buf_size -= str_size;
-
 		}
 		else
 		{
-			strncpy(rpt, start, pt - start);
-			rpt += (pt - start);
-			buf_size -= (pt - start);
+			strncpy(rpt, start, word_size);
+			rpt += word_size;
+			buf_size -= word_size;
 		}
 	}
 	*rpt = '\0';
@@ -348,7 +375,7 @@ return( cnt );
 
 static int seqlookuplen(struct fpst_rule *r) {
     int i, len=0;
-    char buf[20];
+    char buf[40];
 
     len += 4;		/* for the arrow, takes 3 bytes in utf8 */
     for ( i=0; i<r->lookup_cnt; ++i ) {
@@ -474,7 +501,7 @@ static char* gruleitem(struct fpst_rule* r)
 
 	if (r->u.glyph.fore != NULL && *r->u.glyph.fore != '\0')
 	{
-		strcpy(pt, r->u.glyph.fore);
+		strncpy(pt, r->u.glyph.fore, pt_size);
 
 		size_t str_size = strlen(r->u.glyph.fore);
 		pt += str_size;
@@ -526,7 +553,7 @@ static char* classruleitem(struct fpst_rule* r, struct matrix_data** classes, in
 {
 	char* ret, * pt;
 	int len, i, k;
-	char buf[20];
+	char buf[40];
 	size_t pt_size, str_size;
 
 	len = 0;
@@ -1901,116 +1928,191 @@ static int WhichSections(struct contextchaindlg *ccd, GGadget *g) {
 return( sections );
 }
 
-static void RenameClass(struct contextchaindlg *ccd,char *old,char *new,int sections) {
-    /* A class has been renamed. We should fix up all class rules that use */
-    /*  the old name to use the new one. The name may only be valid in one */
-    /*  section of the rule (backtrack, match, or forward), or in all, or */
-    /*  in match and one of the other two */
-    int rows, i;
-    GGadget *gclassrules = GWidgetGetControl(ccd->classes_simple,CID_CList_Simple);
-    struct matrix_data *classrules = GMatrixEditGet(gclassrules,&rows);
-    int cols = GMatrixEditGetColCnt(gclassrules);
-    char *end_back=NULL, *end_match=NULL, *pt, *last_name, *temp;
-    int ch;
 
-    if ( sections==0x7 ) {
-	/* name change applies through out rule, no need to search for sections */
-	for ( i=0; i<rows; ++i ) {
-	    char *oldrule = classrules[cols*i+0].u.md_str;
-	    char *newrule = rpl(oldrule,old,new);
-	    free(oldrule);
-	    classrules[cols*i+0].u.md_str = newrule;
+//todo: sdn: memory corruption
+static void RenameClass(struct contextchaindlg* ccd, char* old, char* new, int sections)
+{
+	/* A class has been renamed. We should fix up all class rules that use */
+	/*  the old name to use the new one. The name may only be valid in one */
+	/*  section of the rule (backtrack, match, or forward), or in all, or */
+	/*  in match and one of the other two */
+	int rows, i;
+	GGadget* gclassrules = GWidgetGetControl(ccd->classes_simple, CID_CList_Simple);
+
+	struct matrix_data* classrules = GMatrixEditGet(gclassrules, &rows);
+	int cols = GMatrixEditGetColCnt(gclassrules);
+	int ch;
+
+	//todo possible bug: they do not reset at the next iteration
+	//char* end_back = NULL;
+	//char* end_match = NULL;
+
+	char* pt;
+	char* last_name;
+	char* temp;
+
+	if (sections == 0x7)
+	{
+		/* name change applies through out rule, no need to search for sections */
+		for (i = 0; i < rows; ++i)
+		{
+			char* oldrule = classrules[cols * i + 0].u.md_str;
+			char* newrule = rpl(oldrule, old, new);
+			free(oldrule);
+			classrules[cols * i + 0].u.md_str = newrule;
+		}
 	}
-    } else {
-	for ( i=0; i<rows; ++i ) {
-	    char *oldrule = classrules[cols*i+0].u.md_str;
-	    char *newrule;
-	    for ( pt=last_name=oldrule; *pt; ) {
-		while ( isspace(*pt)) ++pt;
-		if ( *pt=='|' ) {
-		    if ( end_back == NULL )
-			end_back = pt;
-		    else if ( end_match==NULL )
-			end_match = pt;
-		} else if ( end_back==NULL && ( *pt=='<' || *pt=='@' )) {
-		    end_back = last_name;
-		} else
-		    last_name = pt;
-		if ( *pt=='<' || *pt=='@' ) {
-		    while ( *pt!='>' && *pt!='\0' ) ++pt;
-		    if ( *pt=='>' ) ++pt;
-		} else {
-		    while ( !isspace( *pt ) && *pt!='\0' )
-			++pt;
+	else
+	{
+		for (i = 0; i < rows; ++i)
+		{
+			char* oldrule = classrules[cols * i + 0].u.md_str;
+			char* newrule;
+			char* end_back = NULL;
+			char* end_match = NULL;
+
+			for (pt = last_name = oldrule; *pt; )
+			{
+				while (isspace(*pt))
+				{
+					++pt;
+				}
+
+				if (*pt == '|')
+				{
+					if (end_back == NULL)
+					{
+						end_back = pt;
+					}
+					else if (end_match == NULL)
+					{
+						end_match = pt;
+					}
+				}
+				else if (end_back == NULL && (*pt == '<' || *pt == '@'))
+				{
+					end_back = last_name;
+				}
+				else
+				{
+					last_name = pt;
+				}
+
+				if (*pt == '<' || *pt == '@')
+				{
+					while (*pt != '>' && *pt != '\0')
+					{
+						++pt;
+					}
+
+					if (*pt == '>')
+					{
+						++pt;
+					}
+				}
+				else
+				{
+					while (!isspace(*pt) && *pt != '\0')
+					{
+						++pt;
+					}
+				}
+			}
+			if ((sections == 0x3 && end_match == NULL) ||
+				(sections == 0x6 && end_back == NULL) ||
+				(sections == 0x2 && end_match == NULL && end_back == NULL))
+			{
+				newrule = rpl(oldrule, old, new);
+			}
+			else if (sections == 0x3)
+			{
+				ch = *end_match; *end_match = '\0';
+				temp = rpl(oldrule, old, new);
+				*end_match = ch;
+				newrule = strconcat(temp, end_match);
+				free(temp);
+			}
+			else if (sections == 0x6)
+			{
+				temp = rpl(end_back, old, new);
+				ch = *end_back; *end_back = '\0';
+				newrule = strconcat(oldrule, temp);
+				*end_back = ch;
+				free(temp);
+			}
+			else if (sections == 0x1)
+			{
+				if (end_back == NULL)
+				{
+					newrule = NULL;
+				}
+				else
+				{
+					ch = *end_back; *end_back = '\0';
+					temp = rpl(oldrule, old, new);
+					*end_back = ch;
+					newrule = strconcat(temp, end_back);
+					free(temp);
+				}
+			}
+			else if (sections == 0x2)
+			{
+				if (end_match == NULL)
+				{
+					temp = rpl(end_back, old, new);	/* end_back is not NULL, checked above */
+					ch = *end_back; *end_back = '\0';
+					newrule = strconcat(oldrule, temp);
+					*end_back = ch;
+					free(temp);
+				}
+				else if (end_back == NULL)
+				{
+					ch = *end_match; *end_match = '\0';
+					temp = rpl(oldrule, old, new);
+					*end_match = ch;
+					newrule = strconcat(temp, end_match);
+					free(temp);
+				}
+				else
+				{
+					ch = *end_match; *end_match = '\0';
+					temp = rpl(end_back, old, new);
+					*end_match = ch;
+					ch = *end_back; *end_back = '\0';
+					newrule = strconcat3(oldrule, temp, end_match);
+					*end_back = ch;
+					free(temp);
+				}
+			}
+			else if (sections == 0x4)
+			{
+				if (end_match == NULL)
+				{
+					newrule = NULL;
+				}
+				else
+				{
+					temp = rpl(end_match, old, new);
+					ch = *end_match; *end_match = '\0';
+					newrule = strconcat(oldrule, temp);
+					*end_match = ch;
+					free(temp);
+				}
+			}
+			else
+			{
+				newrule = NULL;
+			}
+
+			if (newrule != NULL)
+			{
+				free(oldrule);
+				classrules[cols * i + 0].u.md_str = newrule;
+			}
 		}
-	    }
-	    if ( (sections==0x3 && end_match==NULL) ||
-		    (sections==0x6 && end_back==NULL) ||
-		    (sections==0x2 && end_match==NULL && end_back==NULL)) {
-		newrule = rpl(oldrule,old,new);
-	    } else if ( sections==0x3 ) {
-		ch = *end_match; *end_match='\0';
-		temp = rpl(oldrule,old,new);
-		*end_match = ch;
-		newrule = strconcat(temp,end_match);
-		free(temp);
-	    } else if ( sections==0x6 ) {
-		temp = rpl(end_back,old,new);
-		ch = *end_back; *end_back = '\0';
-		newrule = strconcat(oldrule,temp);
-		*end_back = ch;
-		free(temp);
-	    } else if ( sections==0x1 ) {
-		if ( end_back==NULL )
-		    newrule=NULL;
-		else {
-		    ch = *end_back; *end_back = '\0';
-		    temp = rpl(oldrule,old,new);
-		    *end_back = ch;
-		    newrule = strconcat(temp,end_back);
-		    free(temp);
-		}
-	    } else if ( sections==0x2 ) {
-		if ( end_match==NULL ) {
-		    temp = rpl(end_back,old,new);	/* end_back is not NULL, checked above */
-		    ch = *end_back; *end_back = '\0';
-		    newrule = strconcat(oldrule,temp);
-		    *end_back = ch;
-		    free(temp);
-		} else if ( end_back==NULL ) {
-		    ch = *end_match; *end_match = '\0';
-		    temp = rpl(oldrule,old,new);
-		    *end_match = ch;
-		    newrule = strconcat(temp,end_match);
-		    free(temp);
-		} else {
-		    ch = *end_match; *end_match = '\0';
-		    temp = rpl(end_back,old,new);
-		    *end_match = ch;
-		    ch = *end_back; *end_back = '\0';
-		    newrule = strconcat3(oldrule,temp,end_match);
-		    *end_back = ch;
-		    free(temp);
-		}
-	    } else if ( sections==0x4 ) {
-		if ( end_match==NULL )
-		    newrule=NULL;
-		else {
-		    temp = rpl(end_match,old,new);
-		    ch = *end_match; *end_match = '\0';
-		    newrule = strconcat(oldrule,temp);
-		    *end_match = ch;
-		    free(temp);
-		}
-	    } else
-		newrule = NULL;
-	    if ( newrule!=NULL ) {
-		free(oldrule);
-		classrules[cols*i+0].u.md_str = newrule;
-	    }
 	}
-    }
-    GGadgetRedraw(gclassrules);
+
+	GGadgetRedraw(gclassrules);
 }
 
 static void CCD_FinishClassEdit(GGadget *g,int r, int c, int wasnew) {
@@ -2021,7 +2123,7 @@ static void CCD_FinishClassEdit(GGadget *g,int r, int c, int wasnew) {
     else if ( c==0 ) {
 	int rows, i;
 	struct matrix_data *classes_simple = _GMatrixEditGet(g,&rows);
-	char buffer[40], *end, *pt;
+	char buffer[400], *end, *pt;
 
 	if ( strchr(classes_simple[3*r+0].u.md_str,' ')!=NULL ) {
 	    for ( pt=classes_simple[3*r+0].u.md_str; *pt; ++pt) {
