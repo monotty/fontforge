@@ -74,71 +74,98 @@ return( axismap->designs[j-1]+ t*(axismap->designs[j]-axismap->designs[j-1]) );
 return(axismap->designs[axismap->points-1]);
 }
 
-static char *_MMMakeFontname(MMSet *mm,real *normalized,char **fullname) {
-    char *pt, *pt2, *hyphen=NULL;
-    char *ret = NULL;
-    int i,j;
+static char* _MMMakeFontname(MMSet* mm, real* normalized, char** fullname)
+{
+	char* pt, * pt2, * hyphen = NULL;
+	char* ret = NULL;
+	int i, j;
 
-    if ( mm->apple ) {
-	for ( i=0; i<mm->named_instance_count; ++i ) {
-	    for ( j=0; j<mm->axis_count; ++j ) {
-		if (( normalized[j] == -1 &&
-			RealApprox(mm->named_instances[i].coords[j],mm->axismaps[j].min) ) ||
-		    ( normalized[j] ==  0 &&
-			RealApprox(mm->named_instances[i].coords[j],mm->axismaps[j].def) ) ||
-		    ( normalized[j] ==  1 &&
-			RealApprox(mm->named_instances[i].coords[j],mm->axismaps[j].max) ))
-		    /* A match so far */;
-		else
-	    break;
-	    }
-	    if ( j==mm->axis_count )
-	break;
+	if (mm->apple)
+	{
+		for (i = 0; i < mm->named_instance_count; ++i)
+		{
+			for (j = 0; j < mm->axis_count; ++j)
+			{
+				if ((normalized[j] == -1 &&
+					RealApprox(mm->named_instances[i].coords[j], mm->axismaps[j].min)) ||
+					(normalized[j] == 0 &&
+						RealApprox(mm->named_instances[i].coords[j], mm->axismaps[j].def)) ||
+					(normalized[j] == 1 &&
+						RealApprox(mm->named_instances[i].coords[j], mm->axismaps[j].max)))
+					/* A match so far */;
+				else
+					break;
+			}
+			if (j == mm->axis_count)
+				break;
+		}
+		if (i != mm->named_instance_count)
+		{
+			char* styles = PickNameFromMacName(mm->named_instances[i].names);
+			if (styles == NULL)
+				styles = FindEnglishNameInMacName(mm->named_instances[i].names);
+			if (styles != NULL)
+			{
+				ret = malloc(strlen(mm->normal->familyname) + strlen(styles) + 3);
+				strcpy(ret, mm->normal->familyname);
+				hyphen = ret + strlen(ret);
+				strcpy(hyphen, " ");
+				strcpy(hyphen + 1, styles);
+				free(styles);
+			}
+		}
 	}
-	if ( i!=mm->named_instance_count ) {
-	    char *styles = PickNameFromMacName(mm->named_instances[i].names);
-	    if ( styles==NULL )
-		styles = FindEnglishNameInMacName(mm->named_instances[i].names);
-	    if ( styles!=NULL ) {
-		ret = malloc(strlen(mm->normal->familyname)+ strlen(styles)+3 );
-		strcpy(ret,mm->normal->familyname);
-		hyphen = ret+strlen(ret);
-		strcpy(hyphen," ");
-		strcpy(hyphen+1,styles);
-		free(styles);
-	    }
+
+	if (ret == NULL)
+	{
+		int buf_size = strlen(mm->normal->familyname) + mm->axis_count * 15 + 1;
+		pt = ret = malloc(buf_size);
+
+		strncpy(pt, mm->normal->familyname, buf_size);
+
+		int str_size = strlen(pt);
+		pt += str_size;
+		buf_size -= str_size;
+
+		*pt++ = '_';
+		buf_size--;
+
+		for (i = 0; i < mm->axis_count; ++i)
+		{
+			if (!mm->apple)
+			{
+				snprintf(pt, buf_size, " %d%s", (int)rint(MMAxisUnmap(mm, i, normalized[i])),
+					MMAxisAbrev(mm->axes[i]));
+			}
+			else
+			{
+				snprintf(pt, buf_size, " %.1f%s", (double)MMAxisUnmap(mm, i, normalized[i]),
+					MMAxisAbrev(mm->axes[i]));
+			}
+			
+			int str_size = strlen(pt);
+			pt += str_size;
+			buf_size -= str_size;
+		}
+		
+		if (pt > ret && pt[-1] == ' ')
+		{
+			--pt;
+		}
+
+		*pt = '\0';
 	}
-    }
 
-    if ( ret==NULL ) {
-	pt = ret = malloc(strlen(mm->normal->familyname)+ mm->axis_count*15 + 1);
-	strcpy(pt,mm->normal->familyname);
-	pt += strlen(pt);
-	*pt++ = '_';
-	for ( i=0; i<mm->axis_count; ++i ) {
-	    if ( !mm->apple )
-		sprintf( pt, " %d%s", (int) rint(MMAxisUnmap(mm,i,normalized[i])),
-			MMAxisAbrev(mm->axes[i]));
-	    else
-		sprintf( pt, " %.1f%s", (double) MMAxisUnmap(mm,i,normalized[i]),
-			MMAxisAbrev(mm->axes[i]));
-	    pt += strlen(pt);
-	}
-	if ( pt>ret && pt[-1]==' ' )
-	    --pt;
-	*pt = '\0';
-    }
+	*fullname = ret;
 
-    *fullname = ret;
-
-    ret = copy(ret);
-    for ( pt=*fullname, pt2=ret; *pt!='\0'; ++pt )
-	if ( pt==hyphen )
-	    *pt2++ = '-';
-	else if ( *pt!=' ' )
-	    *pt2++ = *pt;
-    *pt2 = '\0';
-return( ret );
+	ret = copy(ret);
+	for (pt = *fullname, pt2 = ret; *pt != '\0'; ++pt)
+		if (pt == hyphen)
+			*pt2++ = '-';
+		else if (*pt != ' ')
+			*pt2++ = *pt;
+	*pt2 = '\0';
+	return(ret);
 }
 
 char *MMMakeMasterFontname(MMSet *mm,int ipos,char **fullname) {
@@ -550,89 +577,117 @@ return( _("The different instances of this mm have a different number of glyphs"
 return(ret);
 }
 
-static struct psdict *BlendPrivate(struct psdict *private,MMSet *mm) {
-    struct psdict *other;
-    real sum, val;
-    char *data;
-    int i,j,k, cnt;
-    char *values[MmMax], buffer[32], *space, *pt, *end;
+static struct psdict* BlendPrivate(struct psdict* private, MMSet* mm)
+{
+	struct psdict* other;
+	real sum, val;
+	char* data;
+	int i, j, k, cnt;
+	char* values[MmMax], buffer[32], * space, * pt, * end;
 
-    other = mm->instances[0]->private;
-    if ( other==NULL )
-return( private );
+	other = mm->instances[0]->private;
+	if (other == NULL)
+		return(private);
 
-    if ( private==NULL )
-	private = calloc(1,sizeof(struct psdict));
+	if (private == NULL)
+		private = calloc(1, sizeof(struct psdict));
 
-    i = PSDictFindEntry(private,"ForceBoldThreshold");
-    if ( i!=-1 ) {
-	val = strtod(private->values[i],NULL);
-	sum = 0;
-	for ( j=0; j<mm->instance_count; ++j ) {
-	    i = PSDictFindEntry(mm->instances[j]->private,"ForceBold");
-	    if ( i!=-1 && strcmp(mm->instances[j]->private->values[i],"true")==0 )
-		sum += mm->defweights[j];
-	}
-	data = ( sum>=val ) ? "true" : "false";
-	PSDictChangeEntry(private,"ForceBold",data);
-    }
-    for ( i=0; i<other->next; ++i ) {
-	if ( *other->values[i]!='[' && !isdigit( *other->values[i]) && *other->values[i]!='.' )
-    continue;
-	for ( j=0; j<mm->instance_count; ++j ) {
-	    k = PSDictFindEntry(mm->instances[j]->private,other->keys[i]);
-	    if ( k==-1 )
-	break;
-	    values[j] = mm->instances[j]->private->values[k];
-	}
-	if ( j!=mm->instance_count )
-    continue;
-	if ( *other->values[i]!='[' ) {
-	    /* blend a real number */
-	    sum = 0;
-	    for ( j=0; j<mm->instance_count; ++j ) {
-		val = strtod(values[j],&end);
-		if ( end==values[j])
-	    break;
-		sum += val*mm->defweights[j];
-	    }
-	    if ( j!=mm->instance_count )
-    continue;
-	    sprintf(buffer,"%g",(double) sum);
-	    PSDictChangeEntry(private,other->keys[i],buffer);
-	} else {
-	    /* Blend an array of numbers */
-	    for ( pt = values[0], cnt=0; *pt!='\0' && *pt!=']'; ++pt ) {
-		if ( *pt==' ' ) {
-		    while ( *pt==' ' ) ++pt;
-		    --pt;
-		    ++cnt;
-		}
-	    }
-	    space = pt = malloc((cnt+2)*24+4);
-	    *pt++ = '[';
-	    for ( j=0; j<mm->instance_count; ++j )
-		if ( *values[j]=='[' ) ++values[j];
-	    while ( *values[0]!=']' ) {
+	i = PSDictFindEntry(private, "ForceBoldThreshold");
+	if (i != -1)
+	{
+		val = strtod(private->values[i], NULL);
 		sum = 0;
-		for ( j=0; j<mm->instance_count; ++j ) {
-		    val = strtod(values[j],&end);
-		    sum += val*mm->defweights[j];
-		    while ( *end==' ' ) ++end;
-		    values[j] = end;
+		for (j = 0; j < mm->instance_count; ++j)
+		{
+			i = PSDictFindEntry(mm->instances[j]->private, "ForceBold");
+			if (i != -1 && strcmp(mm->instances[j]->private->values[i], "true") == 0)
+				sum += mm->defweights[j];
 		}
-		sprintf( pt,"%g ", (double) sum);
-		pt += strlen(pt);
-	    }
-	    if ( pt[-1]==' ' ) --pt;
-	    *pt++ = ']';
-	    *pt = '\0';
-	    PSDictChangeEntry(private,other->keys[i],space);
-	    free(space);
+		data = (sum >= val) ? "true" : "false";
+		PSDictChangeEntry(private, "ForceBold", data);
 	}
-    }
+	for (i = 0; i < other->next; ++i)
+	{
+		if (*other->values[i] != '[' && !isdigit(*other->values[i]) && *other->values[i] != '.')
+			continue;
+		for (j = 0; j < mm->instance_count; ++j)
+		{
+			k = PSDictFindEntry(mm->instances[j]->private, other->keys[i]);
+			if (k == -1)
+				break;
+			values[j] = mm->instances[j]->private->values[k];
+		}
+		if (j != mm->instance_count)
+			continue;
+		if (*other->values[i] != '[')
+		{
+			/* blend a real number */
+			sum = 0;
+			for (j = 0; j < mm->instance_count; ++j)
+			{
+				val = strtod(values[j], &end);
+				if (end == values[j])
+					break;
+				sum += val * mm->defweights[j];
+			}
+			if (j != mm->instance_count)
+				continue;
+			snprintf(buffer, sizeof(buffer), "%g", (double)sum);
+			PSDictChangeEntry(private, other->keys[i], buffer);
+		}
+		else
+		{
+			/* Blend an array of numbers */
+			for (pt = values[0], cnt = 0; *pt != '\0' && *pt != ']'; ++pt)
+			{
+				if (*pt == ' ')
+				{
+					while (*pt == ' ') ++pt;
+					--pt;
+					++cnt;
+				}
+			}
 
-return( private );
+			int buf_size = (cnt + 2) * 24 + 4;
+			space = pt = malloc(buf_size);
+
+			*pt++ = '[';
+			buf_size--;
+
+			for (j = 0; j < mm->instance_count; ++j)
+			{
+				if (*values[j] == '[')
+				{
+					++values[j];
+				}
+			}
+
+			while (*values[0] != ']')
+			{
+				sum = 0;
+				for (j = 0; j < mm->instance_count; ++j)
+				{
+					val = strtod(values[j], &end);
+					sum += val * mm->defweights[j];
+					while (*end == ' ') ++end;
+					values[j] = end;
+				}
+
+				snprintf(pt, buf_size, "%g ", (double)sum);
+				int str_size = strlen(pt);
+				pt += str_size;
+				buf_size -= str_size;
+			}
+
+			if (pt[-1] == ' ') --pt;
+			*pt++ = ']';
+			*pt = '\0';
+			PSDictChangeEntry(private, other->keys[i], space);
+			free(space);
+		}
+	}
+
+	return(private);
 }
 
 int MMReblend(FontViewBase *fv, MMSet *mm) {

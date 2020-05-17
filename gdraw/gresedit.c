@@ -81,36 +81,39 @@ static void GRE_RefreshAll(GRE *gre) {
     GDrawRequestExpose(GTabSetGetSubwindow(gre->tabset,GTabSetGetSel(gre->tabset)),NULL,false);
 }
 
-static char *GFontSpec2String(GFont *font) {
-    int len;
-    char *fontname;
-    FontRequest rq;
+static char* GFontSpec2String(GFont* font)
+{
+	int len;
+	char* fontname;
+	FontRequest rq;
 
-    if ( font==NULL )
-return( copy(""));
+	if (font == NULL)
+		return(copy(""));
 
-    GDrawDecomposeFont(font,&rq);
-    if ( rq.family_name!=NULL )
-	len = 4*u_strlen(rq.family_name);
-    else
-	len = strlen(rq.utf8_family_name);
-    len += 6 /* point size */ + 1 +
-	    5 /* weight */ + 1 +
-	    10 /* style */;
-    fontname = malloc(len);
-    if ( rq.family_name!=NULL ) {
-	char *utf8_name = u2utf8_copy(rq.family_name);
-	sprintf( fontname, "%d %s%dpt %s", rq.weight,
-	    rq.style&1 ? "italic " : "",
-	    rq.point_size,
-	    utf8_name );
-	free(utf8_name );
-    } else
-	sprintf( fontname, "%d %s%dpt %s", rq.weight,
-	    rq.style&1 ? "italic " : "",
-	    rq.point_size,
-	    rq.utf8_family_name );
-return( fontname );
+	GDrawDecomposeFont(font, &rq);
+	if (rq.family_name != NULL)
+		len = 4 * u_strlen(rq.family_name);
+	else
+		len = strlen(rq.utf8_family_name);
+	len += 6 /* point size */ + 1 +
+		5 /* weight */ + 1 +
+		10 /* style */;
+	fontname = malloc(len);
+	if (rq.family_name != NULL)
+	{
+		char* utf8_name = u2utf8_copy(rq.family_name);
+		snprintf(fontname, len, "%d %s%dpt %s", rq.weight,
+			rq.style & 1 ? "italic " : "",
+			rq.point_size,
+			utf8_name);
+		free(utf8_name);
+	}
+	else
+		snprintf(fontname, len, "%d %s%dpt %s", rq.weight,
+			rq.style & 1 ? "italic " : "",
+			rq.point_size,
+			rq.utf8_family_name);
+	return(fontname);
 }
 
 static void GRE_Reflow(GRE *gre,GResInfo *res) {
@@ -171,7 +174,7 @@ static void inherit_byte_change(GRE *gre, int childindex, int cid_off,
     int val = (intpt) whatever;
     char buf[20];
 
-    sprintf( buf, "%d", val );
+    snprintf( buf, sizeof(buf), "%d", val );
     GGadgetSetTitle8(g,buf);
     *((uint8 *) GGadgetGetUserData(g)) = val;
 }
@@ -270,7 +273,7 @@ static int GRE_InheritByteChange(GGadget *g, GEvent *e) {
 	    if ( val != *(uint8 *) GGadgetGetUserData(g) ) {
 		int cid_off = cid - gre->tofree[index].startcid;
 		char buf[20];
-		sprintf( buf, "%d", val );
+		snprintf( buf, sizeof(buf), "%d", val );
 		GGadgetSetTitle8(g,buf);
 		*((uint8 *) GGadgetGetUserData(g)) = val;
 		GRE_FigureInheritance(gre,res,cid_off,cid_off+2,false,
@@ -1872,7 +1875,7 @@ static void GResEditDlg(GResInfo *all,const char *def_res_file,void (*change_res
 	    gcd[k++].creator = GLabelCreate;
 	    tofree[i].carray[l][1] = &gcd[k-1];
 
-	    sprintf( tofree[i].bw, "%d", res->boxdata->border_width );
+	    snprintf( tofree[i].bw, sizeof(tofree[i].bw), "%d", res->boxdata->border_width );
 	    lab[k].text = (unichar_t *) tofree[i].bw;
 	    lab[k].text_is_1byte = true;
 	    gcd[k].gd.pos.width = 50;
@@ -1911,7 +1914,7 @@ static void GResEditDlg(GResInfo *all,const char *def_res_file,void (*change_res
 	    gcd[k++].creator = GLabelCreate;
 	    tofree[i].carray[l][5] = &gcd[k-1];
 
-	    sprintf( tofree[i].padding, "%d", res->boxdata->padding );
+	    snprintf( tofree[i].padding, sizeof(tofree[i].padding), "%d", res->boxdata->padding );
 	    lab[k].text = (unichar_t *) tofree[i].padding;
 	    lab[k].text_is_1byte = true;
 	    gcd[k].gd.pos.width = 50;
@@ -1952,7 +1955,7 @@ static void GResEditDlg(GResInfo *all,const char *def_res_file,void (*change_res
 	    gcd[k++].creator = GLabelCreate;
 	    tofree[i].carray[l][1] = &gcd[k-1];
 
-	    sprintf( tofree[i].rr, "%d", res->boxdata->rr_radius );
+	    snprintf( tofree[i].rr, sizeof(tofree[i].rr), "%d", res->boxdata->rr_radius );
 	    lab[k].text = (unichar_t *) tofree[i].rr;
 	    lab[k].text_is_1byte = true;
 	    gcd[k].gd.pos.width = 50;
@@ -2111,7 +2114,8 @@ static void GResEditDlg(GResInfo *all,const char *def_res_file,void (*change_res
 		    tofree[i].earray[hl][base] = &gcd[k-1];
 
 		    tofree[i].extradefs[l] = malloc(20);
-		    sprintf( tofree[i].extradefs[l], "%d", extras->orig.ival );
+		    snprintf( tofree[i].extradefs[l], 20, "%d", extras->orig.ival );
+
 		    lab[k].text = (unichar_t *) tofree[i].extradefs[l];
 		    lab[k].text_is_1byte = true;
 		    gcd[k].gd.pos.width = 60;
@@ -2138,7 +2142,7 @@ static void GResEditDlg(GResInfo *all,const char *def_res_file,void (*change_res
 		    tofree[i].earray[hl][base] = &gcd[k-1];
 
 		    tofree[i].extradefs[l] = malloc(40);
-		    sprintf( tofree[i].extradefs[l], "%g", extras->orig.dval );
+		    snprintf( tofree[i].extradefs[l], 40, "%g", extras->orig.dval );
 		    lab[k].text = (unichar_t *) tofree[i].extradefs[l];
 		    lab[k].text_is_1byte = true;
 		    gcd[k].gd.label = &lab[k];

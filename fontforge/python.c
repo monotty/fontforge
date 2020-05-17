@@ -560,7 +560,7 @@ static PyObject *TagToPythonString(uint32 tag,int ismac) {
     char foo[30];
 
     if ( ismac ) {
-	sprintf( foo,"<%d,%d>", tag>>16, tag&0xffff );
+	snprintf( foo, sizeof(foo), "<%d,%d>", tag>>16, tag&0xffff );
     } else {
 	foo[0] = tag>>24;
 	foo[1] = tag>>16;
@@ -745,7 +745,7 @@ return( NULL );
 	for_new_glyphs = fv_active_in_ui->sf->for_new_glyphs;
     }
 
-    name = StdGlyphNameBoundsCheck(buffer,uni,uniinterp,for_new_glyphs);
+    name = StdGlyphNameBoundsCheck(buffer, sizeof(buffer), uni,uniinterp,for_new_glyphs);
     if ( name!=NULL )
 	ret = Py_BuildValue("s", name);
     else
@@ -2084,7 +2084,7 @@ static PyObject *PyFFPoint_richcompare(PyObject *a, PyObject *b, int op) {
 static PyObject *PyFFPoint_Repr(PyFF_Point *self) {
     char buffer[200];
 
-    sprintf(buffer,"%s(%g,%g,%s)", Py_TYPE(self)->tp_name, (double)self->x, (double)self->y,
+    snprintf(buffer, sizeof(buffer), "%s(%g,%g,%s)", Py_TYPE(self)->tp_name, (double)self->x, (double)self->y,
 	    self->on_curve?"True":"False" );
 return( STRING_TO_PY(buffer));
 }
@@ -2092,7 +2092,7 @@ return( STRING_TO_PY(buffer));
 static PyObject *PyFFPoint_Str(PyFF_Point *self) {
     char buffer[200];
 
-    sprintf(buffer,"<FFPoint (%g,%g) %s>", (double)self->x, (double)self->y, self->on_curve?"on":"off" );
+    snprintf(buffer, sizeof(buffer), "<FFPoint (%g,%g) %s>", (double)self->x, (double)self->y, self->on_curve?"on":"off" );
 return( STRING_TO_PY(buffer));
 }
 
@@ -2333,23 +2333,34 @@ return -1;
 return 0;
 }
 
-static PyObject *PyFFContour_Str(PyFF_Contour *self) {
-    char *buffer, *pt;
+static PyObject* PyFFContour_Str(PyFF_Contour* self)
+{
+    char* buffer, * pt;
     int i;
-    PyObject *ret;
+    PyObject* ret;
 
-    buffer=pt=malloc(self->pt_cnt*30+30);
-    strcpy(buffer, self->is_quadratic? "<Contour(quadratic)\n":"<Contour(cubic)\n");
-    pt = buffer+strlen(buffer);
-    for ( i=0; i<self->pt_cnt; ++i ) {
-	sprintf( pt, "  (%g,%g) %s\n", (double)self->points[i]->x, (double)self->points[i]->y,
-		self->points[i]->on_curve ? "on" : "off" );
-	pt += strlen( pt );
+    int buffer_size = self->pt_cnt * 30 + 30;
+    buffer = pt = malloc(buffer_size);
+
+    strncpy(buffer, self->is_quadratic ? "<Contour(quadratic)\n" : "<Contour(cubic)\n", buffer_size);
+
+    int str_size = strlen(buffer);
+    pt = buffer + str_size;
+    buffer_size -= str_size;
+
+    for (i = 0; i < self->pt_cnt; ++i)
+    {
+        snprintf(pt, buffer_size, "  (%g,%g) %s\n", (double)self->points[i]->x, (double)self->points[i]->y,
+            self->points[i]->on_curve ? "on" : "off");
+        
+        str_size = strlen(pt);
+        pt += str_size;
+        buffer_size -= str_size;
     }
-    strcpy(pt,">");
-    ret = STRING_TO_PY( buffer );
-    free( buffer );
-return( ret );
+    strcpy(pt, ">");
+    ret = STRING_TO_PY(buffer);
+    free(buffer);
+    return(ret);
 }
 
 static int PyFFContour_docompare(PyFF_Contour *self,PyObject *other,
@@ -3979,34 +3990,57 @@ return -1;
     self->is_quadratic = (quad!=0);
 return 0;
 }
-static PyObject *PyFFLayer_Str(PyFF_Layer *self) {
-    char *buffer, *pt;
-    int cnt, i,j;
-    PyFF_Contour *contour;
-    PyObject *ret;
+static PyObject* PyFFLayer_Str(PyFF_Layer* self)
+{
+    char* buffer, * pt;
+    int cnt, i, j;
+    PyFF_Contour* contour;
+    PyObject* ret;
 
     cnt = 0;
-    for ( i=0; i<self->cntr_cnt; ++i )
-	cnt += self->contours[i]->pt_cnt;
-    buffer=pt=malloc(cnt*30+self->cntr_cnt*30+30);
-    strcpy(buffer, self->is_quadratic? "<Layer(quadratic)\n":"<Layer(cubic)\n");
-    pt = buffer+strlen(buffer);
-    for ( i=0; i<self->cntr_cnt; ++i ) {
-	contour = self->contours[i];
-	strcpy(pt, " <Contour\n" );
-	pt += strlen(pt);
-	for ( j=0; j<contour->pt_cnt; ++j ) {
-	    sprintf( pt, "  (%g,%g) %s\n", (double)contour->points[j]->x, (double)contour->points[j]->y,
-		    contour->points[j]->on_curve ? "on" : "off" );
-	    pt += strlen( pt );
-	}
-	strcpy(pt," >\n");
-	pt += strlen(pt);
+    for (i = 0; i < self->cntr_cnt; ++i)
+    {
+        cnt += self->contours[i]->pt_cnt;
     }
-    strcpy(pt,">");
-    ret = STRING_TO_PY( buffer );
-    free( buffer );
-return( ret );
+
+    int buffer_size = cnt * 30 + self->cntr_cnt * 30 + 30;
+    buffer = pt = malloc(buffer_size);
+
+    strncpy(buffer, self->is_quadratic ? "<Layer(quadratic)\n" : "<Layer(cubic)\n", buffer_size);
+
+    int str_size = strlen(buffer);
+    pt = buffer + str_size;
+    buffer_size -= str_size;
+
+    for (i = 0; i < self->cntr_cnt; ++i)
+    {
+        contour = self->contours[i];
+        strncpy(pt, " <Contour\n", buffer_size);
+        
+        str_size = strlen(pt);
+        pt += str_size;
+        buffer_size -= str_size;
+
+        for (j = 0; j < contour->pt_cnt; ++j)
+        {
+            snprintf(pt, buffer_size, "  (%g,%g) %s\n", (double)contour->points[j]->x, (double)contour->points[j]->y,
+                contour->points[j]->on_curve ? "on" : "off");
+            
+            str_size = strlen(pt);
+            pt += str_size;
+            buffer_size -= str_size;
+
+        }
+        strncpy(pt, " >\n", buffer_size);
+        str_size = strlen(pt);
+        pt += str_size;
+        buffer_size -= str_size;
+
+    }
+    strncpy(pt, ">", buffer_size);
+    ret = STRING_TO_PY(buffer);
+    free(buffer);
+    return(ret);
 }
 
 static int PyFFLayer_docompare(PyFF_Layer *self,PyObject *other,
@@ -6614,23 +6648,23 @@ static PyObject *PyFFGlyph_Repr(PyFF_Glyph *self) {
 	repr = malloc( space_needed );
 
 #ifdef DEBUG
-    at = sprintf(repr, "<%s at 0x%p sc=0x%p",
+    at = snprintf(repr, space_needed, "<%s at 0x%p sc=0x%p",
 		 Py_TYPENAME(self), self, self->sc);
 #else
-    at = sprintf(repr, "<%s at 0x%p", Py_TYPENAME(self), self);
+    at = snprintf(repr, space_needed, "<%s at 0x%p", Py_TYPENAME(self), self);
 #endif
     if ( self->sc==NULL ) {
-	strcpy( &repr[at], " CLOSED>" );
+	strncpy( &repr[at], " CLOSED>", space_needed - at);
     }
     else {
 	if ( self->sc->unicodeenc >= 0 )
-	    at += sprintf( &repr[at], " U+%04X", self->sc->unicodeenc);
+	    at += snprintf( &repr[at], space_needed - at, " U+%04X", self->sc->unicodeenc);
 
 	for ( alt=self->sc->altuni; alt!=NULL; alt=alt->next )
 	    if ( alt->vs==-1 && alt->unienc>=0 )
-		at += sprintf( &repr[at], " U+%04X", alt->unienc );
+		at += snprintf( &repr[at], space_needed - at, " U+%04X", alt->unienc );
 
-	at += sprintf( &repr[at], " \"%s\">", self->sc->name);
+	at += snprintf( &repr[at], space_needed - at, " \"%s\">", self->sc->name);
     }
     ret = STRING_TO_PY(repr);
     if ( repr != buf )
@@ -11349,23 +11383,39 @@ static int PyFF_PrivateIndexAssign( PyObject *self, PyObject *index, PyObject *v
 	ENDPYGETSTR();
     } else if ( PyFloat_Check(value)) {
 	double temp = PyFloat_AsDouble(value);
-	sprintf(buffer,"%g",temp);
+	snprintf(buffer, sizeof(buffer), "%g",temp);
 	string = buffer;
     } else if ( PyInt_Check(value)) {
 	int temp = PyInt_AsLong(value);
-	sprintf(buffer,"%d",temp);
+	snprintf(buffer, sizeof(buffer), "%d",temp);
 	string = buffer;
     } else if ( PySequence_Check(value)) {
 	int i; char *pt;
-	pt = string = freeme = malloc(PySequence_Size(value)*21+4);
+    int buf_size = PySequence_Size(value) * 21 + 4;
+	pt = string = freeme = malloc(buf_size);
 	*pt++ = '[';
+    buf_size--;
+
 	for ( i=0; i<PySequence_Size(value); ++i ) {
-	    sprintf( pt, "%g", PyFloat_AsDouble(PySequence_GetItem(value,i)));
-	    pt += strlen(pt);
+	    snprintf( pt, buf_size, "%g", PyFloat_AsDouble(PySequence_GetItem(value,i)));
+        int str_size = strlen(pt);
+        pt += str_size;
+        buf_size-=str_size;
+
 	    *pt++ = ' ';
+        buf_size--;
+
 	}
-	if ( pt[-1]==' ' ) --pt;
-	*pt++ = ']'; *pt = '\0';
+    if (pt[-1] == ' ')
+    {
+        --pt;
+        buf_size++;
+    }
+
+	*pt++ = ']'; 
+    *pt = '\0';
+    buf_size--;
+
     } else {
 	PyErr_Format(PyExc_TypeError, "Assignment value must be string, float, integer or tuple" );
         return( -1 );

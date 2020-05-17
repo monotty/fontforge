@@ -381,7 +381,7 @@ void _ImportParamsDlg(ImportParams *ip) {
     gcd[k++].creator = GLabelCreate;
     hvarray[6][0] = &gcd[k-1];
 
-    sprintf( jlbuf, "%g", (double) (ip->default_joinlimit) );
+    snprintf( jlbuf, sizeof(jlbuf), "%g", (double) (ip->default_joinlimit) );
     label[k].text = (unichar_t *) jlbuf;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -404,7 +404,7 @@ void _ImportParamsDlg(ImportParams *ip) {
     gcd[k++].creator = GLabelCreate;
     hvarray[7][0] = &gcd[k-1];
 
-    sprintf( accbuf, "%g", (double) (ip->accuracy_target) );
+    snprintf( accbuf, sizeof(accbuf), "%g", (double) (ip->accuracy_target) );
     label[k].text = (unichar_t *) accbuf;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -667,11 +667,14 @@ static int GFD_Format(GGadget *g, GEvent *e) {
 	    char *text;
 	    char *ae = py_ie[format-fv_pythonbase].all_extensions;
 	    unichar_t *utext;
-	    text = malloc(strlen(ae)+10);
+
+        size_t text_size = strlen(ae) + 10;
+	    text = malloc(text_size);
+
 	    if ( strchr(ae,','))
-		sprintf( text, "*.{%s}", ae );
+		snprintf( text, text_size, "*.{%s}", ae );
 	    else
-		sprintf( text, "*.%s", ae );
+		snprintf( text, text_size, "*.%s", ae );
 	    utext = utf82u_copy(text);
 	    GFileChooserSetFilterText(d->gfc,utext);
 	    free(text); free(utext);

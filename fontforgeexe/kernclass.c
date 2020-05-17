@@ -490,7 +490,7 @@ return;
 	    if ( kcd->within ) {
 		GDrawSetCursor(kcd->subw,ct_pointer);
 		if ( kcd->down && kcd->orig_kern!=kern ) {
-		    sprintf(buf, "%d", kcd->orig_kern);
+		    snprintf(buf, sizeof(buf), "%d", kcd->orig_kern);
 		    uc_strcpy(ubuf,buf);
 		    GGadgetSetTitle(GWidgetGetControl(kcd->gw,CID_KernOffset),ubuf);
 		    GDrawRequestExpose(kcd->subw,NULL,false);
@@ -515,7 +515,7 @@ return;
 	    /*  changes in both directions */
 	    int nkern = kcd->orig_kern + rint(2*(event->u.mouse.x-kcd->downpos)/scale/kcd->magfactor);
 	    if ( kern!=nkern ) {
-		sprintf(buf, "%d", nkern);
+		snprintf(buf, sizeof(buf), "%d", nkern);
 		uc_strcpy(ubuf,buf);
 		GGadgetSetTitle(GWidgetGetControl(kcd->gw,CID_KernOffset),ubuf);
 		GDrawRequestExpose(kcd->subw,NULL,false);
@@ -546,7 +546,7 @@ return;
 	    if ( kcd->within ) {
 		GDrawSetCursor(kcd->subw,ct_pointer);
 		if ( kcd->down && kcd->orig_kern!=kern ) {
-		    sprintf(buf, "%d", kcd->orig_kern);
+		    snprintf(buf, sizeof(buf), "%d", kcd->orig_kern);
 		    uc_strcpy(ubuf,buf);
 		    GGadgetSetTitle(GWidgetGetControl(kcd->gw,CID_KernOffset),ubuf);
 		    GDrawRequestExpose(kcd->subw,NULL,false);
@@ -569,7 +569,7 @@ return;
 	} else if ( kcd->down ) {
 	    int nkern = kcd->orig_kern + rint((event->u.mouse.y-kcd->downpos)/scale)/kcd->magfactor;
 	    if ( kern!=nkern ) {
-		sprintf(buf, "%d", nkern);
+		snprintf(buf, sizeof(buf), "%d", nkern);
 		uc_strcpy(ubuf,buf);
 		GGadgetSetTitle(GWidgetGetControl(kcd->gw,CID_KernOffset),ubuf);
 		GDrawRequestExpose(kcd->subw,NULL,false);
@@ -751,7 +751,7 @@ static void _KCD_DisplaySizeChanged(KernClassDlg *kcd) {
 	if ( kcd->active_adjust.corrections!=NULL &&
 		pixelsize>=kcd->active_adjust.first_pixel_size &&
 		pixelsize<=kcd->active_adjust.last_pixel_size ) {
-	    sprintf( buffer, "%d", kcd->active_adjust.corrections[
+	    snprintf( buffer, sizeof(buffer), "%d", kcd->active_adjust.corrections[
 		    pixelsize-kcd->active_adjust.first_pixel_size]);
 	    uc_strcpy(ubuf,buffer);
 	}
@@ -833,7 +833,7 @@ static int KCD_RevertKerning(GGadget *g, GEvent *e) {
     KernClassDlg *kcd = GDrawGetUserData(GGadgetGetWindow(g));
     if ( e->type==et_controlevent && e->u.control.subtype == et_buttonactivate ) {
 	char buf[20];
-	sprintf( buf, "%d", kcd->orig_kern_offset );
+	snprintf( buf, sizeof(buf), "%d", kcd->orig_kern_offset );
 	GGadgetSetTitle8(GWidgetGetControl(kcd->gw,CID_KernOffset),buf);
 	free(kcd->active_adjust.corrections);
 	kcd->active_adjust = kcd->orig_adjust;
@@ -906,7 +906,7 @@ static void KCD_SetDevTab(KernClassDlg *kcd) {
 	GTextInfo **ti = malloc((len+1)*sizeof(GTextInfo *));
 	for ( i=0; i<len; ++i ) {
 	    ti[i] = calloc(1,sizeof(GTextInfo));
-	    sprintf( buffer, "%d", i+kcd->active_adjust.first_pixel_size);
+	    snprintf( buffer, sizeof(buffer), "%d", i+kcd->active_adjust.first_pixel_size);
 	    ti[i]->text = uc_copy(buffer);
 	    ti[i]->fg = ti[i]->bg = COLOR_DEFAULT;
 	}
@@ -914,7 +914,7 @@ static void KCD_SetDevTab(KernClassDlg *kcd) {
 	GGadgetSetList(GWidgetGetControl(kcd->gw,CID_DisplaySize),ti,false);
 	if ( kcd->pixelsize>=kcd->active_adjust.first_pixel_size &&
 		kcd->pixelsize<=kcd->active_adjust.last_pixel_size ) {
-	    sprintf( buffer, "%d", kcd->active_adjust.corrections[
+	    snprintf( buffer, sizeof(buffer), "%d", kcd->active_adjust.corrections[
 		    kcd->pixelsize-kcd->active_adjust.first_pixel_size]);
 	    uc_strcpy(ubuf,buffer);
 	}
@@ -1011,7 +1011,7 @@ static void KPD_PairSearch(KernClassDlg *kcd) {
 	KP_SelectSubtable(kcd,sub);
     }
 
-    sprintf(buf, "%d", offset);
+    snprintf(buf, sizeof(buf), "%d", offset);
     uc_strcpy(ubuf,buf);
     GGadgetSetTitle(GWidgetGetControl(kcd->gw,CID_KernOffset),ubuf);
     KCD_SetDevTab(kcd);
@@ -1122,7 +1122,7 @@ static void KCD_EditOffset(KernClassDlg *kcd, int first, int second) {
 	KCD_UpdateGlyph(kcd,1);
 
 	kcd->orig_kern_offset = kcd->offsets[kcd->st_pos];
-	sprintf( buf, "%d", kcd->offsets[kcd->st_pos]);
+	snprintf( buf, sizeof(buf), "%d", kcd->offsets[kcd->st_pos]);
 	uc_strcpy(ubuf,buf);
 	GGadgetSetTitle(GWidgetGetControl(kcd->gw,CID_KernOffset),ubuf);
 
@@ -1465,8 +1465,10 @@ return;
 	//space[0] = '\0';
 	memset(space,'\0',sizeof(space));
 	if ( event->u.mouse.y>=kcd->ystart2 && s<kcd->first_cnt ) {
-	    sprintf( space, _("First Class %d\n"), s );
-	    classes = GMatrixEditGet(GWidgetGetControl(kcd->gw,CID_ClassList),&len);
+	    
+		snprintf(space, sizeof(space), _("First Class %d\n"), s);
+	    
+		classes = GMatrixEditGet(GWidgetGetControl(kcd->gw,CID_ClassList),&len);
 	    str = classes[s].u.md_str!=NULL ? classes[s].u.md_str :
 		    s==0 ? _("{Everything Else}") : "";
 	    len = strlen(space);
@@ -1477,7 +1479,9 @@ return;
 	}
 	if ( event->u.mouse.x>=kcd->xstart2 && c<kcd->second_cnt ) {
 	    len = strlen(space);
-	    sprintf( space+len, _("Second Class %d\n"), c );
+		
+		snprintf(space + len, sizeof(space) - len, _("Second Class %d\n"), c);
+
 	    classes = GMatrixEditGet(GWidgetGetControl(kcd->gw,CID_ClassList+100),&len);
 	    str = classes[c].u.md_str!=NULL ? classes[c].u.md_str :
 		    c==0 ? _("{Everything Else}") : "";
@@ -1662,7 +1666,7 @@ return;
 	    if ( x+kcd->kernw<area->x )
 	continue;
 
-	    sprintf( buf, "%d", kcd->offsets[(i+kcd->offtop)*kcd->second_cnt+j+kcd->offleft] );
+	    snprintf( buf, sizeof(buf), "%d", kcd->offsets[(i+kcd->offtop)*kcd->second_cnt+j+kcd->offleft] );
 	    len = GDrawGetText8Width(pixmap,buf,-1);
 	    GDrawDrawText8(pixmap,x+kcd->kernw-3-len,y+kcd->as+1,
 		buf,-1,MAIN_FOREGROUND);
@@ -2585,7 +2589,7 @@ static void FillShowKerningWindow(KernClassDlg *kcd, GGadgetCreateData *left,
     gcd[k++].creator = GLabelCreate;
     hvarray[0] = &gcd[k-1];
 
-    sprintf( buffer, "%d", kcd->pixelsize );
+    snprintf( buffer, sizeof(buffer), "%d", kcd->pixelsize );
     label[k].text = (unichar_t *) buffer;
     label[k].text_is_1byte = true;
     gcd[k].gd.label = &label[k];
@@ -2933,7 +2937,7 @@ return;
 	gcd[i].creator = GLabelCreate;
 	h4array[0] = &gcd[i++];
 
-	sprintf( sepbuf, "%d", kc->subtable->separation );
+	snprintf( sepbuf, sizeof(sepbuf), "%d", kc->subtable->separation );
 	label[i].text = (unichar_t *) sepbuf;
 	label[i].text_is_1byte = true;
 	label[i].text_in_resource = true;
@@ -2957,7 +2961,7 @@ return;
 	gcd[i].creator = GLabelCreate;
 	h4array[3] = &gcd[i++];
 
-	sprintf( mkbuf, "%d", kc->subtable->minkern );
+	snprintf( mkbuf, sizeof(mkbuf), "%d", kc->subtable->minkern );
 	label[i].text = (unichar_t *) mkbuf;
 	label[i].text_is_1byte = true;
 	label[i].text_in_resource = true;

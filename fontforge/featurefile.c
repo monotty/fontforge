@@ -143,7 +143,7 @@ static void dump_glyphnamelist(FILE *out, SplineFont *sf, char *names) {
 		LogError(_("No CID named %s"), start);
 		nm = start;
 	    } else {
-		sprintf( cidbuf, "\\%d", sc2->orig_pos );
+		snprintf( cidbuf, sizeof(cidbuf), "\\%d", sc2->orig_pos );
 		nm = cidbuf;
 	    }
 	    if ( strlen(nm)+len+1 >72 ) {
@@ -1930,7 +1930,7 @@ return;
 			}
 		    }
 		}
-		sprintf( namebuf, "%s_%s_%s%s_%d", isgpos ? "pos" : "sub",
+		snprintf( namebuf, sizeof(namebuf), "%s_%s_%s%s_%d", isgpos ? "pos" : "sub",
 			    otl->lookup_type== gsub_single ? "single" :
 			    otl->lookup_type== gsub_multiple ? "mult" :
 			    otl->lookup_type== gsub_alternate ? "alt" :
@@ -3037,7 +3037,7 @@ return( NULL );
 			/* Single letter changes */
 			v1 = *start1; v2 = *start2;
 			for ( ++v1; v1<=v2; ++v1 ) {
-			    sprintf( last_glyph, "%.*s%c%s", (int) (start2-tok->tokbuf),
+			    snprintf( last_glyph, sizeof(last_glyph), "%.*s%c%s", (int) (start2-tok->tokbuf),
 			             tok->tokbuf, v1, start2+1);
 			    contents = fea_glyphname_validate(tok,last_glyph);
 			    if ( v1==v2 )
@@ -3051,10 +3051,10 @@ return( NULL );
 			v2 = strtol(start2,NULL,10);
 			for ( ++v1; v1<=v2; ++v1 ) {
 			    if ( range_len==2 )
-				sprintf( last_glyph, "%.*s%02d%s", (int) (start2-tok->tokbuf),
+				snprintf( last_glyph, sizeof(last_glyph), "%.*s%02d%s", (int) (start2-tok->tokbuf),
 					tok->tokbuf, v1, start2+2 );
 			    else
-				sprintf( last_glyph, "%.*s%03d%s", (int) (start2-tok->tokbuf),
+				snprintf( last_glyph, sizeof(last_glyph), "%.*s%03d%s", (int) (start2-tok->tokbuf),
 					tok->tokbuf, v1, start2+3 );
 			    contents = fea_glyphname_validate(tok,last_glyph);
 			    if ( v1==v2 )
@@ -6353,10 +6353,12 @@ static void fea_ApplyLookupListMark2(struct parseState *tok,
 		    /* Skip the initial '@' in the named mark class name */
 		    if ( classes[i]->name_used==0 )
 			acs[i]->name = copy(classes[i]->name+1);
-		    else {
-			acs[i]->name = malloc(strlen(classes[i]->name)+10);
-			sprintf(acs[i]->name,"%s_%d", classes[i]->name+1, classes[i]->name_used);
-		    }
+			else
+			{
+				int str_size = strlen(classes[i]->name) + 10;
+				acs[i]->name = malloc(str_size);
+				snprintf(acs[i]->name, str_size, "%s_%d", classes[i]->name + 1, classes[i]->name_used);
+			}
 		    ++(classes[i]->name_used);
 		    acs[i]->next = tok->accreated;
 		    tok->accreated = acs[i];
@@ -7142,11 +7144,15 @@ static void fea_NameLookups(struct parseState *tok) {
 	otl->next = NULL;
 	if ( otl->lookup_name!=NULL && SFFindLookup(sf,otl->lookup_name)!=NULL ) {
 	    int cnt=0;
-	    char *namebuf = malloc(strlen( otl->lookup_name )+8 );
+		int str_size = strlen(otl->lookup_name) + 8;
+	    char *namebuf = malloc(str_size);
 	    /* Name already in use, modify it */
-	    do {
-		sprintf(namebuf,"%s-%d", otl->lookup_name, cnt++ );
-	    } while ( SFFindLookup(sf,namebuf)!=NULL );
+		do
+		{
+			snprintf(namebuf, str_size, "%s-%d", otl->lookup_name, cnt++);
+		}
+		while (SFFindLookup(sf, namebuf) != NULL);
+
 	    free(otl->lookup_name);
 	    otl->lookup_name = namebuf;
 	}

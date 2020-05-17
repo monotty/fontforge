@@ -114,23 +114,23 @@ int main(int argc, char **argv) {
 	maxcid = cid;
 	if ( ( (cid>=814 && cid<=907) || cid==7716 ) && uni!=-1 ) {
 /* 814-907, 7716 are halfwidth */ /* This seems to have been corrected */
-	    sprintf( buffer,"uni%04X.hw", (unsigned int)(uni) );
+	    snprintf( buffer, sizeof(buffer), "uni%04X.hw", (unsigned int)(uni) );
 	    nonuni_names[cid] = strdup(buffer);
 	} else if ( cid>=22226 && cid<=22319 && uni==-1 ) {
 /* 22226-22352 are rotated halfwidth latin */
-	    sprintf( buffer,"GB1.%d.vert", cid-22226+814 );
+	    snprintf( buffer, sizeof(buffer), "GB1.%d.vert", cid-22226+814 );
 	    nonuni_names[cid] = strdup(buffer);
 	} else if ( cid>=22127 && cid<=22221 && uni==-1 ) {
 /* 22127-22225 are rotated proportional latin */
-	    sprintf( buffer,"GB1.%d.vert", cid-22127+1 );
+	    snprintf( buffer, sizeof(buffer), "GB1.%d.vert", cid-22127+1 );
 	    nonuni_names[cid] = strdup(buffer);
 	} else if ( cid>=29059 && cid<=29063 && uni==-1 ) {
 /* 29059-29063 rotated 22353-22357 */
-	    sprintf( buffer,"GB1.%d.vert", cid-29059+22353 );
+	    snprintf( buffer, sizeof(buffer), "GB1.%d.vert", cid-29059+22353 );
 	    nonuni_names[cid] = strdup(buffer);
 	} else if ( uni==-1 ) {
     continue;
-	    sprintf( buffer,"GB1.%d", cid );
+	    snprintf( buffer, sizeof(buffer), "GB1.%d", cid );
 	    nonuni_names[cid] = strdup(buffer);
 	} else if ( uni>VERTMARK ) {
 	    /* rotated */
@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
 	    used[uni] = 1;
 	    cid_2_unicode[cid] = uni;
 	} else {
-	    sprintf( buffer, "uni%04X.dup%d", (unsigned int)(uni), ++used[uni] );
+	    snprintf( buffer, sizeof(buffer), "uni%04X.dup%d", (unsigned int)(uni), ++used[uni] );
 	    nonuni_names[cid] = strdup(buffer);
 	}
 	max = cid;
@@ -149,9 +149,9 @@ int main(int argc, char **argv) {
 	    if ( cid_2_unicode[j] == cid_2_rotunicode[i] )
 	break;
 	if ( j==maxcid )
-	    sprintf( buffer, "uni%04X.vert", (unsigned int)(cid_2_rotunicode[i]) );
+	    snprintf( buffer, sizeof(buffer), "uni%04X.vert", (unsigned int)(cid_2_rotunicode[i]) );
 	else
-	    sprintf( buffer, "GB1.%d.vert", j);
+	    snprintf( buffer, sizeof(buffer), "GB1.%d.vert", j);
 	nonuni_names[i] = strdup(buffer);
     }
 

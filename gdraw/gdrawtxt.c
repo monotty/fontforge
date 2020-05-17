@@ -140,15 +140,16 @@ int32 GDrawGetText8Height(GWindow gw, const char *text, int32 cnt)
 }
 
 
-int32 GDrawGetText8Bounds(GWindow gw,const char *text, int32 cnt, GTextBounds *bounds) {
+int32 GDrawGetText8Bounds(GWindow gw, const char* text, int32 cnt, GTextBounds* bounds)
+{
     int ret;
     struct tf_arg arg;
 
-    memset(&arg,'\0',sizeof(arg));
+    memset(&arg, '\0', sizeof(arg));
     arg.first = true;
-    ret = gw->display->funcs->doText8(gw,0,0,text,cnt,0x0,tf_rect,&arg);
+    ret = gw->display->funcs->doText8(gw, 0, 0, text, cnt, 0x0, tf_rect, &arg);
     *bounds = arg.size;
-return( ret );
+    return(ret);
 }
 
 /* End UTF8 routines */

@@ -121,30 +121,30 @@ int main(int argc, char **argv) {
 		else if ( cid==8190 ) fakeuni = 8154-8094+' ';
 	    }
 	    /*if ( psunicodenames[uni]!=NULL )
-		sprintf( buffer, "%s.hw", psunicodenames[uni]);
+		snprintf( buffer, sizeof(buffer),  "%s.hw", psunicodenames[uni]);
 	    else*/
-		sprintf( buffer, "uni%04X.hw", (unsigned int)(fakeuni) );
+		snprintf( buffer, sizeof(buffer), "uni%04X.hw", (unsigned int)(fakeuni) );
 	    nonuni_names[cid] = strdup(buffer);
 	} else if ( cid>=18255 && cid<=18351 ) {
 	    /* rotated halfwidth latin */
-	    sprintf( buffer, "Korea1.%d.vert", cid-18255+8094 );
+	    snprintf( buffer, sizeof(buffer), "Korea1.%d.vert", cid-18255+8094 );
 	    nonuni_names[cid] = strdup(buffer);
 	} else if ( cid>=18155 && cid<=18254 ) {
 	    /* rotated proportional latin */
-	    sprintf( buffer, "Korea1.%d.vert", cid-18155+1 );
+	    snprintf( buffer, sizeof(buffer), "Korea1.%d.vert", cid-18155+1 );
 	    nonuni_names[cid] = strdup(buffer);
 	} else if ( uni>=VERTMARK ) {
 	    /* rotated */
 	    cid_2_rotunicode[cid] = uni-VERTMARK;
 	} else if ( uni==-1 ) {
     continue;
-	    sprintf( buffer,"Korea1.%d", cid );
+	    snprintf( buffer, sizeof(buffer), "Korea1.%d", cid );
 	    nonuni_names[cid] = strdup(buffer);
 	} else if ( !used[uni] ) {
 	    used[uni] = 1;
 	    cid_2_unicode[cid] = uni;
 	} else {
-	    sprintf( buffer, "uni%04X.dup%d", (unsigned int)(uni), ++used[uni] );
+	    snprintf( buffer, sizeof(buffer), "uni%04X.dup%d", (unsigned int)(uni), ++used[uni] );
 	    nonuni_names[cid] = strdup(buffer);
 	}
 	max = cid;
@@ -154,9 +154,9 @@ int main(int argc, char **argv) {
 	    if ( cid_2_unicode[j] == cid_2_rotunicode[i] )
 	break;
 	if ( j==maxcid )
-	    sprintf( buffer, "uni%04X.vert", (unsigned int)(cid_2_rotunicode[i]) );
+	    snprintf( buffer, sizeof(buffer), "uni%04X.vert", (unsigned int)(cid_2_rotunicode[i]) );
 	else
-	    sprintf( buffer, "Korea1.%d.vert", j);
+	    snprintf( buffer, sizeof(buffer), "Korea1.%d.vert", j);
 	nonuni_names[i] = strdup(buffer);
     }
 

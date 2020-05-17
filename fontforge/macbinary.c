@@ -2101,7 +2101,7 @@ static SplineFont *SearchTtfResources(FILE *f,long rlistpos,int subcnt,long rdat
 	    names[i] = TTFGetFontName(f,roff+4,roff+4);
 	    if ( names[i]==NULL ) {
 		char buffer[32];
-		sprintf( buffer, "Nameless%d", i );
+		snprintf( buffer, sizeof(buffer), "Nameless%d", i );
 		names[i] = copy(buffer);
 	    }
 	    fseek(f,here,SEEK_SET);

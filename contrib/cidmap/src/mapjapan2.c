@@ -113,13 +113,13 @@ int main(int argc, char **argv) {
 	maxcid = cid;
 	if ( uni==-1 ) {
     continue;
-	    sprintf( buffer,"Japan2.%d", cid );
+	    snprintf( buffer, sizeof(buffer), "Japan2.%d", cid );
 	    nonuni_names[cid] = strdup(buffer);
 	} else if ( !used[uni] ) {
 	    used[uni] = 1;
 	    cid_2_unicode[cid] = uni;
 	} else {
-	    sprintf( buffer, "uni%04X.dup%d", (unsigned int)(uni), ++used[uni] );
+	    snprintf( buffer, sizeof(buffer), "uni%04X.dup%d", (unsigned int)(uni), ++used[uni] );
 	    nonuni_names[cid] = strdup(buffer);
 	}
 	max = cid;

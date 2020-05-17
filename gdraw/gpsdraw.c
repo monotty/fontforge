@@ -1070,11 +1070,11 @@ static int PSQueueFile(GPSWindow ps) {
 	if ( !gdisp->use_lpr )
 	    argv[argc++] = "-s";
 	if ( gdisp->printer_name!=NULL ) {
-	    sprintf(pbuf, "-%s%s ", parg, gdisp->printer_name );
+	    snprintf(pbuf, sizeof(pbuf), "-%s%s ", parg, gdisp->printer_name );
 	    argv[argc++] = pbuf;
 	}
 	if ( gdisp->num_copies!=0 ) {
-	    sprintf(cbuf, "-%s%d ", carg, gdisp->num_copies );
+	    snprintf(cbuf, sizeof(cbuf), "-%s%d ", carg, gdisp->num_copies );
 	    argv[argc++] = pbuf;
 	}
 	if ( gdisp->lpr_args!=NULL ) {

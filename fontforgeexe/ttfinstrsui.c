@@ -395,18 +395,18 @@ static void instr_expose(struct instrinfo *ii,GWindow pixmap,GRect *rect) {
 	int temp_indent;
 	for ( ; y<=high && i<ii->instrdata->instr_cnt+1; ++i ) {
 	    temp_indent = indent;
-	    sprintf( loc, "%d", i );
+	    snprintf( loc, sizeof(loc), "%d", i );
 	    if ( ii->instrdata->bts[i]==bt_wordhi ) {
-		sprintf( ins, " %02x%02x", ii->instrdata->instrs[i], ii->instrdata->instrs[i+1]); uc_strcpy(uins,ins);
-		sprintf( val, " %d", (short) ((ii->instrdata->instrs[i]<<8) | ii->instrdata->instrs[i+1]) );
-		uc_strcpy(uname,val);
+		snprintf( ins, sizeof(ins), " %02x%02x", ii->instrdata->instrs[i], ii->instrdata->instrs[i+1]); uc_strncpy(uins,ins, sizeof(uins)/sizeof(uins[0]));
+		snprintf( val, sizeof(val), " %d", (short) ((ii->instrdata->instrs[i]<<8) | ii->instrdata->instrs[i+1]) );
+		uc_strncpy(uname,val, sizeof(uname) / sizeof(uname[0]));
 		++i;
 	    } else if ( ii->instrdata->bts[i]==bt_cnt || ii->instrdata->bts[i]==bt_byte ) {
-		sprintf( ins, " %02x", ii->instrdata->instrs[i] ); uc_strcpy(uins,ins);
-		sprintf( val, " %d", ii->instrdata->instrs[i]);
-		uc_strcpy(uname,val);
+		snprintf( ins, sizeof(ins), " %02x", ii->instrdata->instrs[i] ); uc_strncpy(uins,ins, sizeof(uins) / sizeof(uins[0]));
+		snprintf( val, sizeof(val), " %d", ii->instrdata->instrs[i]);
+		uc_strncpy(uname,val, sizeof(uname) / sizeof(uname[0]));
 	    } else if ( ii->instrdata->bts[i]==bt_impliedreturn ) {
-		uc_strcpy(uname,_("<return>"));
+		uc_strncpy(uname,_("<return>"), sizeof(uname) / sizeof(uname[0]));
 		uins[0] = '\0';
 	    } else {
 		int instr = ii->instrdata->instrs[i];
@@ -415,8 +415,8 @@ static void instr_expose(struct instrinfo *ii,GWindow pixmap,GRect *rect) {
 		temp_indent = indent;
 		if ( instr == ttf_else )
 		    --temp_indent;
-		sprintf( ins, "%02x", instr ); uc_strcpy(uins,ins);
-		uc_strcpy(uname, ff_ttf_instrnames[instr]);
+		snprintf( ins, sizeof(ins), "%02x", instr ); uc_strncpy(uins,ins, sizeof(uins) / sizeof(uins[0]));
+		uc_strncpy(uname, ff_ttf_instrnames[instr], sizeof(uname) / sizeof(uname[0]));
 		if ( instr == ttf_if || instr==ttf_idef || instr == ttf_fdef )
 		    ++indent;
 	    }
@@ -905,7 +905,7 @@ return;
     id->instrs = malloc(id->max+1);
     if ( sc->ttf_instrs!=NULL )
 	memcpy(id->instrs,sc->ttf_instrs,id->instr_cnt);
-    sprintf(title,_("TrueType Instructions for %.50s"),sc->name);
+    snprintf(title, sizeof(title), _("TrueType Instructions for %.50s"),sc->name);
     InstrDlgCreate(id,title);
 }
 
@@ -1046,7 +1046,7 @@ static int SV_ChangeLength(GGadget *g, GEvent *e) {
 	char *ret, *e;
 	int val,i;
 
-	sprintf( buffer, "%d", (int) (sv->len/2) );
+	snprintf( buffer, sizeof(buffer), "%d", (int) (sv->len/2) );
 	ret = gwwv_ask_string(_("Change Length"), buffer,_("How many entries should there be in the cvt table?"));
 	if ( ret==NULL )
 return( true );		/* Cancelled */
@@ -1204,11 +1204,11 @@ static void short_expose(ShortView *sv,GWindow pixmap,GRect *rect) {
     index = (sv->lpos+(low-EDGE_SPACER)/sv->fh);
     y = low;
     for ( ; y<=high && index<sv->len/2; ++index ) {
-	sprintf( caddr, "%d", index );
+	snprintf( caddr, sizeof(caddr), "%d", index );
 	x = sv->addrend - ADDR_SPACER - GDrawGetText8Width(pixmap,caddr,-1);
 	GDrawDrawText8(pixmap,x,y+sv->as,caddr,-1,MAIN_FOREGROUND);
 
-	sprintf( cval, "%d", sv->edits[index] );
+	snprintf( cval, sizeof(cval), "%d", sv->edits[index] );
 	GDrawDrawText8(pixmap,sv->addrend,y+sv->as,cval,-1,MAIN_FOREGROUND);
 
 	if ( sv->comments[index]!=NULL )
@@ -1299,7 +1299,7 @@ static int sv_v_e_h(GWindow gw, GEvent *event) {
 		    GGadgetResize(sv->tf,sv->valend-sv->addrend-EDGE_SPACER,sv->fh);
 		    GGadgetMove(sv->tf, sv->addrend,
 					    (l-sv->lpos)*sv->fh+EDGE_SPACER+1);
-		    sprintf( buf, "%d", sv->edits[sv->active] );
+		    snprintf( buf, sizeof(buf), "%d", sv->edits[sv->active] );
 		    GGadgetSetTitle8(sv->tf,buf);
 		} else {
 		    GGadgetResize(sv->tf,sv->vwidth-sv->valend-EDGE_SPACER,sv->fh);
@@ -1764,7 +1764,7 @@ static void maxpCreateEditor(struct ttf_table *tab,SplineFont *sf,uint32 tag) {
 	gcd[k++].creator = GLabelCreate;
 	hvarray[hv++] = &gcd[k-1];
 
-	sprintf( buffer[0], "%d", (data[14]<<8)|data[14+1] );
+	snprintf( buffer[0], sizeof(buffer[0]), "%d", (data[14]<<8)|data[14+1] );
 	label[k].text = (unichar_t *) buffer[0];
 	label[k].text_is_1byte = true;
 	gcd[k].gd.label = &label[k];
@@ -1785,7 +1785,7 @@ static void maxpCreateEditor(struct ttf_table *tab,SplineFont *sf,uint32 tag) {
 	gcd[k++].creator = GLabelCreate;
 	hvarray[hv++] = &gcd[k-1];
 
-	sprintf( buffer[1], "%d", (data[16]<<8)|data[16+1] );
+	snprintf( buffer[1], sizeof(buffer[0]), "%d", (data[16]<<8)|data[16+1] );
 	label[k].text = (unichar_t *) buffer[1];
 	label[k].text_is_1byte = true;
 	gcd[k].gd.label = &label[k];
@@ -1806,7 +1806,7 @@ static void maxpCreateEditor(struct ttf_table *tab,SplineFont *sf,uint32 tag) {
 	gcd[k++].creator = GLabelCreate;
 	hvarray[hv++] = &gcd[k-1];
 
-	sprintf( buffer[2], "%d", (data[18]<<8)|data[18+1] );
+	snprintf( buffer[2], sizeof(buffer[0]), "%d", (data[18]<<8)|data[18+1] );
 	label[k].text = (unichar_t *) buffer[2];
 	label[k].text_is_1byte = true;
 	gcd[k].gd.label = &label[k];
@@ -1827,7 +1827,7 @@ static void maxpCreateEditor(struct ttf_table *tab,SplineFont *sf,uint32 tag) {
 	gcd[k++].creator = GLabelCreate;
 	hvarray[hv++] = &gcd[k-1];
 
-	sprintf( buffer[3], "%d", (data[24]<<8)|data[24+1] );
+	snprintf( buffer[3], sizeof(buffer[0]), "%d", (data[24]<<8)|data[24+1] );
 	label[k].text = (unichar_t *) buffer[3];
 	label[k].text_is_1byte = true;
 	gcd[k].gd.label = &label[k];
@@ -1848,7 +1848,7 @@ static void maxpCreateEditor(struct ttf_table *tab,SplineFont *sf,uint32 tag) {
 	gcd[k++].creator = GLabelCreate;
 	hvarray[hv++] = &gcd[k-1];
 
-	sprintf( buffer[4], "%d", (data[20]<<8)|data[20+1] );
+	snprintf( buffer[4], sizeof(buffer[0]), "%d", (data[20]<<8)|data[20+1] );
 	label[k].text = (unichar_t *) buffer[4];
 	label[k].text_is_1byte = true;
 	gcd[k].gd.label = &label[k];
@@ -1868,7 +1868,7 @@ static void maxpCreateEditor(struct ttf_table *tab,SplineFont *sf,uint32 tag) {
 	gcd[k++].creator = GLabelCreate;
 	hvarray[hv++] = &gcd[k-1];
 
-	sprintf( buffer[5], "%d", (data[22]<<8)|data[22+1] );
+	snprintf( buffer[5], sizeof(buffer[0]), "%d", (data[22]<<8)|data[22+1] );
 	label[k].text = (unichar_t *) buffer[5];
 	label[k].text_is_1byte = true;
 	gcd[k].gd.label = &label[k];
@@ -1964,7 +1964,7 @@ return;
 	name[0] = name[5] = '\'';
 	name[1] = tag>>24; name[2] = (tag>>16)&0xff; name[3] = (tag>>8)&0xff; name[4] = tag&0xff;
 	name[6] = 0;
-	sprintf(title,_("TrueType Instructions for %.50s"),name);
+	snprintf(title, sizeof(title), _("TrueType Instructions for %.50s"),name);
 	InstrDlgCreate(id,title);
     } else {
 	if ( sf->cvt_dlg!=NULL ) {

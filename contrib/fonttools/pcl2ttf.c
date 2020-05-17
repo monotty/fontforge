@@ -1001,7 +1001,8 @@ static void create_name(struct ttf_header *hdr) {
     char family[20], style[20], *version="Version 1.0", unique[32];
 
     /* Guess at font family, style */
-    strcpy(family,hdr->fontname);
+    strncpy(family,hdr->fontname, sizeof(family));
+
     for ( pt=pt2=family; *pt!='\0'; ++pt )
 	if ( *pt>' ' && *pt<0x7f && *pt!='(' && *pt!=')' && *pt!='{' && *pt!='}' &&
 		*pt!='[' && *pt!=']' && *pt!='<' && *pt!='>' && *pt!='%' &&
@@ -1009,15 +1010,15 @@ static void create_name(struct ttf_header *hdr) {
 	    *pt2++ = *pt;
     *pt2 = '\0';
     if ( (pt=strstr(family,"BdIt"))!=NULL )
-	strcpy(style,"Bold Italic");
+	strncpy(style,"Bold Italic", sizeof(style));
     else if ( (pt=strstr(family,"Bd"))!=NULL )
-	strcpy(style,"Bold");
+	strncpy(style,"Bold", sizeof(style));
     else if ( (pt=strstr(family,"It"))!=NULL )
-	strcpy(style,"Italic");
+	strncpy(style,"Italic", sizeof(style));
     else
-	strcpy(style,"Regular");
+	strncpy(style,"Regular", sizeof(style));
     if ( pt!=NULL ) *pt='\0';
-    sprintf( unique, "pcl2ttf: %s", hdr->fontname );
+    snprintf( unique, sizeof(unique), "pcl2ttf: %s", hdr->fontname );
 
     putshort(name,0);			/* format 0 */
     putshort(name,cnt);			/* only one name */

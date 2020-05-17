@@ -241,93 +241,127 @@ return( &mi[i] );
 return( NULL );
 }
 
-static int GME_ColWidth(GMatrixEdit *gme, int c) {
-    int width=0, max, cur;
-    FontInstance *old = GDrawSetFont(gme->g.base,gme->font);
-    char *str, *pt;
-    int r;
-    GMenuItem *mi;
+static int GME_ColWidth(GMatrixEdit* gme, int c)
+{
+	int width = 0, max, cur;
+	FontInstance* old = GDrawSetFont(gme->g.base, gme->font);
+	char* str, * pt;
+	int r;
+	GMenuItem* mi;
 
-    if ( gme->col_data[c].hidden )
-return( 0 );
-    switch ( gme->col_data[c].me_type ) {
-      case me_int:
-	width = GDrawGetText8Width(gme->g.base,"1234", -1);
-      break;
-      case me_hex: case me_addr:
-	width = GDrawGetText8Width(gme->g.base,"0xFFFF", -1);
-      break;
-      case me_uhex:
-	width = GDrawGetText8Width(gme->g.base,"U+FFFF", -1);
-      break;
-      case me_real:
-	width = GDrawGetText8Width(gme->g.base,"1.234567", -1);
-      break;
-      case me_enum:
-	max = 0;
-	for ( r=0; r<gme->rows; ++r ) {
-	    mi = FindMi(gme->col_data[c].enum_vals,gme->data[r*gme->cols+c].u.md_ival);
-	    if ( mi!=NULL ) {
-		if ( mi->ti.text_is_1byte )
-		    cur = GDrawGetText8Width(gme->g.base,(char *)mi->ti.text,-1);
-		else
-		    cur = GDrawGetTextWidth(gme->g.base,mi->ti.text,-1);
-		if ( cur>max ) max = cur;
-	    }
+	if (gme->col_data[c].hidden)
+		return(0);
+	switch (gme->col_data[c].me_type)
+	{
+		case me_int:
+			width = GDrawGetText8Width(gme->g.base, "1234", -1);
+			break;
+		case me_hex: case me_addr:
+			width = GDrawGetText8Width(gme->g.base, "0xFFFF", -1);
+			break;
+		case me_uhex:
+			width = GDrawGetText8Width(gme->g.base, "U+FFFF", -1);
+			break;
+		case me_real:
+			width = GDrawGetText8Width(gme->g.base, "1.234567", -1);
+			break;
+		case me_enum:
+			max = 0;
+			for (r = 0; r < gme->rows; ++r)
+			{
+				mi = FindMi(gme->col_data[c].enum_vals, gme->data[r * gme->cols + c].u.md_ival);
+				if (mi != NULL)
+				{
+					if (mi->ti.text_is_1byte)
+						cur = GDrawGetText8Width(gme->g.base, (char*)mi->ti.text, -1);
+					else
+						cur = GDrawGetTextWidth(gme->g.base, mi->ti.text, -1);
+					if (cur > max) max = cur;
+				}
+			}
+			cur = 6 * GDrawGetText8Width(gme->g.base, "n", 1);
+			if (max < cur)
+				max = cur;
+			width = max;
+			break;
+		case me_func:
+		case me_button:
+		case me_stringchoice: case me_stringchoicetrans: case me_stringchoicetag:
+		case me_funcedit:
+		case me_onlyfuncedit:
+		case me_string: case me_bigstr:
+			max = 0;
+			for (r = 0; r < gme->rows; ++r)
+			{
+				char* freeme = NULL;
+				str = gme->data[r * gme->cols + c].u.md_str;
+				if (str == NULL && gme->col_data[c].me_type == me_func)
+				{
+					str = freeme = (gme->col_data[c].func)(&gme->g, r, c);
+				}
+
+				if (str == NULL)
+				{
+					continue;
+				}
+
+				/* use the maximum width of 40 characters to avoid insanely wide
+				 * cells and horizontal scrollbars, the magic number 40 is the max
+				 * length of characters after which we use GME_StrBigEdit below */
+				char buf[1024];
+				utf8_strncpy(buf, str, 40);
+				pt = strchr(buf, '\n');
+				
+				cur = GDrawGetText8Width(gme->g.base, buf, pt == NULL ? -1 : pt - buf);
+				if (cur > max)
+				{
+					max = cur;
+				}
+
+				free(freeme);
+			}
+
+			if (max < 10 * GDrawGetText8Width(gme->g.base, "n", 1))
+			{
+				width = 10 * GDrawGetText8Width(gme->g.base, "n", 1);
+			}
+			else
+			{
+				width = max;
+			}
+
+			if (gme->col_data[c].me_type == me_stringchoice ||
+				gme->col_data[c].me_type == me_stringchoicetrans ||
+				gme->col_data[c].me_type == me_stringchoicetag ||
+				gme->col_data[c].me_type == me_onlyfuncedit ||
+				gme->col_data[c].me_type == me_funcedit)
+			{
+				width += gme->mark_size + gme->mark_skip;
+			}
+
+			break;
+		default:
+			width = 0;
+			break;
 	}
-	cur = 6 * GDrawGetText8Width(gme->g.base,"n", 1);
-	if ( max<cur )
-	    max = cur;
-	width = max;
-      break;
-      case me_func:
-      case me_button:
-      case me_stringchoice: case me_stringchoicetrans: case me_stringchoicetag:
-      case me_funcedit:
-      case me_onlyfuncedit:
-      case me_string: case me_bigstr:
-	max = 0;
-	for ( r=0; r<gme->rows; ++r ) {
-	    char *freeme = NULL;
-	    str = gme->data[r*gme->cols+c].u.md_str;
-	    if ( str==NULL && gme->col_data[c].me_type==me_func )
-		str = freeme = (gme->col_data[c].func)(&gme->g,r,c);
-	    if ( str==NULL )
-	continue;
-	    /* use the maximum width of 40 characters to avoid insanely wide
-	     * cells and horizontal scrollbars, the magic number 40 is the max
-	     * length of characters after which we use GME_StrBigEdit below */
-	    char buf[1024];
-	    utf8_strncpy(buf, str, 40);
-	    pt = strchr(buf,'\n');
-	    cur = GDrawGetText8Width(gme->g.base,buf, pt==NULL ? -1: pt-buf);
-	    if ( cur>max ) max = cur;
-	    free(freeme);
+	if (gme->col_data[c].title != NULL)
+	{
+		GDrawSetFont(gme->g.base, gme->titfont);
+		cur = GDrawGetText8Width(gme->g.base, gme->col_data[c].title, -1);
+		if (cur > width)
+		{
+			width = cur;
+		}
 	}
-	if ( max < 10*GDrawGetText8Width(gme->g.base,"n", 1) )
-	    width = 10*GDrawGetText8Width(gme->g.base,"n", 1);
-	else
-	    width = max;
-	if ( gme->col_data[c].me_type==me_stringchoice ||
-		gme->col_data[c].me_type==me_stringchoicetrans ||
-		gme->col_data[c].me_type==me_stringchoicetag ||
-		gme->col_data[c].me_type==me_onlyfuncedit ||
-		gme->col_data[c].me_type==me_funcedit )
-	    width += gme->mark_size + gme->mark_skip;
-      break;
-      default:
-	width = 0;
-      break;
-    }
-    if ( gme->col_data[c].title!=NULL ) {
-	GDrawSetFont(gme->g.base,gme->titfont);
-	cur = GDrawGetText8Width(gme->g.base,gme->col_data[c].title, -1);
-	if ( cur>width ) width = cur;
-    }
-    GDrawSetFont(gme->g.base,old);
-    if ( width>0x7fff )
-	width = 0x7fff;
-return( width );
+
+	GDrawSetFont(gme->g.base, old);
+	
+	if (width > 0x7fff)
+	{
+		width = 0x7fff;
+	}
+
+	return(width);
 }
 
 static void GME_RedrawTitles(GMatrixEdit *gme);
@@ -680,23 +714,23 @@ static char *MD_Text(GMatrixEdit *gme,int r, int c ) {
       case me_enum:
 	/* Fall through into next case */
       case me_int:
-	sprintf( buffer,"%d",(int) d->u.md_ival );
+	snprintf( buffer, sizeof(buffer), "%d",(int) d->u.md_ival );
 	str = buffer;
       break;
       case me_hex:
-	sprintf( buffer,"0x%x",(int) d->u.md_ival );
+	snprintf( buffer, sizeof(buffer), "0x%x",(int) d->u.md_ival );
 	str = buffer;
       break;
       case me_uhex:
-	sprintf( buffer,"U+%04X",(int) d->u.md_ival );
+	snprintf( buffer, sizeof(buffer), "U+%04X",(int) d->u.md_ival );
 	str = buffer;
       break;
       case me_addr:
-	sprintf( buffer,"%p", d->u.md_addr );
+	snprintf( buffer, sizeof(buffer), "%p", d->u.md_addr );
 	str = buffer;
       break;
       case me_real:
-	sprintf( buffer,"%g",d->u.md_real );
+	snprintf( buffer, sizeof(buffer), "%g",d->u.md_real );
 	str = buffer;
       break;
       case me_string: case me_bigstr:
@@ -716,45 +750,54 @@ return( (gme->col_data[c].func)(&gme->g,r,c) );
 return( copy(str));
 }
 
-static int GME_RecalcFH(GMatrixEdit *gme) {
-    int r,c, as, ds;
-    int32 end = -1;
-    char *str, *ept;
-    GTextBounds bounds;
-    GMenuItem *mi;
+static int GME_RecalcFH(GMatrixEdit* gme)
+{
+	int r, c, as, ds;
+	int32 end = -1;
+	char* str, * ept;
+	GTextBounds bounds;
+	GMenuItem* mi;
 
-    GDrawSetFont(gme->nested,gme->font);
-    as = gme->font_as; ds = gme->font_fh-as;
-    for ( r=0; r<gme->rows; ++r ) for ( c=0; c<gme->cols; ++c ) {
-	end = -1;
-	switch ( gme->col_data[c].me_type ) {
-	  case me_enum:
-	    mi = FindMi(gme->col_data[c].enum_vals,gme->data[r*gme->cols+c].u.md_ival);
-	    if ( mi==NULL )
-    continue;
-	    str = copy( (char *)mi->ti.text );
-	break;
-	  default:
-	    str = MD_Text(gme,r,c);
-	    if ( str == NULL )
-    continue;
-	    if ( ( ept = strchr(str,'\n') ) != NULL )
-		end = ept - str;
-	break;
+	GDrawSetFont(gme->nested, gme->font);
+	as = gme->font_as; ds = gme->font_fh - as;
+	for (r = 0; r < gme->rows; ++r) for (c = 0; c < gme->cols; ++c)
+	{
+		end = -1;
+		switch (gme->col_data[c].me_type)
+		{
+			case me_enum:
+				mi = FindMi(gme->col_data[c].enum_vals, gme->data[r * gme->cols + c].u.md_ival);
+				if (mi == NULL)
+					continue;
+				str = copy((char*)mi->ti.text);
+				break;
+			default:
+				str = MD_Text(gme, r, c);
+				if (str == NULL)
+				{
+					continue;
+				}
+				if ((ept = strchr(str, '\n')) != NULL)
+				{
+					end = ept - str;
+				}
+				break;
+		}
+
+		GDrawGetText8Bounds(gme->nested, str, end, &bounds);
+		free(str);
+		if (bounds.as > as)
+			as = bounds.as;
+		if (bounds.ds > ds)
+			ds = bounds.ds;
 	}
-	GDrawGetText8Bounds(gme->nested, str, end, &bounds);
-	free(str);
-	if ( bounds.as>as )
-	    as = bounds.as;
-	if ( bounds.ds>ds )
-	    ds = bounds.ds;
-    }
-    if ( as!=gme->as || as+ds!=gme->fh ) {
-	gme->fh = as+ds;
-	gme->as = as;
-return( true );
-    }
-return( false );
+	if (as != gme->as || as + ds != gme->fh)
+	{
+		gme->fh = as + ds;
+		gme->as = as;
+		return(true);
+	}
+	return(false);
 }
 
 static void GMatrixEdit_SetFont(GGadget *g,FontInstance *new) {

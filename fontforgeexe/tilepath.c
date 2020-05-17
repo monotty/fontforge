@@ -1551,13 +1551,13 @@ return( true );
 		/*  lose his/her work */
 		if ( !RealNear(GetCalmReal8(ptd->gw,CID_PatternWidth,_("Width"),&err),
 			ss->first->me.x) && !err ) {
-		    sprintf( buffer,"%g",ss->first->me.x);
+		    snprintf( buffer, sizeof(buffer), "%g",ss->first->me.x);
 		    GGadgetSetTitle8(GWidgetGetControl(ptd->gw,CID_PatternWidth),buffer);
 		}
 	    } else if ( ss->first->me.y==ss->last->me.y ) {
 		if ( !RealNear(GetCalmReal8(ptd->gw,CID_PatternHeight,_("Height"),&err),
 			ss->first->me.y) && !err ) {
-		    sprintf( buffer,"%g",ss->first->me.y);
+		    snprintf( buffer, sizeof(buffer), "%g",ss->first->me.y);
 		    GGadgetSetTitle8(GWidgetGetControl(ptd->gw,CID_PatternHeight),buffer);
 		}
 	    }
@@ -1800,9 +1800,9 @@ static int TilePatternAsk(struct tiledata *td,SplineFont *sf) {
     harray1[0] = &gcd[k-1];
 
     if ( last_pattern==NULL )
-	sprintf( width, "%d", sf->ascent+sf->descent );
+	snprintf( width, sizeof(width), "%d", sf->ascent+sf->descent );
     else
-	sprintf( width, "%g", patternSize.x );
+	snprintf( width, sizeof(width), "%g", patternSize.x );
     gcd[k].gd.flags = gg_visible | gg_enabled;
     label[k].text = (unichar_t *) width;
     label[k].text_is_1byte = true;
@@ -1820,9 +1820,9 @@ static int TilePatternAsk(struct tiledata *td,SplineFont *sf) {
     harray1[2] = &gcd[k-1];
 
     if ( last_pattern==NULL )
-	sprintf( height, "%d", sf->ascent+sf->descent );
+	snprintf( height, sizeof(height), "%d", sf->ascent+sf->descent );
     else
-	sprintf( height, "%g", patternSize.y );
+	snprintf( height, sizeof(height), "%g", patternSize.y );
     gcd[k].gd.flags = gg_visible | gg_enabled;
     label[k].text = (unichar_t *) height;
     label[k].text_is_1byte = true;
@@ -1851,7 +1851,7 @@ static int TilePatternAsk(struct tiledata *td,SplineFont *sf) {
     gcd[k++].creator = GLabelCreate;
     harray2[0] = &gcd[k-1];
 
-    sprintf( xr, "%d", patternRepeat.x );
+    snprintf( xr, sizeof(xr), "%d", patternRepeat.x );
     gcd[k].gd.flags = gg_visible | gg_enabled;
     label[k].text = (unichar_t *) xr;
     label[k].text_is_1byte = true;
@@ -1867,7 +1867,7 @@ static int TilePatternAsk(struct tiledata *td,SplineFont *sf) {
     gcd[k++].creator = GLabelCreate;
     harray2[2] = &gcd[k-1];
 
-    sprintf( yr, "%d", patternRepeat.y );
+    snprintf( yr, sizeof(yr), "%d", patternRepeat.y );
     gcd[k].gd.flags = gg_visible | gg_enabled;
     label[k].text = (unichar_t *) yr;
     label[k].text_is_1byte = true;

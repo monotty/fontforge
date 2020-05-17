@@ -525,9 +525,9 @@ static void KP_ExposeKerns(KPData *kpd,GWindow pixmap,GRect *rect) {
 	GDrawDrawLine(pixmap,0,subclip.y+kpd->uh-1,
 		subclip.x+subclip.width,subclip.y+kpd->uh-1,0x000000);
 	if ( kern->kp!=NULL )
-	    sprintf( buffer, "%d ", kern->newoff);
+	    snprintf( buffer, sizeof(buffer), "%d ", kern->newoff);
 	else
-	    sprintf( buffer, "%d,%d ", kern->newoff, kern->newyoff );
+	    snprintf( buffer, sizeof(buffer), "%d,%d ", kern->newoff, kern->newyoff );
 	if ( kern->ac!=NULL )
 	    strncat(buffer,kern->ac->name,sizeof(buffer)-strlen(buffer)-1);
 	GDrawDrawText8(pixmap,15,subclip.y+kpd->uh-kpd->fh+kpd->as,buffer,-1,
@@ -920,129 +920,164 @@ static GMenuItem acmenu[] = {
 
 static unichar_t upopupbuf[100];
 
-static int kpdv_e_h(GWindow gw, GEvent *event) {
-    KPData *kpd = GDrawGetUserData(gw);
-    int index, old_sel, temp;
-    char buffer[100];
-    static int done=false;
+static int kpdv_e_h(GWindow gw, GEvent* event)
+{
+	KPData* kpd = GDrawGetUserData(gw);
+	int index, old_sel, temp;
+	char buffer[100];
+	static int done = false;
 
-    switch ( event->type ) {
-      case et_expose:
-	KP_ExposeKerns(kpd,gw,&event->u.expose.rect);
-      break;
-      case et_char:
-	if ( event->u.chr.keysym == GK_F1 || event->u.chr.keysym == GK_Help ) {
-	    help("ui/dialogs/kernpairs.html", NULL);
-return( true );
+	switch (event->type)
+	{
+		case et_expose:
+			KP_ExposeKerns(kpd, gw, &event->u.expose.rect);
+			break;
+		case et_char:
+			if (event->u.chr.keysym == GK_F1 || event->u.chr.keysym == GK_Help)
+			{
+				help("ui/dialogs/kernpairs.html", NULL);
+				return(true);
+			}
+			KP_Commands(kpd, event);
+			break;
+		case et_mousedown:
+			GGadgetEndPopup();
+			kpd->pressed = true;
+			index = kpd->off_top + event->u.mouse.y / kpd->uh;
+			if (index >= kpd->kcnt)
+				index = -1;
+			if (index != kpd->selected)
+			{
+				old_sel = kpd->selected;
+				kpd->selected = index;
+				KP_RefreshSel(kpd, old_sel);
+				KP_RefreshSel(kpd, index);
+			}
+			if (event->u.mouse.button == 3 && index >= 0)
+			{
+				if (!done)
+				{
+					int i;
+					for (i = 0; kernmenu[i].ti.text != NULL || kernmenu[i].ti.line; ++i)
+						if (kernmenu[i].ti.text != NULL)
+							kernmenu[i].ti.text = (unichar_t*)_((char*)kernmenu[i].ti.text);
+					for (i = 0; acmenu[i].ti.text != NULL || acmenu[i].ti.line; ++i)
+						if (acmenu[i].ti.text != NULL)
+							acmenu[i].ti.text = (unichar_t*)_((char*)acmenu[i].ti.text);
+					done = true;
+				}
+				if (kpd->ac == NULL)
+					GMenuCreatePopupMenu(gw, event, kernmenu);
+				else
+					GMenuCreatePopupMenu(gw, event, acmenu);
+			}
+			else if (KP_Cursor(kpd, event) != NULL)
+			{
+				kpd->pressed_x = event->u.mouse.x;
+				kpd->old_val = kpd->kerns[index].newoff;
+			}
+			else
+				kpd->pressed_x = -1;
+			break;
+		case et_mouseup:
+			if (kpd->pressed_x != -1)
+				kpd->last_index = kpd->selected;
+			else
+				kpd->last_index = -1;
+			if (kpd->selected >= 0 && event->u.mouse.clicks > 1)
+			{
+				if (kpd->ac == NULL)
+					KPKPCloseup(kpd);
+				else
+					KPAC(kpd, true);
+				return(true);
+			}
+			/* Fall through... */
+		case et_mousemove:
+			GGadgetEndPopup();
+			index = kpd->off_top + event->u.mouse.y / kpd->uh;
+			if (!kpd->pressed && index < kpd->kcnt)
+			{
+				snprintf(buffer, sizeof(buffer), "%.20s %d U+%04x",
+					kpd->kerns[index].first->name,
+					kpd->kerns[index].first->orig_pos,
+					kpd->kerns[index].first->unicodeenc);
+				
+				if (kpd->kerns[index].first->unicodeenc == -1)
+				{
+					int str_size = strlen(buffer) - 4;
+					strncpy(buffer + str_size, "????", sizeof(buffer) - str_size);
+				}
+
+				int str_size = strlen(buffer);
+				snprintf(buffer + str_size, sizeof(buffer) - str_size, " + %.20s %d U+%04x",
+					kpd->kerns[index].second->name,
+					kpd->kerns[index].second->orig_pos,
+					kpd->kerns[index].second->unicodeenc);
+				
+				if (kpd->kerns[index].second->unicodeenc == -1)
+				{
+					int str_size = strlen(buffer) - 4;
+					strncpy(buffer + str_size, "????", sizeof(buffer) - str_size);
+
+					//strcpy(buffer + strlen(buffer) - 4, "????");
+				}
+
+				uc_strncpy(upopupbuf, buffer, sizeof(buffer));
+
+				GGadgetPreparePopup(gw, upopupbuf);
+				KP_Cursor(kpd, event);
+			}
+			else if (kpd->pressed && kpd->pressed_x != -1)
+			{
+				if (kpd->ac != NULL)
+				{
+					/* Nothing to be done. That's what I find so wonderful. Happy Days */
+				}
+				else if (index == kpd->selected)
+				{
+					KP_SetCursor(kpd, true);
+					temp = kpd->old_val + (event->u.mouse.x - kpd->pressed_x) * (kpd->sf->ascent + kpd->sf->descent) / kpd->bdf->pixelsize;
+					if (temp != kpd->kerns[index].newoff)
+					{
+						kpd->kerns[index].newoff = temp;
+						KP_RefreshKP(kpd, index);
+					}
+				}
+				else
+				{
+					if (kpd->movecursor)
+					{
+						kpd->kerns[kpd->selected].newoff = kpd->old_val;
+						KP_SetCursor(kpd, false);
+						KP_RefreshKP(kpd, kpd->selected);
+					}
+				}
+				if (kpd->ac == NULL && kpd->kerns[index].kp->kcid != 0 && event->type == et_mouseup)
+					KP_KernClassAlter(kpd, index);
+			}
+			if (event->type == et_mouseup)
+				kpd->pressed = false;
+			break;
+		case et_resize:
+			KPV_Resize(kpd);
+			break;
 	}
-	KP_Commands(kpd,event);
-      break;
-      case et_mousedown:
-	GGadgetEndPopup();
-	kpd->pressed = true;
-	index = kpd->off_top + event->u.mouse.y/kpd->uh;
-	if ( index>=kpd->kcnt )
-	    index = -1;
-	if ( index!=kpd->selected ) {
-	    old_sel = kpd->selected;
-	    kpd->selected = index;
-	    KP_RefreshSel(kpd,old_sel);
-	    KP_RefreshSel(kpd,index);
-	}
-	if ( event->u.mouse.button==3 && index>=0 ) {
-	    if ( !done ) {
-		int i;
-		for ( i=0; kernmenu[i].ti.text!=NULL || kernmenu[i].ti.line; ++i )
-		    if ( kernmenu[i].ti.text!=NULL )
-			kernmenu[i].ti.text = (unichar_t *) _((char *) kernmenu[i].ti.text);
-		for ( i=0; acmenu[i].ti.text!=NULL || acmenu[i].ti.line; ++i )
-		    if ( acmenu[i].ti.text!=NULL )
-			acmenu[i].ti.text = (unichar_t *) _((char *) acmenu[i].ti.text);
-		done = true;
-	    }
-	    if ( kpd->ac==NULL )
-		GMenuCreatePopupMenu(gw,event, kernmenu);
-	    else
-		GMenuCreatePopupMenu(gw,event, acmenu);
-	} else if ( KP_Cursor(kpd,event)!=NULL ) {
-	    kpd->pressed_x = event->u.mouse.x;
-	    kpd->old_val = kpd->kerns[index].newoff;
-	} else
-	    kpd->pressed_x = -1;
-      break;
-      case et_mouseup:
-	if ( kpd->pressed_x!=-1 )
-	    kpd->last_index = kpd->selected;
-	else
-	    kpd->last_index = -1;
-	if ( kpd->selected>=0 && event->u.mouse.clicks>1 ) {
-	    if ( kpd->ac==NULL )
-		KPKPCloseup(kpd);
-	    else
-		KPAC(kpd,true);
-return( true );
-	}
-      /* Fall through... */
-      case et_mousemove:
-	GGadgetEndPopup();
-	index = kpd->off_top + event->u.mouse.y/kpd->uh;
-	if ( !kpd->pressed && index<kpd->kcnt ) {
-	    sprintf( buffer, "%.20s %d U+%04x",
-		    kpd->kerns[index].first->name,
-		    kpd->kerns[index].first->orig_pos,
-		    kpd->kerns[index].first->unicodeenc );
-	    if ( kpd->kerns[index].first->unicodeenc==-1 )
-		strcpy(buffer+strlen(buffer)-4, "????");
-	    sprintf( buffer+strlen(buffer), " + %.20s %d U+%04x",
-		    kpd->kerns[index].second->name,
-		    kpd->kerns[index].second->orig_pos,
-		    kpd->kerns[index].second->unicodeenc );
-	    if ( kpd->kerns[index].second->unicodeenc==-1 )
-		strcpy(buffer+strlen(buffer)-4, "????");
-	    uc_strcpy(upopupbuf,buffer);
-	    GGadgetPreparePopup(gw,upopupbuf);
-	    KP_Cursor(kpd,event);
-	} else if ( kpd->pressed && kpd->pressed_x!=-1 ) {
-	    if ( kpd->ac!=NULL ) {
-		/* Nothing to be done. That's what I find so wonderful. Happy Days */
-	    } else if ( index==kpd->selected ) {
-		KP_SetCursor(kpd,true);
-		temp = kpd->old_val + (event->u.mouse.x-kpd->pressed_x)*(kpd->sf->ascent+kpd->sf->descent)/kpd->bdf->pixelsize;
-		if ( temp!=kpd->kerns[index].newoff ) {
-		    kpd->kerns[index].newoff = temp;
-		    KP_RefreshKP(kpd,index);
-		}
-	    } else {
-		if ( kpd->movecursor ) {
-		    kpd->kerns[kpd->selected].newoff = kpd->old_val;
-		    KP_SetCursor(kpd,false);
-		    KP_RefreshKP(kpd,kpd->selected);
-		}
-	    }
-	    if ( kpd->ac==NULL && kpd->kerns[index].kp->kcid!=0 && event->type==et_mouseup )
-		KP_KernClassAlter(kpd,index);
-	}
-	if ( event->type==et_mouseup )
-	    kpd->pressed = false;
-      break;
-      case et_resize:
-	KPV_Resize(kpd);
-      break;
-    }
-return( true );
+	return(true);
 }
 
 static void kpdpopup(KPData *kpd) {
     char buffer[100];
 
     if ( kpd->ac==NULL ) {
-	sprintf( buffer, "total kern pairs=%d\nchars starting kerns=%d",
+	snprintf( buffer, sizeof(buffer), "total kern pairs=%d\nchars starting kerns=%d",
 		kpd->kcnt, kpd->firstcnt );
     } else {
-	sprintf( buffer, "total anchored pairs=%d\nbase char cnt=%d",
+	snprintf( buffer, sizeof(buffer), "total anchored pairs=%d\nbase char cnt=%d",
 		kpd->kcnt, kpd->firstcnt );
     }
-    uc_strcpy(upopupbuf,buffer);
+    uc_strncpy(upopupbuf,buffer, sizeof(buffer));
+
     GGadgetPreparePopup(kpd->gw,upopupbuf);
 }
 

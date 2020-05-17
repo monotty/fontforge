@@ -187,7 +187,7 @@ static unichar_t *CounterMaskLine(SplineChar *sc, HintMask *hm) {
 	len = 0;
 	for ( h=sc->hstem, k=0; h!=NULL && k<HntMax; h=h->next, ++k ) {
 	    if ( (*hm)[k>>3]& (0x80>>(k&7)) ) {
-		sprintf( buffer, "H<%g,%g>, ",
+		snprintf( buffer, sizeof(buffer), "H<%g,%g>, ",
 			rint(h->start*100)/100, rint(h->width*100)/100 );
 		if ( textmask!=NULL )
 		    uc_strcpy(textmask+len,buffer);
@@ -196,7 +196,7 @@ static unichar_t *CounterMaskLine(SplineChar *sc, HintMask *hm) {
 	}
 	for ( h=sc->vstem; h!=NULL && k<HntMax; h=h->next, ++k ) {
 	    if ( (*hm)[k>>3]& (0x80>>(k&7)) ) {
-		sprintf( buffer, "V<%g,%g>, ",
+		snprintf( buffer, sizeof(buffer), "V<%g,%g>, ",
 			rint(h->start*100)/100, rint(h->width*100)/100 );
 		if ( textmask!=NULL )
 		    uc_strcpy(textmask+len,buffer);
@@ -499,7 +499,7 @@ static void SetNameFromUnicode(GWindow gw,int cid,int val) {
     char buf[100];
     CharInfo *ci = GDrawGetUserData(gw);
 
-    temp = utf82u_copy(StdGlyphName(buf,val,ci->sc->parent->uni_interp,ci->sc->parent->for_new_glyphs));
+    temp = utf82u_copy(StdGlyphName(buf, sizeof(buf), val,ci->sc->parent->uni_interp,ci->sc->parent->for_new_glyphs));
     GGadgetSetTitle(GWidgetGetControl(gw,cid),temp);
     free(temp);
 }
@@ -658,22 +658,40 @@ void VRDevTabParse(struct vr *vr,struct matrix_data *md) {
     }
 }
 
-void DevTabToString(char **str,DeviceTable *adjust) {
-    char *pt;
-    int i;
+void DevTabToString(char** str, DeviceTable* adjust)
+{
+	char* pt;
+	int i;
 
-    if ( adjust==NULL || adjust->corrections==NULL ) {
-	*str = NULL;
-return;
-    }
-    *str = pt = malloc(11*(adjust->last_pixel_size-adjust->first_pixel_size+1)+1);
-    for ( i=adjust->first_pixel_size; i<=adjust->last_pixel_size; ++i ) {
-	if ( adjust->corrections[i-adjust->first_pixel_size]!=0 )
-	    sprintf( pt, "%d:%d, ", i, adjust->corrections[i-adjust->first_pixel_size]);
-	pt += strlen(pt);
-    }
-    if ( pt>*str && pt[-2] == ',' )
-	pt[-2] = '\0';
+	if (adjust == NULL || adjust->corrections == NULL)
+	{
+		*str = NULL;
+		return;
+	}
+
+	int buf_size = 11 * (adjust->last_pixel_size - adjust->first_pixel_size + 1) + 1;
+	*str = pt = malloc(buf_size);
+
+	for (i = adjust->first_pixel_size; i <= adjust->last_pixel_size; ++i)
+	{
+		if (adjust->corrections[i - adjust->first_pixel_size] != 0)
+		{
+			snprintf(pt, buf_size, "%d:%d, ", i, adjust->corrections[i - adjust->first_pixel_size]);
+
+			int str_size = strlen(pt);
+			pt += str_size;
+			buf_size -= str_size;
+		}
+
+		//possibly bug
+		//pt += strlen(pt);
+	}
+
+	if (pt > * str && 
+		pt[-2] == ',')
+	{
+		pt[-2] = '\0';
+	}
 }
     
 void ValDevTabToStrings(struct matrix_data *mds,int first_offset,ValDevTab *adjust) {
@@ -1689,13 +1707,13 @@ static void CI_BoundsToMargin(CharInfo *ci) {
     if ( err )
 return;
     SplineCharFindBounds(ci->sc,&b);
-    sprintf( buffer, "%g", (double)(b.minx-margin) );
+    snprintf( buffer, sizeof(buffer), "%g", (double)(b.minx-margin) );
     GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_TileBBoxMinX),buffer);
-    sprintf( buffer, "%g", (double)(b.miny-margin) );
+    snprintf( buffer, sizeof(buffer), "%g", (double)(b.miny-margin) );
     GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_TileBBoxMinY),buffer);
-    sprintf( buffer, "%g", (double)(b.maxx+margin) );
+    snprintf( buffer, sizeof(buffer), "%g", (double)(b.maxx+margin) );
     GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_TileBBoxMaxX),buffer);
-    sprintf( buffer, "%g", (double)(b.maxy+margin) );
+    snprintf( buffer, sizeof(buffer), "%g", (double)(b.maxy+margin) );
     GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_TileBBoxMaxY),buffer);
 }
 
@@ -1804,9 +1822,9 @@ return( NULL );
 	    len = 0;
 	    for ( pt=alt; *pt; ++pt ) {
 		if ( components==NULL ) {
-		    len += strlen(StdGlyphName(buffer,*pt,ui_none,(NameList *)-1))+1;
+		    len += strlen(StdGlyphName(buffer, sizeof(buffer), *pt,ui_none,(NameList *)-1))+1;
 		} else {
-		    const char *temp = StdGlyphName(buffer,*pt,ui_none,(NameList *)-1);
+		    const char *temp = StdGlyphName(buffer, sizeof(buffer), *pt,ui_none,(NameList *)-1);
 		    strcpy(components+len,temp);
 		    len += strlen( temp );
 		    components[len++] = ' ';
@@ -1837,7 +1855,7 @@ char *AdobeLigatureFormat(char *name) {
 		free(components); components = NULL;
 	break;
 	    }
-	    next = StdGlyphName(buffer,uni,ui_none,(NameList *)-1);
+	    next = StdGlyphName(buffer, sizeof(buffer), uni,ui_none,(NameList *)-1);
 	    components = realloc(components,strlen(components) + strlen(next) + 2);
 	    if ( *components!='\0' )
 		strcat(components," ");
@@ -1901,23 +1919,23 @@ SplineChar *SuffixCheck(SplineChar *sc,char *suffix) {
 
     if ( *suffix=='.' ) ++suffix;
     if ( sf->cidmaster!=NULL ) {
-	sprintf( namebuf, "%.20s.%d.%.80s", sf->cidmaster->ordering, sc->orig_pos, suffix );
+	snprintf( namebuf, sizeof(namebuf), "%.20s.%d.%.80s", sf->cidmaster->ordering, sc->orig_pos, suffix );
 	alt = SFGetChar(sf,-1,namebuf);
 	if ( alt==NULL ) {
-	    sprintf( namebuf, "cid-%d.%.80s", sc->orig_pos, suffix );
+	    snprintf( namebuf, sizeof(namebuf), "cid-%d.%.80s", sc->orig_pos, suffix );
 	    alt = SFGetChar(sf,-1,namebuf);
 	}
     }
     if ( alt==NULL && sc->unicodeenc!=-1 ) {
-	sprintf( namebuf, "uni%04X.%.80s", sc->unicodeenc, suffix );
+	snprintf( namebuf, sizeof(namebuf), "uni%04X.%.80s", sc->unicodeenc, suffix );
 	alt = SFGetChar(sf,-1,namebuf);
     }
     if ( alt==NULL ) {
-	sprintf( namebuf, "glyph%d.%.80s", sc->orig_pos, suffix );
+	snprintf( namebuf, sizeof(namebuf), "glyph%d.%.80s", sc->orig_pos, suffix );
 	alt = SFGetChar(sf,-1,namebuf);
     }
     if ( alt==NULL ) {
-	sprintf( namebuf, "%.80s.%.80s", sc->name, suffix );
+	snprintf( namebuf, sizeof(namebuf), "%.80s.%.80s", sc->name, suffix );
 	alt = SFGetChar(sf,-1,namebuf);
     }
 return( alt );
@@ -1939,21 +1957,21 @@ return( NULL );
     if ( cvt2lc ) {
 	if ( alt==NULL && sc->unicodeenc!=-1 && sc->unicodeenc<0x10000 &&
 		isupper(sc->unicodeenc)) {
-	    sprintf( namebuf, "uni%04X.%s", tolower(sc->unicodeenc), suffix );
+	    snprintf( namebuf, sizeof(namebuf), "uni%04X.%s", tolower(sc->unicodeenc), suffix );
 	    alt = SFGetChar(sf,-1,namebuf);
 	}
 	if ( alt==NULL && isupper(*sc->name)) {
-	    sprintf( namebuf, "%c%s.%s", tolower(*sc->name), sc->name+1, suffix );
+	    snprintf( namebuf, sizeof(namebuf), "%c%s.%s", tolower(*sc->name), sc->name+1, suffix );
 	    alt = SFGetChar(sf,-1,namebuf);
 	}
     } else {
 	if ( alt==NULL && sc->unicodeenc!=-1 && sc->unicodeenc<0x10000 &&
 		islower(sc->unicodeenc)) {
-	    sprintf( namebuf, "uni%04X.%s", toupper(sc->unicodeenc), suffix );
+	    snprintf( namebuf, sizeof(namebuf), "uni%04X.%s", toupper(sc->unicodeenc), suffix );
 	    alt = SFGetChar(sf,-1,namebuf);
 	}
 	if ( alt==NULL && islower(*sc->name)) {
-	    sprintf( namebuf, "%c%s.%s", toupper(*sc->name), sc->name+1, suffix );
+	    snprintf( namebuf, sizeof(namebuf), "%c%s.%s", toupper(*sc->name), sc->name+1, suffix );
 	    alt = SFGetChar(sf,-1,namebuf);
 	}
     }
@@ -2045,7 +2063,7 @@ static int CI_SName(GGadget *g, GEvent *e) {	/* Set From Name */
 	    }
 	}
 
-	sprintf(buf,"U+%04x", i);
+	snprintf(buf, sizeof(buf), "U+%04x", i);
 	temp = uc_copy(i==-1?"-1":buf);
 	GGadgetSetTitle(GWidgetGetControl(ci->gw,CID_UValue),temp);
 	free(temp);
@@ -2147,7 +2165,7 @@ return( true );
 	SetNameFromUnicode(ci->gw,CID_UName,val);
 	CI_SetNameList(ci,val);
 
-	sprintf(buf,"U+%04x", val);
+	snprintf(buf, sizeof(buf), "U+%04x", val);
 	temp = uc_copy(buf);
 	GGadgetSetTitle(GWidgetGetControl(ci->gw,CID_UValue),temp);
 	free(temp);
@@ -3626,7 +3644,7 @@ static int TeX_Default(GGadget *g, GEvent *e) {
 		value = 0;
 	}
 	if (mcid!=0) {
-	    sprintf( buf, "%d", value );
+	    snprintf( buf, sizeof(buf), "%d", value );
 	    GGadgetSetTitle8(GWidgetGetControl(ci->gw,mcid),buf);
 	}
     }
@@ -3687,7 +3705,7 @@ static void CI_NoteAspect(CharInfo *ci) {
 	else
 	    cnt = 0;
 	if ( cnt<0 ) cnt = 0;
-	sprintf( buf, "%d", cnt );
+	snprintf( buf, sizeof(buf), "%d", cnt );
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_LCCount),buf);
     }
 }
@@ -3745,9 +3763,13 @@ char* CI_CreateInterpretedAsLabel(unichar_t* inp) {
 
     if (inp != NULL && inp[0] != 0 && valid) {
         char* inp_l = u2utf8_copy(inp);
-        lblbuf = malloc(strlen(lblprefix)+strlen(inp_l)+1);
-        sprintf(lblbuf, "%s%s", lblprefix, inp_l);
-        free(inp_l);
+		
+		int lblbuf_size = strlen(lblprefix) + strlen(inp_l) + 1;
+        lblbuf = malloc(lblbuf_size);
+        
+		snprintf(lblbuf, lblbuf_size, "%s%s", lblprefix, inp_l);
+        
+		free(inp_l);
     } else {
         lblbuf = copy(lblerror);
     }
@@ -3952,7 +3974,7 @@ static void CIFillup(CharInfo *ci) {
     GTextInfo **ti;
     char *devtabstr;
 
-    sprintf(buf,_("Glyph Info for %.40s"),sc->name);
+    snprintf(buf, sizeof(buf), _("Glyph Info for %.40s"),sc->name);
     GDrawSetWindowTitles8(ci->gw, buf, _("Glyph Info..."));
 
     if ( ci->oldsc!=NULL && ci->oldsc->charinfo==ci )
@@ -3974,7 +3996,7 @@ static void CIFillup(CharInfo *ci) {
     free(temp);
     CI_SetNameList(ci,sc->unicodeenc);
 
-    sprintf(buffer,"U+%04x", sc->unicodeenc);
+    snprintf(buffer, sizeof(buffer), "U+%04x", sc->unicodeenc);
     temp = utf82u_copy(sc->unicodeenc==-1?"-1":buffer);
     GGadgetSetTitle(GWidgetGetControl(ci->gw,CID_UValue),temp);
     free(temp);
@@ -4063,7 +4085,7 @@ static void CIFillup(CharInfo *ci) {
 	unichar_t *temp = malloc(18*u_strlen(bits)*sizeof(unichar_t));
 	unichar_t *upt=temp;
 	while ( *bits!='\0' ) {
-	    sprintf(buffer, "U+%04x (", *bits );
+	    snprintf(buffer, sizeof(buffer), "U+%04x (", *bits );
 	    uc_strcpy(upt,buffer);
 	    upt += u_strlen(upt);
 	    if (iscombining(*bits)) {
@@ -4072,7 +4094,7 @@ static void CIFillup(CharInfo *ci) {
 	    }
 	    *upt = *bits;
 	    upt += 1;
-	    sprintf(buffer, ") ");
+	    snprintf(buffer, sizeof(buffer), ") ");
 	    uc_strcpy(upt,buffer);
 	    upt += u_strlen(upt);
 
@@ -4096,13 +4118,13 @@ static void CIFillup(CharInfo *ci) {
     while (d_ptr != NULL && *d_ptr != '\0') {
         switch (BytesNeeded(*d_ptr)) {
             case 1:
-                sprintf(buffer, "%02x ", *d_ptr); break;
+                snprintf(buffer, sizeof(buffer), "%02x ", *d_ptr); break;
             case 2:
-                sprintf(buffer, "%04x ", *d_ptr); break;
+                snprintf(buffer, sizeof(buffer), "%04x ", *d_ptr); break;
             case 3:
-                sprintf(buffer, "%06x ", *d_ptr); break;
+                snprintf(buffer, sizeof(buffer), "%06x ", *d_ptr); break;
             default:
-                sprintf(buffer, "%08x ", *d_ptr);
+                snprintf(buffer, sizeof(buffer), "%08x ", *d_ptr);
         }
         codepoints_as_hex = strcat(codepoints_as_hex, buffer);
         ++d_ptr;
@@ -4148,19 +4170,19 @@ static void CIFillup(CharInfo *ci) {
     GGadgetSetList(GWidgetGetControl(ci->gw,CID_List+600),ti,false);
 
     if ( sc->tex_height!=TEX_UNDEF )
-	sprintf(buffer,"%d",sc->tex_height);
+	snprintf(buffer, sizeof(buffer), "%d",sc->tex_height);
     else
 	buffer[0] = '\0';
     GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_TeX_Height),buffer);
 
     if ( sc->tex_depth!=TEX_UNDEF )
-	sprintf(buffer,"%d",sc->tex_depth);
+	snprintf(buffer, sizeof(buffer), "%d",sc->tex_depth);
     else
 	buffer[0] = '\0';
     GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_TeX_Depth),buffer);
 
     if ( sc->italic_correction!=TEX_UNDEF )
-	sprintf(buffer,"%d",sc->italic_correction);
+	snprintf(buffer, sizeof(buffer), "%d",sc->italic_correction);
     else
 	buffer[0] = '\0';
     GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_TeX_Italic),buffer);
@@ -4169,7 +4191,7 @@ static void CIFillup(CharInfo *ci) {
     free(devtabstr);
 
     if ( sc->top_accent_horiz!=TEX_UNDEF )
-	sprintf(buffer,"%d",sc->top_accent_horiz);
+	snprintf(buffer, sizeof(buffer), "%d",sc->top_accent_horiz);
     else
 	buffer[0] = '\0';
     GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_HorAccent),buffer);
@@ -4185,7 +4207,7 @@ static void CIFillup(CharInfo *ci) {
 	    GGadgetSetTitle8(g,"");
 	else
 	    GGadgetSetTitle8(g,sc->vert_variants->variants);
-	sprintf(buffer,"%d",sc->vert_variants!=NULL?sc->vert_variants->italic_correction:0);
+	snprintf(buffer, sizeof(buffer), "%d",sc->vert_variants!=NULL?sc->vert_variants->italic_correction:0);
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_ExtItalicCor+0*100),buffer);
 	DevTabToString(&devtabstr,sc->vert_variants!=NULL?
 		sc->vert_variants->italic_adjusts:
@@ -4198,7 +4220,7 @@ static void CIFillup(CharInfo *ci) {
 	    GGadgetSetTitle8(g,"");
 	else
 	    GGadgetSetTitle8(g,sc->horiz_variants->variants);
-	sprintf(buffer,"%d",sc->horiz_variants!=NULL?sc->horiz_variants->italic_correction:0);
+	snprintf(buffer, sizeof(buffer), "%d",sc->horiz_variants!=NULL?sc->horiz_variants->italic_correction:0);
 	GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_ExtItalicCor+1*100),buffer);
 	DevTabToString(&devtabstr,sc->horiz_variants!=NULL?
 		sc->horiz_variants->italic_adjusts:
@@ -4219,18 +4241,18 @@ static void CIFillup(CharInfo *ci) {
 
 	GGadgetSetChecked(GWidgetGetControl(ci->gw,CID_IsTileMargin),margined);
 	if ( margined ) {
-	    sprintf( buffer, "%g", (double) sc->tile_margin );
+	    snprintf( buffer, sizeof(buffer), "%g", (double) sc->tile_margin );
 	    GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_TileMargin),buffer);
 	    CI_BoundsToMargin(ci);
 	} else {
 	    GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_TileMargin),"0");
-	    sprintf( buffer, "%g", (double) sc->tile_bounds.minx );
+	    snprintf( buffer, sizeof(buffer), "%g", (double) sc->tile_bounds.minx );
 	    GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_TileBBoxMinX),buffer);
-	    sprintf( buffer, "%g", (double) sc->tile_bounds.miny );
+	    snprintf( buffer, sizeof(buffer), "%g", (double) sc->tile_bounds.miny );
 	    GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_TileBBoxMinY),buffer);
-	    sprintf( buffer, "%g", (double) sc->tile_bounds.maxx );
+	    snprintf( buffer, sizeof(buffer), "%g", (double) sc->tile_bounds.maxx );
 	    GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_TileBBoxMaxX),buffer);
-	    sprintf( buffer, "%g", (double) sc->tile_bounds.maxy );
+	    snprintf( buffer, sizeof(buffer), "%g", (double) sc->tile_bounds.maxy );
 	    GGadgetSetTitle8(GWidgetGetControl(ci->gw,CID_TileBBoxMaxY),buffer);
 	}
     }
@@ -4382,37 +4404,37 @@ return;
 	memset(&ubox,0,sizeof(ubox));
 	memset(&ulabel,0,sizeof(ulabel));
 
-	ulabel[0].text = (unichar_t *) _("Gl_yph Name:");
+	ulabel[0].text = (unichar_t *) _("Glyph _v Name:");
 	ulabel[0].text_is_1byte = true;
 	ulabel[0].text_in_resource = true;
 	ugcd[0].gd.label = &ulabel[0];
 	ugcd[0].gd.pos.x = 5; ugcd[0].gd.pos.y = 5+4; 
 	ugcd[0].gd.flags = gg_enabled|gg_visible;
-	ugcd[0].gd.mnemonic = 'N';
+	ugcd[0].gd.mnemonic = 'v'; //? 'N';
 	ugcd[0].creator = GLabelCreate;
 	uhvarray[0] = &ugcd[0];
 
 	ugcd[1].gd.pos.x = 85; ugcd[1].gd.pos.y = 5;
 	ugcd[1].gd.flags = gg_enabled|gg_visible;
-	ugcd[1].gd.mnemonic = 'N';
+	ugcd[1].gd.mnemonic = 'v'; //? 'N';
 	ugcd[1].gd.cid = CID_UName;
 	ugcd[1].creator = GListFieldCreate;
 	ugcd[1].data = (void *) (-2);
 	uhvarray[1] = &ugcd[1]; uhvarray[2] = NULL;
 
-	ulabel[2].text = (unichar_t *) _("Unicode _Value:");
+	ulabel[2].text = (unichar_t *) _("Unicode Value:");
 	ulabel[2].text_in_resource = true;
 	ulabel[2].text_is_1byte = true;
 	ugcd[2].gd.label = &ulabel[2];
 	ugcd[2].gd.pos.x = 5; ugcd[2].gd.pos.y = 31+4; 
 	ugcd[2].gd.flags = gg_enabled|gg_visible;
-	ugcd[2].gd.mnemonic = 'V';
+	//ugcd[2].gd.mnemonic = 'V';
 	ugcd[2].creator = GLabelCreate;
 	uhvarray[3] = &ugcd[2];
 
 	ugcd[3].gd.pos.x = 85; ugcd[3].gd.pos.y = 31;
 	ugcd[3].gd.flags = gg_enabled|gg_visible;
-	ugcd[3].gd.mnemonic = 'V';
+	//ugcd[3].gd.mnemonic = 'V';
 	ugcd[3].gd.cid = CID_UValue;
 	ugcd[3].gd.handle_controlevent = CI_UValChanged;
 	ugcd[3].creator = GTextFieldCreate;

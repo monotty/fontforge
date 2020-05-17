@@ -173,9 +173,9 @@ void FVAutoWidth2(FontView *fv) {
     harray1[0] = &gcd[i-1];
 
     if ( sf->width_separation>0 )
-	sprintf( sepbuf, "%d", sf->width_separation );
+	snprintf( sepbuf, sizeof(sepbuf), "%d", sf->width_separation );
     else
-	sprintf( sepbuf, "%d", (int) rint( width_separation * emsize / width_last_em_size ));
+	snprintf( sepbuf, sizeof(sepbuf), "%d", (int) rint( width_separation * emsize / width_last_em_size ));
     label[i].text = (unichar_t *) sepbuf;
     label[i].text_is_1byte = true;
     gcd[i].gd.label = &label[i];
@@ -200,11 +200,11 @@ void FVAutoWidth2(FontView *fv) {
     harray2[0] = &gcd[i-1];
 
     if ( sf->italicangle<0 )
-	sprintf( minbuf, "%d", (int) rint( sf->descent*tan(sf->italicangle*FF_PI/180 )) );
+	snprintf( minbuf, sizeof(minbuf), "%d", (int) rint( sf->descent*tan(sf->italicangle*FF_PI/180 )) );
     else if ( sf->italicangle>0 )
-	sprintf( minbuf, "%d", (int) -rint( sf->ascent*tan(sf->italicangle*FF_PI/180 )) );
+	snprintf( minbuf, sizeof(minbuf), "%d", (int) -rint( sf->ascent*tan(sf->italicangle*FF_PI/180 )) );
     else
-	sprintf( minbuf, "%d", (int) rint( width_min_side_bearing * emsize / width_last_em_size ));
+	snprintf( minbuf, sizeof(minbuf), "%d", (int) rint( width_min_side_bearing * emsize / width_last_em_size ));
     label[i].text = (unichar_t *) minbuf;
     label[i].text_is_1byte = true;
     gcd[i].gd.label = &label[i];
@@ -223,7 +223,7 @@ void FVAutoWidth2(FontView *fv) {
     gcd[i++].creator = GLabelCreate;
     harray2[2] = &gcd[i-1];
 
-    sprintf( maxbuf, "%d", (int) rint( width_max_side_bearing * emsize / width_last_em_size ));
+    snprintf( maxbuf, sizeof(maxbuf), "%d", (int) rint( width_max_side_bearing * emsize / width_last_em_size ));
     label[i].text = (unichar_t *) maxbuf;
     label[i].text_is_1byte = true;
     gcd[i].gd.label = &label[i];
@@ -247,7 +247,7 @@ void FVAutoWidth2(FontView *fv) {
     gcd[i++].creator = GLabelCreate;
     harray3[0] = &gcd[i-1];
 
-    sprintf( hbuf, "%d", (int) rint( width_chunk_height * emsize / width_last_em_size ));
+    snprintf( hbuf, sizeof(hbuf), "%d", (int) rint( width_chunk_height * emsize / width_last_em_size ));
     label[i].text = (unichar_t *) hbuf;
     label[i].text_is_1byte = true;
     gcd[i].gd.label = &label[i];
@@ -266,7 +266,7 @@ void FVAutoWidth2(FontView *fv) {
     gcd[i++].creator = GLabelCreate;
     harray3[2] = &gcd[i-1];
 
-    sprintf( lbuf, "%d", (int) rint( width_loop_cnt * emsize / width_last_em_size ));
+    snprintf( lbuf, sizeof(lbuf), "%d", (int) rint( width_loop_cnt * emsize / width_last_em_size ));
     label[i].text = (unichar_t *) lbuf;
     label[i].text_is_1byte = true;
     gcd[i].gd.label = &label[i];

@@ -103,7 +103,7 @@ return;
 	    /*!!!!!! pattern? */
 	    sc->layers[pos].stroke_pen.brush.col = e->u.splines.stroke.col==0xffffffff ? COLOR_INHERITED : e->u.splines.stroke.col;
 	    sc->layers[pos].stroke_pen.brush.gradient = e->u.splines.stroke.grad;
-	    sc->layers[pos].stroke_pen.width = e->u.splines.stroke_width;
+		sc->layers[pos].stroke_pen.width = e->u.splines.stroke_width;
 	    sc->layers[pos].stroke_pen.linejoin = e->u.splines.join;
 	    sc->layers[pos].stroke_pen.linecap = e->u.splines.cap;
 	    memcpy(sc->layers[pos].stroke_pen.trans, e->u.splines.transform,
@@ -1103,7 +1103,7 @@ return( false );
 		(isc && entry->d_name[0]=='c' && entry->d_name[1]=='i' && entry->d_name[2]=='d' && (val=strtol(entry->d_name+3,&end,10), end==pt)) ||
 		(ise && entry->d_name[0]=='e' && entry->d_name[1]=='n' && entry->d_name[2]=='c' && (val=strtol(entry->d_name+3,&end,10), end==pt)) ))
     continue;
-	sprintf (start, "%s/%s", dirname, entry->d_name);
+	snprintf (start, sizeof(start), "%s/%s", dirname, entry->d_name);
 	if ( isu ) {
 	    i = SFFindSlot(fv->sf,fv->map,val,NULL);
 	    if ( i==-1 ) {

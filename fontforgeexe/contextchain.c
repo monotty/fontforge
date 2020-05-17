@@ -173,103 +173,191 @@ return( NULL );
 return( ret );
 }
 
-static char *rpl(const char *src, const char *find, const char *rpl) {
-    const char *pt, *start;
-    char *ret, *rpt;
-    int found_cnt=0;
-    int flen = strlen(find);
+static char* rpl(const char* src, const char* find, const char* rpl)
+{
+	const char* pt, * start;
+	char* ret, * rpt;
+	int found_cnt = 0;
+	int flen = strlen(find);
 
-    for ( pt=src; *pt; ) {
-	while ( isspace(*pt)) ++pt;
-	if ( *pt=='\0' )
-    break;
-	for ( start=pt; !isspace(*pt) && *pt!='\0'; ++pt );
-	if ( pt-start==flen && strncmp(find,start,flen)==0 )
-	    ++found_cnt;
-    }
-    if ( found_cnt==0 )
-return( copy(src));
+	// looking for the number of occurrences
+	//for (pt = src; *pt; )
+	pt = src; 
+	while(*pt)
+	{
+		while (isspace(*pt))
+		{
+			++pt;
+		}
 
-    rpt = ret = malloc(strlen(src)+found_cnt*(strlen(rpl)-flen)+1);
-    for ( pt=src; *pt; ) {
-	while ( isspace(*pt))
-	    *rpt++ = *pt++;
-	if ( *pt=='\0' )
-    break;
-	for ( start=pt; !isspace(*pt) && *pt!='\0'; ++pt );
-	if ( pt-start==flen && strncmp(find,start,flen)==0 ) {
-	    strcpy(rpt,rpl);
-	    rpt += strlen(rpt);
-	} else {
-	    strncpy(rpt,start,pt-start);
-	    rpt += (pt-start);
+		if (*pt == '\0')
+		{
+			break;
+		}
+
+		// take next word
+		//for (start = pt; !isspace(*pt) && *pt != '\0'; ++pt);
+		start = pt;
+		while(!isspace(*pt) && *pt != '\0')
+		{
+			++pt;
+		}
+
+		if (pt - start == flen && strncmp(find, start, flen) == 0)
+		{
+			++found_cnt;
+		}
 	}
-    }
-    *rpt = '\0';
-return( ret );
+
+	// nothing found
+	if (found_cnt == 0)
+	{
+		return(copy(src));
+	}
+
+	int buf_size = strlen(src) + found_cnt * (strlen(rpl) - flen);
+	//rpt = ret = malloc(buf_size); //todo possible bug: strlen(rpt) - overflow
+	rpt = ret = calloc(buf_size + 1, 1);
+
+	//for (pt = src; *pt; )
+	pt = src;
+	while(*pt)
+	{
+		while (isspace(*pt))
+		{
+			*rpt++ = *pt++;
+			buf_size--;
+		}
+
+		if (*pt == '\0')
+		{
+			break;
+		}
+
+		// take next word
+		for (start = pt; !isspace(*pt) && *pt != '\0'; )
+		{
+			++pt;
+		}
+		int word_size = pt - start;
+
+		if (word_size == flen && strncmp(find, start, flen) == 0)
+		{
+			strncpy(rpt, rpl, buf_size);
+
+			int str_size = strlen(rpt);
+			rpt += str_size;
+			buf_size -= str_size;
+		}
+		else
+		{
+			strncpy(rpt, start, word_size);
+			rpt += word_size;
+			buf_size -= word_size;
+		}
+	}
+	*rpt = '\0';
+	return(ret);
 }
 
-static char *classnumbers(int cnt,uint16 *classes, struct matrix_data *classnames, int rows, int cols) {
-    char buf[20];
-    int i, len;
-    char *pt, *ret;
+static char* classnumbers(int cnt, uint16* classes, struct matrix_data* classnames, int rows, int cols)
+{
+	char buf[20];
+	int i, len;
+	char* pt, * ret;
 
-    len = 0;
-    for ( i=0; i<cnt; ++i ) {
-	if ( classnames[cols*classes[i]+0].u.md_str==NULL ) {
-	    sprintf( buf, "%d ", classes[i]);
-	    len += strlen(buf);
-	} else {
-	    len += strlen(classnames[cols*classes[i]+0].u.md_str)+1;
+	len = 0;
+	for (i = 0; i < cnt; ++i)
+	{
+		if (classnames[cols * classes[i] + 0].u.md_str == NULL)
+		{
+			snprintf(buf, sizeof(buf), "%d ", classes[i]);
+			len += strlen(buf);
+		}
+		else
+		{
+			len += strlen(classnames[cols * classes[i] + 0].u.md_str) + 1;
+		}
 	}
-    }
-    ret = pt = malloc(len+3);
-    *pt = '\0';		/* In case it is empty */
 
-    for ( i=0; i<cnt; ++i ) {
-	if ( classnames[cols*classes[i]+0].u.md_str==NULL ) {
-	    sprintf( pt, "%d ", classes[i]);
-	    pt += strlen(pt);
-	} else {
-	    strcpy(pt, classnames[cols*classes[i]+0].u.md_str);
-	    pt += strlen(pt);
-	    *pt++ = ' ';
+	int pt_size = len + 3;
+	ret = pt = malloc(pt_size);
+	*pt = '\0';		/* In case it is empty */
+
+	for (i = 0; i < cnt; ++i)
+	{
+		if (classnames[cols * classes[i] + 0].u.md_str == NULL)
+		{
+			snprintf(pt, pt_size, "%d ", classes[i]);
+			int str_size = strlen(pt);
+			pt += str_size;
+			pt_size -= str_size;
+		}
+		else
+		{
+			strncpy(pt, classnames[cols * classes[i] + 0].u.md_str, pt_size);
+			int str_size = strlen(pt);
+			pt += str_size;
+			pt_size -= str_size;
+			*pt++ = ' ';
+			pt_size--;
+		}
 	}
-    }
-    if ( pt>ret && pt[-1]==' ' )
-	pt[-1] = '\0';
-return( ret );
+	if (pt > ret && pt[-1] == ' ')
+		pt[-1] = '\0';
+	return(ret);
 }
 
-static char *rclassnumbers(int cnt,uint16 *classes, struct matrix_data *classnames, int rows, int cols) {
-    char buf[20];
-    int i, len;
-    char *pt, *ret;
+static char* rclassnumbers(int cnt, uint16* classes, struct matrix_data* classnames, int rows, int cols)
+{
+	char buf[20];
+	int i, len;
+	char* pt, * ret;
 
-    len = 0;
-    for ( i=0; i<cnt; ++i ) {
-	if ( classnames[cols*classes[i]+0].u.md_str==NULL ) {
-	    sprintf( buf, "%d ", classes[i]);
-	    len += strlen(buf);
-	} else {
-	    len += strlen(classnames[cols*classes[i]+0].u.md_str)+1;
+	len = 0;
+	for (i = 0; i < cnt; ++i)
+	{
+		if (classnames[cols * classes[i] + 0].u.md_str == NULL)
+		{
+			snprintf(buf, sizeof(buf), "%d ", classes[i]);
+			len += strlen(buf);
+		}
+		else
+		{
+			len += strlen(classnames[cols * classes[i] + 0].u.md_str) + 1;
+		}
 	}
-    }
-    ret = pt = malloc(len+3);
-    *pt = '\0';
-    for ( i=cnt-1; i>=0; --i ) {
-	if ( classnames[cols*classes[i]+0].u.md_str==NULL ) {
-	    sprintf( pt, "%d ", classes[i]);
-	    pt += strlen(pt);
-	} else {
-	    strcpy(pt, classnames[cols*classes[i]+0].u.md_str);
-	    pt += strlen(pt);
-	    *pt++ = ' ';
+
+	int pt_size = len + 3;
+	ret = pt = malloc(pt_size);
+
+	*pt = '\0';
+
+	for (i = cnt - 1; i >= 0; --i)
+	{
+		if (classnames[cols * classes[i] + 0].u.md_str == NULL)
+		{
+			snprintf(pt, pt_size, "%d ", classes[i]);
+			//pt += strlen(pt);
+			int str_size = strlen(pt);
+			pt += str_size;
+			pt_size -= str_size;
+		}
+		else
+		{
+			strncpy(pt, classnames[cols * classes[i] + 0].u.md_str, pt_size);
+			//pt += strlen(pt);
+			int str_size = strlen(pt);
+			pt += str_size;
+			pt_size -= str_size;
+
+			*pt++ = ' ';
+			pt_size--;
+		}
 	}
-    }
-    if ( pt>ret && pt[-1]==' ' )
-	pt[-1] = '\0';
-return( ret );
+	if (pt > ret && pt[-1] == ' ')
+		pt[-1] = '\0';
+	return(ret);
 }
 
 static int CCD_GlyphNameCnt(const char *pt) {
@@ -287,27 +375,38 @@ return( cnt );
 
 static int seqlookuplen(struct fpst_rule *r) {
     int i, len=0;
-    char buf[20];
+    char buf[40];
 
     len += 4;		/* for the arrow, takes 3 bytes in utf8 */
     for ( i=0; i<r->lookup_cnt; ++i ) {
-	sprintf( buf," %d \"\",", r->lookups[i].seq );
+	snprintf( buf, sizeof(buf), " %d \"\",", r->lookups[i].seq );
 	len += strlen(buf) + strlen( r->lookups[i].lookup->lookup_name );
     }
 return( len );
 }
 
-static char *addseqlookups(char *pt, struct fpst_rule *r) {
-    int i;
+static char* addseqlookups(char* _pt, size_t *pt_size_ptr, struct fpst_rule* r)
+{
+	int i;
 
-    pt = utf8_idpb(pt, 0x21d2,0);
-    for ( i=0; i<r->lookup_cnt; ++i ) {
-	sprintf( pt," %d <%s>,", r->lookups[i].seq, r->lookups[i].lookup->lookup_name);
-	pt += strlen(pt);
-    }
-    if ( pt[-1]==',' ) --pt;
-    *pt = '\0';
-return( pt );
+	char *pt = utf8_idpb(_pt, 0x21d2, 0);
+	(*pt_size_ptr) -= pt - _pt;
+
+	for (i = 0; i < r->lookup_cnt; ++i)
+	{
+		snprintf(pt, *pt_size_ptr, " %d <%s>,", r->lookups[i].seq, r->lookups[i].lookup->lookup_name);
+		int str_size = strlen(pt);
+		pt += str_size;
+		(*pt_size_ptr) -= str_size;
+	}
+	if (pt[-1] == ',')
+	{
+		--pt;
+		(*pt_size_ptr)++;
+	}
+
+	*pt = '\0';
+	return(pt);
 }
 
 static void parseseqlookups(SplineFont *sf, const char *solooks, struct fpst_rule *r) {
@@ -352,37 +451,70 @@ static void parseseqlookups(SplineFont *sf, const char *solooks, struct fpst_rul
     }
 }
 
-static char *gruleitem(struct fpst_rule *r) {
-    char *ret, *pt;
-    int len;
+static char* gruleitem(struct fpst_rule* r)
+{
+	char* ret, * pt;
+	int len;
 
-    len = (r->u.glyph.back==NULL ? 0 : strlen(r->u.glyph.back)) +
-	    strlen(r->u.glyph.names) +
-	    (r->u.glyph.fore==0 ? 0 : strlen(r->u.glyph.fore)) +
-	    seqlookuplen(r);
+	len = (r->u.glyph.back == NULL ? 0 : strlen(r->u.glyph.back)) +
+		strlen(r->u.glyph.names) +
+		(r->u.glyph.fore == 0 ? 0 : strlen(r->u.glyph.fore)) +
+		seqlookuplen(r);
 
-    ret = pt = malloc(len+8);
-    if ( r->u.glyph.back!=NULL && *r->u.glyph.back!='\0' ) {
-	char *temp = reversenames(r->u.glyph.back);
-	strcpy(pt,temp);
-	pt += strlen(temp);
-	free(temp);
+	size_t pt_size = len + 8;
+	ret = pt = malloc(pt_size);
+
+	if (r->u.glyph.back != NULL && *r->u.glyph.back != '\0')
+	{
+		char* temp = reversenames(r->u.glyph.back);
+		strncpy(pt, temp, pt_size);
+
+		size_t str_size = strlen(temp);
+		pt += str_size;
+		pt_size -= str_size;
+
+		free(temp);
+		*pt++ = ' ';
+		pt_size--;
+	}
+
+	*pt++ = '|';
+	pt_size--;
+	
 	*pt++ = ' ';
-    }
-    *pt++ = '|';
-    *pt++ = ' ';
-    strcpy(pt,r->u.glyph.names);
-    pt += strlen(r->u.glyph.names);
-    *pt++ = ' ';
-    *pt++ = '|';
-    *pt++ = ' ';
-    if ( r->u.glyph.fore!=NULL  && *r->u.glyph.fore!='\0' ) {
-	strcpy(pt,r->u.glyph.fore);
-	pt += strlen(r->u.glyph.fore);
+	pt_size--;
+
+	strncpy(pt, r->u.glyph.names, pt_size);
+
+	size_t str_size = strlen(r->u.glyph.names);
+	pt += str_size;
+	pt_size -= str_size;
+
 	*pt++ = ' ';
-    }
-    pt = addseqlookups(pt, r);
-return( ret );
+	pt_size--;
+
+	*pt++ = '|';
+	pt_size--;
+
+	*pt++ = ' ';
+	pt_size--;
+
+	if (r->u.glyph.fore != NULL && *r->u.glyph.fore != '\0')
+	{
+		strncpy(pt, r->u.glyph.fore, pt_size);
+
+		size_t str_size = strlen(r->u.glyph.fore);
+		pt += str_size;
+		pt_size -= str_size;
+		//pt += strlen(r->u.glyph.fore);
+
+		*pt++ = ' ';
+		pt_size--;
+	}
+	
+	pt = addseqlookups(pt, &pt_size, r);
+
+	return(ret);
 }
 
 static void gruleitem2rule(SplineFont *sf, const char *ruletext,struct fpst_rule *r) {
@@ -417,65 +549,123 @@ return;
     parseseqlookups(sf,pt2+2,r);
 }
 
-static char *classruleitem(struct fpst_rule *r,struct matrix_data **classes, int clen[3], int cols) {
-    char *ret, *pt;
-    int len, i, k;
-    char buf[20];
+static char* classruleitem(struct fpst_rule* r, struct matrix_data** classes, int clen[3], int cols)
+{
+	char* ret, * pt;
+	int len, i, k;
+	char buf[40];
+	size_t pt_size, str_size;
 
-    len = 0;
-    for ( i=0; i<3; ++i ) {
-	for ( k=0; k<(&r->u.class.ncnt)[i]; ++k ) {
-	    int c = (&r->u.class.nclasses)[i][k];
-	    if ( classes[i][cols*c+0].u.md_str!=NULL && *classes[i][cols*c+0].u.md_str!='\0' )
-		len += strlen(classes[i][cols*c+0].u.md_str)+1;
-	    else {
-		sprintf( buf, "%d ", c);
-		len += strlen(buf);
-	    }
+	len = 0;
+	for (i = 0; i < 3; ++i)
+	{
+		for (k = 0; k < (&r->u.class.ncnt)[i]; ++k)
+		{
+			int c = (&r->u.class.nclasses)[i][k];
+			if (classes[i][cols * c + 0].u.md_str != NULL && *classes[i][cols * c + 0].u.md_str != '\0')
+				len += strlen(classes[i][cols * c + 0].u.md_str) + 1;
+			else
+			{
+				snprintf(buf, sizeof(buf), "%d ", c);
+				len += strlen(buf);
+			}
+		}
 	}
-    }
 
-    ret = pt = malloc((len+8+seqlookuplen(r)) * sizeof(unichar_t));
-    for ( k=r->u.class.bcnt-1; k>=0; --k ) {
-	int c = r->u.class.bclasses[k];
-	if ( classes[1][cols*c+0].u.md_str!=NULL && *classes[1][cols*c+0].u.md_str!='\0' ) {
-	    strcpy(pt,classes[1][cols*c+0].u.md_str);
-	    pt += strlen( pt );
-	    *pt++ = ' ';
-	} else {
-	    sprintf( pt, "%d ", c);
-	    pt += strlen(pt);
-	}
-    }
-    *pt++ = '|';
-    for ( k=0; k<r->u.class.ncnt; ++k ) {
-	int c = r->u.class.nclasses[k];
-	if ( classes[0][cols*c+0].u.md_str!=NULL && *classes[0][cols*c+0].u.md_str!='\0' ) {
-	    strcpy(pt,classes[0][cols*c+0].u.md_str);
-	    pt += strlen( pt );
-	    *pt++ = ' ';
-	} else {
-	    sprintf( pt, "%d ", c);
-	    pt += strlen(pt);
-	}
-    }
-    if ( pt[-1]==' ' ) --pt;
-    *pt++ = '|';
-    for ( k=0; k<r->u.class.fcnt; ++k ) {
-	int c = r->u.class.fclasses[k];
-	if ( classes[2][cols*c+0].u.md_str!=NULL && *classes[2][cols*c+0].u.md_str!='\0' ) {
-	    strcpy(pt,classes[2][cols*c+0].u.md_str);
-	    pt += strlen( pt );
-	    *pt++ = ' ';
-	} else {
-	    sprintf( pt, "%d ", c);
-	    pt += strlen(pt);
-	}
-    }
+	ret = pt = malloc(pt_size = (len + 8 + seqlookuplen(r)) * sizeof(unichar_t));
+	for (k = r->u.class.bcnt - 1; k >= 0; --k)
+	{
+		int c = r->u.class.bclasses[k];
+		if (classes[1][cols * c + 0].u.md_str != NULL && *classes[1][cols * c + 0].u.md_str != '\0')
+		{
+			strncpy(pt, classes[1][cols * c + 0].u.md_str, pt_size);
+			str_size = strlen(pt);
+			pt += str_size;
+			pt_size -= str_size;
 
-    *pt++ = ' ';
-    pt = addseqlookups(pt, r);
-return( ret );
+			*pt++ = ' ';
+			pt_size--;
+		}
+		else
+		{
+			snprintf(pt, pt_size, "%d ", c);
+			//pt += strlen(pt);
+			str_size = strlen(pt);
+			pt += str_size;
+			pt_size -= str_size;
+		}
+	}
+	
+	*pt++ = '|';
+	pt_size--;
+
+	for (k = 0; k < r->u.class.ncnt; ++k)
+	{
+		int c = r->u.class.nclasses[k];
+		if (classes[0][cols * c + 0].u.md_str != NULL && *classes[0][cols * c + 0].u.md_str != '\0')
+		{
+			strncpy(pt, classes[0][cols * c + 0].u.md_str, pt_size);
+			str_size = strlen(pt);
+			pt += str_size;
+			pt_size -= str_size;
+
+			*pt++ = ' ';
+			pt_size--;
+
+			//pt += strlen(pt);
+			//*pt++ = ' ';
+		}
+		else
+		{
+			snprintf(pt, pt_size, "%d ", c);
+			//pt += strlen(pt);
+			str_size = strlen(pt);
+			pt += str_size;
+			pt_size -= str_size;
+		}
+	}
+	
+	if (pt[-1] == ' ')
+	{
+		--pt;
+		pt_size++;
+	}
+
+	*pt++ = '|';
+	pt_size--;
+
+	for (k = 0; k < r->u.class.fcnt; ++k)
+	{
+		int c = r->u.class.fclasses[k];
+		if (classes[2][cols * c + 0].u.md_str != NULL && *classes[2][cols * c + 0].u.md_str != '\0')
+		{
+			strncpy(pt, classes[2][cols * c + 0].u.md_str, pt_size);
+			str_size = strlen(pt);
+			pt += str_size;
+			pt_size -= str_size;
+
+			*pt++ = ' ';
+			pt_size--;
+
+			//pt += strlen(pt);
+			//*pt++ = ' ';
+		}
+		else
+		{
+			snprintf(pt, pt_size, "%d ", c);
+			//pt += strlen(pt);
+			str_size = strlen(pt);
+			pt += str_size;
+			pt_size -= str_size;
+		}
+	}
+
+	*pt++ = ' ';
+	pt_size--;
+
+	pt = addseqlookups(pt, &pt_size, r);
+
+	return(ret);
 }
 
 static void classruleitem2rule(SplineFont *sf,const char *ruletext,struct fpst_rule *r,
@@ -929,10 +1119,13 @@ static void CCD_ClassSelected(GGadget *g, int r, int c) {
 
     if ( r<0 || r>=rows )
 return;
-    if ( classes[cols*r+0].u.md_str == NULL || classes[cols*r+0].u.md_str[0]=='\0' ) {
-	sprintf( buf, " %d ", r );
-	uc_strcpy(ubuf,buf);
-    } else {
+	if (classes[cols * r + 0].u.md_str == NULL || classes[cols * r + 0].u.md_str[0] == '\0')
+	{
+		snprintf(buf, sizeof(buf), " %d ", r);
+		uc_strncpy(ubuf, buf, sizeof(buf));
+	}
+	else
+	{
 	ubuf[0]=' ';
 	utf82u_strncpy(ubuf+1,classes[cols*r+0].u.md_str,sizeof(ubuf)/sizeof(ubuf[0])-2 );
 	ubuf[sizeof(ubuf)/sizeof(ubuf[0])-2] = '\0';
@@ -1419,28 +1612,35 @@ static int CCD_NewSection(GGadget *g, GEvent *e) {
 return( true );
 }
 
-static int CCD_AddLookup(GGadget *g, GEvent *e) {
-    if ( e->type==et_controlevent && e->u.control.subtype == et_listselected ) {
-	int off = GGadgetGetCid(g)-CID_GAddLookup;
-	GGadget *gme = GWidgetGetControl(GGadgetGetWindow(g),CID_GList_Simple+off);
-	GGadget *tf = _GMatrixEditGetActiveTextField(gme);
-	GTextInfo *lookup_ti = GGadgetGetListItemSelected(g);
-	OTLookup *otl;
+static int CCD_AddLookup(GGadget* g, GEvent* e)
+{
+	if (e->type == et_controlevent && e->u.control.subtype == et_listselected)
+	{
+		int off = GGadgetGetCid(g) - CID_GAddLookup;
+		GGadget* gme = GWidgetGetControl(GGadgetGetWindow(g), CID_GList_Simple + off);
+		GGadget* tf = _GMatrixEditGetActiveTextField(gme);
+		GTextInfo* lookup_ti = GGadgetGetListItemSelected(g);
+		OTLookup* otl;
 
-	if ( tf!=NULL && lookup_ti!=NULL && lookup_ti->userdata!=NULL) {
-	    char *space;
-	    unichar_t *temp;
-	    otl = lookup_ti->userdata;
-	    space = malloc(strlen(otl->lookup_name)+8);
-	    sprintf( space, " @<%s> ", otl->lookup_name );
-	    temp = utf82u_copy(space);
-	    GTextFieldReplace(tf,temp);
-	    free(space);
-	    free(temp);
+		if (tf != NULL && lookup_ti != NULL && lookup_ti->userdata != NULL)
+		{
+			char* space;
+			unichar_t* temp;
+			otl = lookup_ti->userdata;
+
+			size_t space_size = strlen(otl->lookup_name) + 8;
+			space = malloc(space_size);
+
+			snprintf(space, space_size, " @<%s> ", otl->lookup_name);
+			
+			temp = utf82u_copy(space);
+			GTextFieldReplace(tf, temp);
+			free(space);
+			free(temp);
+		}
+		GGadgetSelectOneListItem(g, 0);
 	}
-	GGadgetSelectOneListItem(g,0);
-    }
-return( true );
+	return(true);
 }
 
 static int subccd_e_h(GWindow gw, GEvent *event) {
@@ -1516,8 +1716,10 @@ return( false );
 return( true );
 }
 
-#define CCD_WIDTH	340
-#define CCD_HEIGHT	340
+//#define CCD_WIDTH	340
+//#define CCD_HEIGHT	340
+#define CCD_WIDTH	640 /* GPOS Edit window width  */
+#define CCD_HEIGHT	640 /* GPOS Edit window height */
 
 static unichar_t **CCD_GlyphListCompletion(GGadget *t,int from_tab) {
     struct contextchaindlg *ccd = GDrawGetUserData(GDrawGetParentWindow(GGadgetGetWindow(t)));
@@ -1726,116 +1928,191 @@ static int WhichSections(struct contextchaindlg *ccd, GGadget *g) {
 return( sections );
 }
 
-static void RenameClass(struct contextchaindlg *ccd,char *old,char *new,int sections) {
-    /* A class has been renamed. We should fix up all class rules that use */
-    /*  the old name to use the new one. The name may only be valid in one */
-    /*  section of the rule (backtrack, match, or forward), or in all, or */
-    /*  in match and one of the other two */
-    int rows, i;
-    GGadget *gclassrules = GWidgetGetControl(ccd->classes_simple,CID_CList_Simple);
-    struct matrix_data *classrules = GMatrixEditGet(gclassrules,&rows);
-    int cols = GMatrixEditGetColCnt(gclassrules);
-    char *end_back=NULL, *end_match=NULL, *pt, *last_name, *temp;
-    int ch;
 
-    if ( sections==0x7 ) {
-	/* name change applies through out rule, no need to search for sections */
-	for ( i=0; i<rows; ++i ) {
-	    char *oldrule = classrules[cols*i+0].u.md_str;
-	    char *newrule = rpl(oldrule,old,new);
-	    free(oldrule);
-	    classrules[cols*i+0].u.md_str = newrule;
+//todo: sdn: memory corruption
+static void RenameClass(struct contextchaindlg* ccd, char* old, char* new, int sections)
+{
+	/* A class has been renamed. We should fix up all class rules that use */
+	/*  the old name to use the new one. The name may only be valid in one */
+	/*  section of the rule (backtrack, match, or forward), or in all, or */
+	/*  in match and one of the other two */
+	int rows, i;
+	GGadget* gclassrules = GWidgetGetControl(ccd->classes_simple, CID_CList_Simple);
+
+	struct matrix_data* classrules = GMatrixEditGet(gclassrules, &rows);
+	int cols = GMatrixEditGetColCnt(gclassrules);
+	int ch;
+
+	//todo possible bug: they do not reset at the next iteration
+	//char* end_back = NULL;
+	//char* end_match = NULL;
+
+	char* pt;
+	char* last_name;
+	char* temp;
+
+	if (sections == 0x7)
+	{
+		/* name change applies through out rule, no need to search for sections */
+		for (i = 0; i < rows; ++i)
+		{
+			char* oldrule = classrules[cols * i + 0].u.md_str;
+			char* newrule = rpl(oldrule, old, new);
+			free(oldrule);
+			classrules[cols * i + 0].u.md_str = newrule;
+		}
 	}
-    } else {
-	for ( i=0; i<rows; ++i ) {
-	    char *oldrule = classrules[cols*i+0].u.md_str;
-	    char *newrule;
-	    for ( pt=last_name=oldrule; *pt; ) {
-		while ( isspace(*pt)) ++pt;
-		if ( *pt=='|' ) {
-		    if ( end_back == NULL )
-			end_back = pt;
-		    else if ( end_match==NULL )
-			end_match = pt;
-		} else if ( end_back==NULL && ( *pt=='<' || *pt=='@' )) {
-		    end_back = last_name;
-		} else
-		    last_name = pt;
-		if ( *pt=='<' || *pt=='@' ) {
-		    while ( *pt!='>' && *pt!='\0' ) ++pt;
-		    if ( *pt=='>' ) ++pt;
-		} else {
-		    while ( !isspace( *pt ) && *pt!='\0' )
-			++pt;
+	else
+	{
+		for (i = 0; i < rows; ++i)
+		{
+			char* oldrule = classrules[cols * i + 0].u.md_str;
+			char* newrule;
+			char* end_back = NULL;
+			char* end_match = NULL;
+
+			for (pt = last_name = oldrule; *pt; )
+			{
+				while (isspace(*pt))
+				{
+					++pt;
+				}
+
+				if (*pt == '|')
+				{
+					if (end_back == NULL)
+					{
+						end_back = pt;
+					}
+					else if (end_match == NULL)
+					{
+						end_match = pt;
+					}
+				}
+				else if (end_back == NULL && (*pt == '<' || *pt == '@'))
+				{
+					end_back = last_name;
+				}
+				else
+				{
+					last_name = pt;
+				}
+
+				if (*pt == '<' || *pt == '@')
+				{
+					while (*pt != '>' && *pt != '\0')
+					{
+						++pt;
+					}
+
+					if (*pt == '>')
+					{
+						++pt;
+					}
+				}
+				else
+				{
+					while (!isspace(*pt) && *pt != '\0')
+					{
+						++pt;
+					}
+				}
+			}
+			if ((sections == 0x3 && end_match == NULL) ||
+				(sections == 0x6 && end_back == NULL) ||
+				(sections == 0x2 && end_match == NULL && end_back == NULL))
+			{
+				newrule = rpl(oldrule, old, new);
+			}
+			else if (sections == 0x3)
+			{
+				ch = *end_match; *end_match = '\0';
+				temp = rpl(oldrule, old, new);
+				*end_match = ch;
+				newrule = strconcat(temp, end_match);
+				free(temp);
+			}
+			else if (sections == 0x6)
+			{
+				temp = rpl(end_back, old, new);
+				ch = *end_back; *end_back = '\0';
+				newrule = strconcat(oldrule, temp);
+				*end_back = ch;
+				free(temp);
+			}
+			else if (sections == 0x1)
+			{
+				if (end_back == NULL)
+				{
+					newrule = NULL;
+				}
+				else
+				{
+					ch = *end_back; *end_back = '\0';
+					temp = rpl(oldrule, old, new);
+					*end_back = ch;
+					newrule = strconcat(temp, end_back);
+					free(temp);
+				}
+			}
+			else if (sections == 0x2)
+			{
+				if (end_match == NULL)
+				{
+					temp = rpl(end_back, old, new);	/* end_back is not NULL, checked above */
+					ch = *end_back; *end_back = '\0';
+					newrule = strconcat(oldrule, temp);
+					*end_back = ch;
+					free(temp);
+				}
+				else if (end_back == NULL)
+				{
+					ch = *end_match; *end_match = '\0';
+					temp = rpl(oldrule, old, new);
+					*end_match = ch;
+					newrule = strconcat(temp, end_match);
+					free(temp);
+				}
+				else
+				{
+					ch = *end_match; *end_match = '\0';
+					temp = rpl(end_back, old, new);
+					*end_match = ch;
+					ch = *end_back; *end_back = '\0';
+					newrule = strconcat3(oldrule, temp, end_match);
+					*end_back = ch;
+					free(temp);
+				}
+			}
+			else if (sections == 0x4)
+			{
+				if (end_match == NULL)
+				{
+					newrule = NULL;
+				}
+				else
+				{
+					temp = rpl(end_match, old, new);
+					ch = *end_match; *end_match = '\0';
+					newrule = strconcat(oldrule, temp);
+					*end_match = ch;
+					free(temp);
+				}
+			}
+			else
+			{
+				newrule = NULL;
+			}
+
+			if (newrule != NULL)
+			{
+				free(oldrule);
+				classrules[cols * i + 0].u.md_str = newrule;
+			}
 		}
-	    }
-	    if ( (sections==0x3 && end_match==NULL) ||
-		    (sections==0x6 && end_back==NULL) ||
-		    (sections==0x2 && end_match==NULL && end_back==NULL)) {
-		newrule = rpl(oldrule,old,new);
-	    } else if ( sections==0x3 ) {
-		ch = *end_match; *end_match='\0';
-		temp = rpl(oldrule,old,new);
-		*end_match = ch;
-		newrule = strconcat(temp,end_match);
-		free(temp);
-	    } else if ( sections==0x6 ) {
-		temp = rpl(end_back,old,new);
-		ch = *end_back; *end_back = '\0';
-		newrule = strconcat(oldrule,temp);
-		*end_back = ch;
-		free(temp);
-	    } else if ( sections==0x1 ) {
-		if ( end_back==NULL )
-		    newrule=NULL;
-		else {
-		    ch = *end_back; *end_back = '\0';
-		    temp = rpl(oldrule,old,new);
-		    *end_back = ch;
-		    newrule = strconcat(temp,end_back);
-		    free(temp);
-		}
-	    } else if ( sections==0x2 ) {
-		if ( end_match==NULL ) {
-		    temp = rpl(end_back,old,new);	/* end_back is not NULL, checked above */
-		    ch = *end_back; *end_back = '\0';
-		    newrule = strconcat(oldrule,temp);
-		    *end_back = ch;
-		    free(temp);
-		} else if ( end_back==NULL ) {
-		    ch = *end_match; *end_match = '\0';
-		    temp = rpl(oldrule,old,new);
-		    *end_match = ch;
-		    newrule = strconcat(temp,end_match);
-		    free(temp);
-		} else {
-		    ch = *end_match; *end_match = '\0';
-		    temp = rpl(end_back,old,new);
-		    *end_match = ch;
-		    ch = *end_back; *end_back = '\0';
-		    newrule = strconcat3(oldrule,temp,end_match);
-		    *end_back = ch;
-		    free(temp);
-		}
-	    } else if ( sections==0x4 ) {
-		if ( end_match==NULL )
-		    newrule=NULL;
-		else {
-		    temp = rpl(end_match,old,new);
-		    ch = *end_match; *end_match = '\0';
-		    newrule = strconcat(oldrule,temp);
-		    *end_match = ch;
-		    free(temp);
-		}
-	    } else
-		newrule = NULL;
-	    if ( newrule!=NULL ) {
-		free(oldrule);
-		classrules[cols*i+0].u.md_str = newrule;
-	    }
 	}
-    }
-    GGadgetRedraw(gclassrules);
+
+	GGadgetRedraw(gclassrules);
 }
 
 static void CCD_FinishClassEdit(GGadget *g,int r, int c, int wasnew) {
@@ -1846,7 +2123,7 @@ static void CCD_FinishClassEdit(GGadget *g,int r, int c, int wasnew) {
     else if ( c==0 ) {
 	int rows, i;
 	struct matrix_data *classes_simple = _GMatrixEditGet(g,&rows);
-	char buffer[40], *end, *pt;
+	char buffer[400], *end, *pt;
 
 	if ( strchr(classes_simple[3*r+0].u.md_str,' ')!=NULL ) {
 	    for ( pt=classes_simple[3*r+0].u.md_str; *pt; ++pt) {
@@ -1858,7 +2135,7 @@ static void CCD_FinishClassEdit(GGadget *g,int r, int c, int wasnew) {
 	}
 	i = strtol(classes_simple[3*r+0].u.md_str,&end,10);
 	if ( *end=='\0' && i!=r ) {
-	    sprintf( buffer,"%d",r );
+	    snprintf( buffer, sizeof(buffer), "%d",r );
 	    free( classes_simple[3*r+0].u.md_str );
 	    classes_simple[3*r+0].u.md_str = copy(buffer);
 	    GGadgetRedraw(g);
@@ -1866,7 +2143,7 @@ static void CCD_FinishClassEdit(GGadget *g,int r, int c, int wasnew) {
 	}
 	for ( i=0; i<rows; ++i ) if ( i!=r ) {
 	    if ( strcmp(classes_simple[3*i+0].u.md_str,classes_simple[3*r+0].u.md_str) == 0 ) {
-		sprintf( buffer,"%d",r );
+		snprintf( buffer, sizeof(buffer), "%d",r );
 		free( classes_simple[3*r+0].u.md_str );
 		classes_simple[3*r+0].u.md_str = copy(buffer);
 		GGadgetRedraw(g);
@@ -1893,7 +2170,7 @@ static void CCD_ClassGoing(GGadget *g,int r) {
     for ( i=r+1; i<rows; ++i ) {
 	strtol(classes_simple[3*i+0].u.md_str,&end,10);
 	if ( *end=='\0' ) {
-	    sprintf(buffer,"%d",i-1);
+	    snprintf(buffer, sizeof(buffer), "%d",i-1);
 	    free(classes_simple[3*i+0].u.md_str);
 	    classes_simple[3*i+0].u.md_str = copy(buffer);
 	    RenameClass(ccd,classes_simple[3*i+2].u.md_str,buffer,sections);
@@ -1908,7 +2185,7 @@ static void CCD_InitClassRow(GGadget *g,int r) {
     int rows;
     struct matrix_data *classes_simple = _GMatrixEditGet(g,&rows);
 
-    sprintf( buffer, "%d", r );
+    snprintf( buffer, sizeof(buffer), "%d", r );
     classes_simple[3*r+0].u.md_str = copy(buffer);
 }
 
@@ -2829,7 +3106,7 @@ void ContextChainEdit(SplineFont *sf,FPST *fpst,
 	    for ( j=1; j<cc; ++j ) {
 		if ( classnames==NULL || classnames[j]==NULL ) {
 		    char buffer[12];
-		    sprintf( buffer,"%d",j );
+		    snprintf( buffer, sizeof(buffer), "%d",j );
 		    md[3*j+0].u.md_str = copy(buffer);
 		} else
 		    md[3*j+0].u.md_str = copy(classnames[j]);
@@ -3006,7 +3283,7 @@ void ContextChainEdit(SplineFont *sf,FPST *fpst,
 	    for ( j=1; j<cc; ++j ) {
 		if ( classnames==NULL || classnames[j]==NULL ) {
 		    char buffer[12];
-		    sprintf( buffer,"%d",j );
+		    snprintf( buffer, sizeof(buffer), "%d",j );
 		    md[3*j+0].u.md_str = copy(buffer);
 		} else
 		    md[3*j+0].u.md_str = copy(classnames[j]);

@@ -565,7 +565,7 @@ static  OSErr install_apple_event_handlers(void) {
  /* some debugging code, for now */
  if ( getenv("HOME")!=NULL ) {
   char buffer[1024];
-  sprintf( buffer, "%s/.FontForge-LogFile.txt", getenv("HOME"));
+  snprintf( buffer, sizeof(buffer), "%s/.FontForge-LogFile.txt", getenv("HOME"));
   logfile = fopen("/tmp/LogFile.txt","w");
  }
  if ( logfile==NULL )
@@ -724,7 +724,7 @@ static int ReopenLastFonts(void) {
 
     if ( ffdir==NULL ) return false;
 
-    sprintf( buffer, "%s/FontsOpenAtLastQuit", ffdir );
+    snprintf( buffer, sizeof(buffer), "%s/FontsOpenAtLastQuit", ffdir );
     old = fopen(buffer,"r");
     if ( old==NULL ) {
         free(ffdir);
@@ -1000,8 +1000,8 @@ int fontforge_main( int argc, char **argv ) {
 	char lang[8];
 	char env[32];
 	if( GetLocaleInfoA(LOCALE_USER_DEFAULT, LOCALE_SISO639LANGNAME, lang, 8) > 0 ){
-	    strcpy(env, "LC_ALL=");
-	    strcat(env, lang);
+	    strncpy(env, "LC_ALL=", sizeof(env));
+	    strncat(env, lang, sizeof(env));
 	    putenv(env);
 	}
     }
@@ -1359,15 +1359,21 @@ exit( 0 );
 	    GFileGetAbsoluteName(argv[i],buffer,sizeof(buffer));
 	    if ( GFileIsDir(buffer) ) {
 		char *fname;
-		fname = malloc(strlen(buffer)+strlen("/glyphs/contents.plist")+1);
-		strcpy(fname,buffer); strcat(fname,"/glyphs/contents.plist");
+        int fname_size = strlen(buffer) + strlen("/glyphs/contents.plist") + 1;
+        fname = malloc(fname_size);
+		
+        strncpy(fname,buffer, fname_size);
+        strncat(fname,"/glyphs/contents.plist", fname_size);
+
 		if ( GFileExists(fname)) {
 		    /* It's probably a Unified Font Object directory */
 		    free(fname);
 		    if ( ViewPostScriptFont(buffer,openflags) )
 			any = 1;
 		} else {
-		    strcpy(fname,buffer); strcat(fname,"/font.props");
+		    strncpy(fname,buffer, fname_size);
+            strncat(fname,"/font.props", fname_size);
+
 		    if ( GFileExists(fname)) {
 			/* It's probably a sf dir collection */
 			free(fname);

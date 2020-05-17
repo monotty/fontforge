@@ -438,27 +438,31 @@ struct glyph_res {
 #define GLYPH_RES_EMPTY { 0, 0, NULL, NULL, 0, 0, NULL, NULL, 0, 0, NULL }
 
 
-void makePatName(char *buffer,
-	RefChar *ref,SplineChar *sc,int layer,int isstroke,int isgrad) {
-    /* In PDF patterns (which include gradients) are fixed to the page. They */
-    /*  do not alter with the Current Transformation Matrix. So if we have */
-    /*  a reference to a glyph, then every reference to the same glyph will */
-    /*  need a different pattern description where that description involves */
-    /*  the reference's transform matrix */
+void makePatName(char* buffer, size_t buffer_size, 
+	RefChar* ref, SplineChar* sc, int layer, int isstroke, int isgrad)
+{
+	/* In PDF patterns (which include gradients) are fixed to the page. They */
+	/*  do not alter with the Current Transformation Matrix. So if we have */
+	/*  a reference to a glyph, then every reference to the same glyph will */
+	/*  need a different pattern description where that description involves */
+	/*  the reference's transform matrix */
 
-    if ( ref==NULL )
-	sprintf( buffer,"%s_ly%d_%s_%s", sc->name, layer,
-		    isstroke ? "stroke":"fill", isgrad ? "grad": "pattern" );
-    else {
-	/* PDF names are significant up to 127 chars long and can contain */
-	/*  all kinds of odd characters, just no spaces or slashes, so this */
-	/*  name should be legal */
-	sprintf( buffer,"%s_trans_%g,%g,%g,%g,%g,%g_ly%d_%s_%s", sc->name,
-		(double) ref->transform[0], (double) ref->transform[1], (double) ref->transform[2],
-		(double) ref->transform[3], (double) ref->transform[4], (double) ref->transform[5],
-		layer,
-		isstroke ? "stroke":"fill", isgrad ? "grad": "pattern" );
-    }
+	if (ref == NULL)
+	{
+		snprintf(buffer, buffer_size, "%s_ly%d_%s_%s", sc->name, layer,
+			isstroke ? "stroke" : "fill", isgrad ? "grad" : "pattern");
+	}
+	else
+	{
+		/* PDF names are significant up to 127 chars long and can contain */
+		/*  all kinds of odd characters, just no spaces or slashes, so this */
+		/*  name should be legal */
+		snprintf(buffer, buffer_size, "%s_trans_%g,%g,%g,%g,%g,%g_ly%d_%s_%s", sc->name,
+			(double)ref->transform[0], (double)ref->transform[1], (double)ref->transform[2],
+			(double)ref->transform[3], (double)ref->transform[4], (double)ref->transform[5],
+			layer,
+			isstroke ? "stroke" : "fill", isgrad ? "grad" : "pattern");
+	}
 }
 
 static void pdf_BrushCheck(PI *pi,struct glyph_res *gr,struct brush *brush,
@@ -549,7 +553,7 @@ static void pdf_BrushCheck(PI *pi,struct glyph_res *gr,struct brush *brush,
 	    gr->pattern_names = realloc(gr->pattern_names,(gr->pattern_max+=100)*sizeof(char *));
 	    gr->pattern_objs  = realloc(gr->pattern_objs ,(gr->pattern_max     )*sizeof(int   ));
 	}
-	makePatName(buffer,ref,sc,layer,!isfill,true);
+	makePatName(buffer, sizeof(buffer), ref,sc,layer,!isfill,true);
 	gr->pattern_names[gr->pattern_cnt  ] = copy(buffer);
 	gr->pattern_objs [gr->pattern_cnt++] = pdf_addobject(pi);
 	fprintf( pi->out, "<<\n" );
@@ -573,7 +577,7 @@ static void pdf_BrushCheck(PI *pi,struct glyph_res *gr,struct brush *brush,
 	    gr->pattern_names = realloc(gr->pattern_names,(gr->pattern_max+=100)*sizeof(char *));
 	    gr->pattern_objs  = realloc(gr->pattern_objs ,(gr->pattern_max     )*sizeof(int   ));
 	}
-	makePatName(buffer,ref,sc,layer,!isfill,false);
+	makePatName(buffer, sizeof(buffer), ref,sc,layer,!isfill,false);
 	gr->pattern_names[gr->pattern_cnt  ] = copy(buffer);
 	gr->pattern_objs [gr->pattern_cnt++] = pdf_addobject(pi);
 	fprintf( pi->out, "<<\n" );
@@ -653,7 +657,7 @@ static void pdf_ImageCheck(PI *pi,struct glyph_res *gr,ImageList *images,
 	    gr->image_names = realloc(gr->image_names,(gr->image_max+=100)*sizeof(char *));
 	    gr->image_objs  = realloc(gr->image_objs ,(gr->image_max     )*sizeof(int   ));
 	}
-	sprintf( buffer, "%s_ly%d_%d_image", sc->name, layer, icnt );
+	snprintf( buffer, sizeof(buffer), "%s_ly%d_%d_image", sc->name, layer, icnt );
 	gr->image_names[gr->image_cnt  ] = copy(buffer);
 	gr->image_objs [gr->image_cnt++] = pdf_addobject(pi);
 	++icnt;
@@ -1443,7 +1447,7 @@ return;
 	    if ( sfbit->iscid )
 		DumpIdentCMap(pi,sfid);
 	    if ( pi->pt!=pt_fontsample ) {
-		sprintf(sfbit->psfontname,"%s__%d", sfbit->sf->fontname, pi->pointsize );
+		snprintf(sfbit->psfontname, sizeof(sfbit->psfontname), "%s__%d", sfbit->sf->fontname, pi->pointsize );
 		if ( !sfbit->iscid )
 		    fprintf(pi->out,"/%s /%s findfont %d scalefont def\n",
 			    sfbit->psfontname, sfbit->sf->fontname, pi->pointsize );
@@ -1669,7 +1673,7 @@ return(0);
 	    }
 	    pi->overflow = true;
 	    pi->lastbase = (line>>8);
-	    sprintf(sfbit->psfontname,"%s-%x__%d", sfbit->sf->fontname, pi->lastbase,
+	    snprintf(sfbit->psfontname, sizeof(sfbit->psfontname), "%s-%x__%d", sfbit->sf->fontname, pi->lastbase,
 		    pi->pointsize );
 	}
     }
@@ -2867,7 +2871,7 @@ static void QueueIt(PI *pi) {
 	    }
 	    if ( pi->copies>1 ) {
 		argv[i++] = "-n";
-		sprintf(buf,"%d", pi->copies );
+		snprintf(buf, sizeof(buf), "%d", pi->copies );
 		argv[i++] = buf;
 	    }
 	} else if ( pi->printtype == pt_lpr ) {
@@ -2877,7 +2881,7 @@ static void QueueIt(PI *pi) {
 		argv[i++] = pi->printer;
 	    }
 	    if ( pi->copies>1 ) {
-		sprintf(buf,"-#%d", pi->copies );
+		snprintf(buf, sizeof(buf), "-#%d", pi->copies );
 		argv[i++] = buf;
 	    }
 	} else {
@@ -3088,7 +3092,7 @@ void ScriptPrint(FontViewBase *fv,int type,int32 *pointsizes,char *samplefile,
     }
     if ( pi.printtype==pt_file || pi.printtype==pt_pdf ) {
 	if ( outputfile==NULL ) {
-	    sprintf(buf,"pr-%.90s.%s", pi.mainsf->fontname,
+	    snprintf(buf, sizeof(buf), "pr-%.90s.%s", pi.mainsf->fontname,
 		    pi.printtype==pt_file?"ps":"pdf" );
 	    outputfile = buf;
 	}

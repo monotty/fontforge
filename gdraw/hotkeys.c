@@ -161,7 +161,7 @@ static char* getHotkeyFilename(char* extension) {
     if( !extension )
         extension = "";
     
-    sprintf(buffer,"%s/hotkeys%s", ffdir, extension);
+    snprintf(buffer, sizeof(buffer), "%s/hotkeys%s", ffdir, extension);
     ret = copy(buffer);
     free(ffdir);
     return ret;

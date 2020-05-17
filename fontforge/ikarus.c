@@ -397,7 +397,7 @@ static void IkarusNameFromURWNumber(SplineChar *sc,int number) {
     if ( number<sizeof(urwtable)/sizeof(urwtable[0]) ) {
 	sc->unicodeenc = urwtable[number];
 	if ( sc->unicodeenc!=-1 ) {
-	    sc->name = copy(StdGlyphName(buf,sc->unicodeenc,ui_none,NULL));
+	    sc->name = copy(StdGlyphName(buf, sizeof(buf), sc->unicodeenc,ui_none,NULL));
 return;
 	}
     }
@@ -408,7 +408,7 @@ return;
     else if ( number==796 )
 	sc->name = copy("registered.big");
     else {
-	sprintf(buf, "urw%d", number );
+	snprintf(buf, sizeof(buf), "urw%d", number );
 	sc->name = copy(buf);
     }
 }

@@ -1167,7 +1167,7 @@ static void bNameFromUnicode(Context *c) {
     }
 
     c->return_val.type = v_str;
-    c->return_val.u.sval = copy(StdGlyphName(buffer,c->a.vals[1].u.ival,uniinterp,for_new_glyphs));
+    c->return_val.u.sval = copy(StdGlyphName(buffer, sizeof(buffer), c->a.vals[1].u.ival,uniinterp,for_new_glyphs));
 }
 
 
@@ -1504,49 +1504,77 @@ static void bIsFinite(Context *c) {
 }
 
 
-static char *ToString(Val *val) {
-    int j;
-    char buffer[40];
+static char* ToString(Val* val)
+{
+	int j;
+	char buffer[40];
 
-    if ( val->type==v_str ) {
-return( copy(val->u.sval) );
-    } else if ( val->type==v_arr || val->type==v_arrfree ) {
-	char **results, *ret, *pt;
-	int len;
+	if (val->type == v_str)
+	{
+		return(copy(val->u.sval));
+	}
+	else if (val->type == v_arr || val->type == v_arrfree)
+	{
+		char** results, * ret, * pt;
+		int len;
 
-	results = malloc(val->u.aval->argc*sizeof(char *));
-	len = 0;
-	for ( j=0; j<val->u.aval->argc; ++j ) {
-	    results[j] = ToString(&val->u.aval->vals[j]);
-	    len += strlen(results[j])+2;
+		results = malloc(val->u.aval->argc * sizeof(char*));
+		len = 0;
+		for (j = 0; j < val->u.aval->argc; ++j)
+		{
+			results[j] = ToString(&val->u.aval->vals[j]);
+			len += strlen(results[j]) + 2;
+		}
+
+		int str_size;
+		ret = pt = malloc(str_size = len + 20);
+		*pt++ = '[';
+		str_size--;
+
+		if (val->u.aval->argc > 0)
+		{
+			strncpy(pt, results[0], str_size);
+			int pt_len = strlen(pt);
+			pt += pt_len;
+			str_size -= pt_len;
+
+			free(results[0]);
+
+			for (j = 1; j < val->u.aval->argc; ++j)
+			{
+				*pt++ = ',';
+				str_size--;
+
+				if (val->u.aval->vals[j - 1].type == v_arr ||
+					val->u.aval->vals[j - 1].type == v_arrfree)
+				{
+					*pt++ = '\n';
+					str_size--;
+				}
+				strncpy(pt, results[j], str_size);
+				
+				pt_len = strlen(pt);
+				pt += pt_len;
+				str_size -= pt_len;
+
+				free(results[j]);
+			}
+		}
+		*pt++ = ']'; *pt = '\0';
+		free(results);
+		return(ret);
 	}
-	ret = pt = malloc(len+20);
-	*pt++ = '[';
-	if ( val->u.aval->argc>0 ) {
-	    strcpy(pt,results[0]); pt += strlen(pt);
-	    free(results[0]);
-	    for ( j=1; j<val->u.aval->argc; ++j ) {
-		*pt++ = ',';
-		if ( val->u.aval->vals[j-1].type==v_arr || val->u.aval->vals[j-1].type==v_arrfree )
-		    *pt++ = '\n';
-		strcpy(pt,results[j]); pt += strlen(pt);
-		free(results[j]);
-	    }
-	}
-	*pt++ = ']'; *pt = '\0';
-	free(results);
-return( ret );
-    } else if ( val->type==v_int )
-	sprintf( buffer, "%d", val->u.ival );
-    else if ( val->type==v_unicode )
-	sprintf( buffer, "0u%04X", val->u.ival );
-    else if ( val->type==v_real )
-	sprintf( buffer, "%g", (double) val->u.fval );
-    else if ( val->type==v_void )
-	sprintf( buffer, "<void>");
-    else
-	sprintf( buffer, "<" "???" ">");
-return( copy( buffer ));
+	else if (val->type == v_int)
+		snprintf(buffer, sizeof(buffer), "%d", val->u.ival);
+	else if (val->type == v_unicode)
+		snprintf(buffer, sizeof(buffer), "0u%04X", val->u.ival);
+	else if (val->type == v_real)
+		snprintf(buffer, sizeof(buffer), "%g", (double)val->u.fval);
+	else if (val->type == v_void)
+		snprintf(buffer, sizeof(buffer), "<void>");
+	else
+		snprintf(buffer, sizeof(buffer), "<" "???" ">");
+	return(copy(buffer));
 }
 
 static void bToString(Context *c) {
@@ -2460,7 +2488,7 @@ static void bExport(Context *c) {
 
     t = script2utf8_copy(c->a.vals[1].u.sval);
     tmp = pt = utf82def_copy(t); free(t);
-    sprintf( buffer, "%%n_%%f.%.4s", pt);
+    snprintf( buffer, sizeof(buffer), "%%n_%%f.%.4s", pt);
     format_spec = buffer;
     if ( strrchr(pt,'.')!=NULL ) {
 	format_spec = pt;
@@ -2883,9 +2911,9 @@ return( -1 );
 	if ( signal_error ) {
 	    char buffer[40], *name = buffer;
 	    if ( val->type==v_int )
-		sprintf( buffer, "%d", val->u.ival );
+		snprintf( buffer, sizeof(buffer), "%d", val->u.ival );
 	    else if ( val->type == v_unicode )
-		sprintf( buffer, "U+%04X", val->u.ival );
+		snprintf( buffer, sizeof(buffer), "U+%04X", val->u.ival );
 	    else
 		name = val->u.sval;
 	    if ( bottom==-1 )
@@ -4184,7 +4212,7 @@ static void bSetUnicodeValue(Context *c) {
     if ( c->a.argc!=3 || c->a.vals[2].u.ival ) {
 	char buffer[400];
 	free(name);
-	name = copy(StdGlyphName(buffer,uni,c->curfv->sf->uni_interp,c->curfv->sf->for_new_glyphs));
+	name = copy(StdGlyphName(buffer, sizeof(buffer), uni,c->curfv->sf->uni_interp,c->curfv->sf->for_new_glyphs));
     }
     SCSetMetaData(sc,name,uni,comment);
     free(name);
@@ -4233,6 +4261,71 @@ static void bSetCharColor(Context *c) {
     }
     c->curfv->sf->changed = true;
 }
+
+static void bSetStrokePenWidth(Context* c)
+{
+	SplineFont* sf = c->curfv->sf;
+	EncMap* map = c->curfv->map;
+	SplineChar* sc;
+	int i;
+
+	if (c->a.vals[1].type != v_int)
+	{
+		ScriptError(c, "Bad argument type");
+	}
+
+	for (i = 0; i < map->enccount; ++i)
+	{
+		if (c->curfv->selected[i])
+		{
+			sc = SFMakeChar(sf, map, i);
+			if (sc->layer_cnt > 1)
+			{
+				sc->layers[1].stroke_pen.width = c->a.vals[1].u.ival;
+				SCUpdateAll(sc);
+			}
+		}
+	}
+
+	sf->changed = true;
+}
+
+static void bSwapChars(Context* c)
+{
+	SplineFont* sf = c->curfv->sf;
+	EncMap* map = c->curfv->map;
+	int i, c1, c2, count = 0;
+
+	for (i = 0; i < map->enccount; ++i)
+	{
+		if (c->curfv->selected[i])
+		{
+			if (count == 0)
+			{
+				c1 = i;
+				count++;
+			}
+			else
+			{
+				c2 = i;
+				count++;
+				break;
+			}
+		}
+	}
+
+	if (count == 2)
+	{
+		int32 t = map->map[c1];
+		map->map[c1] = map->map[c2];
+		map->map[c2] = t;
+
+		sf->changed = true;
+	}
+
+	FVRefreshAll(sf);
+}
+
 
 static void bSetCharComment(Context *c) {
     SplineChar *sc;
@@ -5071,7 +5164,7 @@ static void _bMoveReference(Context *c,int position) {
 	if ( (gid=map->map[i])==-1 || (sc=sf->glyphs[gid])==NULL ||
 		(ref = FindFirstRef(sc,refnames,refunis,refcnt))==NULL ) {
 	    char buffer[12];
-	    sprintf(buffer,"%d", i );
+	    snprintf(buffer, sizeof(buffer), "%d", i );
 	    if ( gid!=-1 && sc!=NULL )
 		ScriptErrorString(c,"Failed to find a matching reference in", sc->name);
 	    else
@@ -7376,7 +7469,7 @@ static char *Tag2Str(uint32 tag, int ismac) {
     char buffer[20];
 
     if ( ismac )
-	sprintf( buffer, "<%d,%d>", tag>>16, tag&0xffff );
+	snprintf( buffer, sizeof(buffer), "<%d,%d>", tag>>16, tag&0xffff );
     else {
 	buffer[0] = tag>>24;
 	buffer[1] = tag>>16;
@@ -8975,6 +9068,10 @@ static struct builtins {
     { "SetUnicodeValue", bSetUnicodeValue, 0,0,0 },
     { "SetGlyphClass", bSetGlyphClass, 0,2,v_str },
     { "SetGlyphColor", bSetCharColor, 0,2,0 },
+	
+	{ "StrokeWidth", bSetStrokePenWidth, 1,2,0 },
+	{ "SwapChars", bSwapChars, 1,0,0 },
+
     { "SetGlyphComment", bSetCharComment, 0,2,v_str },
     { "SetCharColor", bSetCharColor, 0,2,0 },
     { "SetCharComment", bSetCharComment, 0,2,v_str },
@@ -10045,7 +10142,7 @@ static void handlename(Context *c,Val *val) {
 		val->u.lval = &c->trace;
 	    } else if ( strcmp(name,"$version")==0 ) {
 		val->type = v_str;
-		sprintf(name,"%s", FONTFORGE_VERSION);
+		snprintf(name, sizeof(name), "%s", FONTFORGE_VERSION);
 		val->u.sval = copy(name);
 	    } else if ( strcmp(name,"$haspython")==0 ) {
 		val->type = v_int;
@@ -10303,7 +10400,7 @@ static void add(Context *c,Val *val) {
 		char *ret, *temp;
 		char buffer[10];
 		if ( other.type == v_int ) {
-		    sprintf(buffer,"%d", other.u.ival);
+		    snprintf(buffer, sizeof(buffer), "%d", other.u.ival);
 		    temp = buffer;
 		} else
 		    temp = other.u.sval;
@@ -10529,15 +10626,18 @@ static void assign(Context *c,Val *val) {
 		char *ret, *temp;
 		char buffer[20];
 		if ( other.type == v_int ) {
-		    sprintf(buffer,"%d", other.u.ival);
+		    snprintf(buffer, sizeof(buffer), "%d", other.u.ival);
 		    temp = buffer;
 		} else if ( other.type == v_real ) {
-		    sprintf(buffer,"%g", (double) other.u.fval);
+		    snprintf(buffer, sizeof(buffer), "%g", (double) other.u.fval);
 		    temp = buffer;
 		} else
 		    temp = other.u.sval;
-		ret = malloc(strlen(val->u.lval->u.sval)+strlen(temp)+1);
-		strcpy(ret,val->u.lval->u.sval);
+
+		int str_size = strlen(val->u.lval->u.sval) + strlen(temp) + 1;
+		ret = malloc(str_size);
+		strncpy(ret,val->u.lval->u.sval, str_size);
+
 		strcat(ret,temp);
 		if ( other.type==v_str ) free(other.u.sval);
 		free(val->u.lval->u.sval);

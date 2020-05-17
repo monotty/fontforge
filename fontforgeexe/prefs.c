@@ -776,7 +776,7 @@ static char *getPfaEditPrefs(void) {
     ffdir = getFontForgeUserDir(Config);
     if ( ffdir==NULL )
         return NULL;
-    sprintf(buffer,"%s/prefs", ffdir);
+    snprintf(buffer, sizeof(buffer), "%s/prefs", ffdir);
     free(ffdir);
     prefs = copy(buffer);
     return prefs;
@@ -995,7 +995,7 @@ static void DefaultXUID(void) {
     gettimeofday(&tv,NULL);
     g_random_set_seed(tv.tv_usec+1);
     r2 = g_random_int();
-    sprintf( buffer, "1021 %d %d", r1, r2 );
+    snprintf( buffer, sizeof(buffer), "1021 %d %d", r1, r2 );
     if (xuid != NULL) free(xuid);
     xuid = copy(buffer);
 }
@@ -1424,7 +1424,7 @@ static GTextInfo *Pref_MappingList(int use_user) {
     ti = calloc(i+1,sizeof( GTextInfo ));
 
     for ( i=0; msn[i].otf_tag!=0; ++i ) {
-	sprintf(buf,"%3d,%2d %c%c%c%c",
+	snprintf(buf, sizeof(buf), "%3d,%2d %c%c%c%c",
 	    msn[i].mac_feature_type, msn[i].mac_feature_setting,
 	    (int) (msn[i].otf_tag>>24), (int) ((msn[i].otf_tag>>16)&0xff), (int) ((msn[i].otf_tag>>8)&0xff), (int) (msn[i].otf_tag&0xff) );
 	ti[i].text = uc_copy(buf);
@@ -1544,7 +1544,7 @@ return( true );
 		ff_post_error(_("Tag too long"),_("Feature tags must be exactly 4 ASCII characters"));
 return( true );
 	    }
-	    sprintf(buf,"%3d,%2d %c%c%c%c",
+	    snprintf(buf, sizeof(buf), "%3d,%2d %c%c%c%c",
 		    feat, on,
 		    ubuf[0], ubuf[1], ubuf[2], ubuf[3]);
 	    sd->done = true;
@@ -1607,7 +1607,7 @@ static unichar_t *AskSetting(struct macsettingname *temp,GGadget *list, int inde
     gcd[2].gd.flags = gg_enabled|gg_visible;
     gcd[2].creator = GLabelCreate;
 
-    sprintf( buf, "%d", temp->mac_feature_setting );
+    snprintf( buf, sizeof(buf), "%d", temp->mac_feature_setting );
     label[3].text = (unichar_t *) buf;
     label[3].text_is_1byte = true;
     gcd[3].gd.label = &label[3];
@@ -2258,7 +2258,7 @@ void DoPrefs(void) {
 		y += 22;
 	      break;
 	      case pr_int:
-		sprintf(buf,"%d", *((int *) pl->val));
+		snprintf(buf, sizeof(buf), "%d", *((int *) pl->val));
 		plabel[gc].text = (unichar_t *) copy( buf );
 		pgcd[gc++].creator = GTextFieldCreate;
 		hvarray[si++] = &pgcd[gc-1];
@@ -2266,7 +2266,7 @@ void DoPrefs(void) {
 		y += 26;
 	      break;
 	      case pr_unicode:
-		/*sprintf(buf,"U+%04x", *((int *) pl->val));*/
+		/*snprintf(buf, sizeof(buf), "U+%04x", *((int *) pl->val));*/
 		{ char *pt; pt=buf; pt=utf8_idpb(pt,*((int *)pl->val),UTF8IDPB_NOZERO); *pt='\0'; }
 		plabel[gc].text = (unichar_t *) copy( buf );
 		pgcd[gc++].creator = GTextFieldCreate;
@@ -2275,7 +2275,7 @@ void DoPrefs(void) {
 		y += 26;
 	      break;
 	      case pr_real:
-		sprintf(buf,"%g", *((float *) pl->val));
+		snprintf(buf, sizeof(buf), "%g", *((float *) pl->val));
 		plabel[gc].text = (unichar_t *) copy( buf );
 		pgcd[gc++].creator = GTextFieldCreate;
 		hvarray[si++] = &pgcd[gc-1];
@@ -2361,7 +2361,7 @@ void DoPrefs(void) {
 		    free(tempstr);
 	      break;
 	      case pr_angle:
-		sprintf(buf,"%g", *((float *) pl->val) * RAD2DEG);
+		snprintf(buf, sizeof(buf), "%g", *((float *) pl->val) * RAD2DEG);
 		plabel[gc].text = (unichar_t *) copy( buf );
 		pgcd[gc++].creator = GTextFieldCreate;
 		hvarray[si++] = &pgcd[gc-1];
@@ -2601,7 +2601,7 @@ void LastFonts_Save(void) {
     FILE *preserve = NULL;
 
     if ( ffdir ) {
-        sprintf(buffer, "%s/FontsOpenAtLastQuit", ffdir);
+        snprintf(buffer, sizeof(buffer), "%s/FontsOpenAtLastQuit", ffdir);
         preserve = fopen(buffer,"w");
         free(ffdir);
     }
@@ -2834,7 +2834,7 @@ static void PrefsSubSetDlg(CharView *cv,char* windowTitle,struct prefs_list* pli
 		y += 22;
 	      break;
 	      case pr_int:
-		sprintf(buf,"%d", *((int *) pl->val));
+		snprintf(buf, sizeof(buf), "%d", *((int *) pl->val));
 		plabel[gc].text = (unichar_t *) copy( buf );
 		pgcd[gc++].creator = GTextFieldCreate;
 		hvarray[si++] = &pgcd[gc-1];
@@ -2842,7 +2842,7 @@ static void PrefsSubSetDlg(CharView *cv,char* windowTitle,struct prefs_list* pli
 		y += 26;
 	      break;
 	      case pr_unicode:
-		/*sprintf(buf,"U+%04x", *((int *) pl->val));*/
+		/*snprintf(buf,"U+%04x", *((int *) pl->val));*/
 		{ char *pt; pt=buf; pt=utf8_idpb(pt,*((int *)pl->val),UTF8IDPB_NOZERO); *pt='\0'; }
 		plabel[gc].text = (unichar_t *) copy( buf );
 		pgcd[gc++].creator = GTextFieldCreate;
@@ -2851,7 +2851,7 @@ static void PrefsSubSetDlg(CharView *cv,char* windowTitle,struct prefs_list* pli
 		y += 26;
 	      break;
 	      case pr_real:
-		sprintf(buf,"%g", *((float *) pl->val));
+		snprintf(buf, sizeof(buf), "%g", *((float *) pl->val));
 		plabel[gc].text = (unichar_t *) copy( buf );
 		pgcd[gc++].creator = GTextFieldCreate;
 		hvarray[si++] = &pgcd[gc-1];
@@ -2937,7 +2937,7 @@ static void PrefsSubSetDlg(CharView *cv,char* windowTitle,struct prefs_list* pli
 		    free(tempstr);
 	      break;
 	      case pr_angle:
-		sprintf(buf,"%g", *((float *) pl->val) * RAD2DEG);
+		snprintf(buf, sizeof(buf), "%g", *((float *) pl->val) * RAD2DEG);
 		plabel[gc].text = (unichar_t *) copy( buf );
 		pgcd[gc++].creator = GTextFieldCreate;
 		hvarray[si++] = &pgcd[gc-1];
