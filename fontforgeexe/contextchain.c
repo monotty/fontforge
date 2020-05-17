@@ -1928,8 +1928,6 @@ static int WhichSections(struct contextchaindlg *ccd, GGadget *g) {
 return( sections );
 }
 
-
-//todo: sdn: memory corruption
 static void RenameClass(struct contextchaindlg* ccd, char* old, char* new, int sections)
 {
 	/* A class has been renamed. We should fix up all class rules that use */
@@ -1942,11 +1940,6 @@ static void RenameClass(struct contextchaindlg* ccd, char* old, char* new, int s
 	struct matrix_data* classrules = GMatrixEditGet(gclassrules, &rows);
 	int cols = GMatrixEditGetColCnt(gclassrules);
 	int ch;
-
-	//todo possible bug: they do not reset at the next iteration
-	//char* end_back = NULL;
-	//char* end_match = NULL;
-
 	char* pt;
 	char* last_name;
 	char* temp;
