@@ -1,7 +1,5 @@
 # FontForge Monotty Edition
 
-![FontForge Logo](http://fontforge.github.io/assets/img/logo-transparent.png)
-
 FontForge is a free (libre) font editor for Windows, Mac OS X and GNU+Linux. 
 Use it to create, edit and convert fonts in OpenType, TrueType, UFO, CID-keyed, Multiple Master, and many other formats.
 
