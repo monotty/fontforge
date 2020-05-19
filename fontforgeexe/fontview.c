@@ -6433,6 +6433,9 @@ GMenuItem2 helplist[] = {
 };
 
 GMenuItem fvpopupmenu[] = {
+
+	//todo monottyunify
+
 	{ { (unichar_t*)N_("Swap"), (GImage*)"filerevert.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'V' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuSwap, MID_CharSwap },
 	{ { (unichar_t*)N_("Invite"), (GImage*)"filenew.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'V' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuInvite, MID_CharInvite },
 	{ { (unichar_t*)N_("Reject"), (GImage*)"editcut.png", COLOR_DEFAULT, COLOR_DEFAULT, NULL, NULL, 0, 1, 0, 0, 0, 0, 1, 1, 0, 'V' }, '\0', ksm_control | ksm_shift, NULL, NULL, FVMenuReject, MID_CharReject },

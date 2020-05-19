@@ -7481,7 +7481,7 @@ static int lookups_e_h(GWindow gw, GEvent* event, int isgpos)
     if ((event->type == et_mouseup || event->type == et_mousedown) &&
         (event->u.mouse.button >= 4 && event->u.mouse.button <= 7))
     {
-        //todo mouse scroll don't work (gadget not found)
+        //todo monotty mouse scroll don't work (gadget not found)
 
         struct ggadget* gadget = GWidgetGetControl(gw, CID_LookupVSB + isgpos);
         return(GGadgetDispatchEvent(gadget, event));

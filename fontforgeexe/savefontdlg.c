@@ -2575,7 +2575,10 @@ int SFGenerateFont(SplineFont* sf, int layer, int family, EncMap* map)
 		formattypes[ff_cff].disabled = true;
 		formattypes[ff_cffcid].disabled = true;
 		formattypes[ff_cid].disabled = true;
+		
+		//todo monotty unify
 		//formattypes[ff_ttf].disabled = true;
+
 		formattypes[ff_type42].disabled = true;
 		formattypes[ff_type42cid].disabled = true;
 		formattypes[ff_ttfsym].disabled = true;
@@ -2590,7 +2593,7 @@ int SFGenerateFont(SplineFont* sf, int layer, int family, EncMap* map)
 		formattypes[ff_ufo3].disabled = true;
 		if (ofs != ff_svg)
 		{
-			//todo unify
+			//todo monotty unify
 			//ofs = ff_ptype3;
 			ofs = ff_ttf;
 		}

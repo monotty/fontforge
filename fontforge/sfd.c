@@ -1224,6 +1224,8 @@ static int SFDOmit(SplineChar* sc)
 	if (sc == NULL)
 		return(true);
 
+	//todo monotty unify
+
 	//if (strncmp("NameMe", sc->name, 6) == 0)
 	//{
 	//	return(true);
@@ -2808,6 +2810,31 @@ return( err );
 }
 
 
+//todo monotty sort glyphs
+typedef struct
+{
+	int glyphs;	// i
+	int id;		// position in Font View
+} pair;
+int compare(const void* a, const void* b)
+{
+	pair pair_a = *((pair*)a);
+	pair pair_b = *((pair*)b);
+
+	if (pair_a.id == pair_b.id)
+	{
+		return 0;
+	}
+	else
+	{
+		if (pair_a.id < pair_b.id) 
+			return -1;
+		else 
+			return 1;
+	}
+}
+
+
 static int SFD_Dump(FILE* sfd, SplineFont* sf, EncMap* map, EncMap* normal,
 	int todir, char* dirname)
 {
@@ -2980,54 +3007,134 @@ static int SFD_Dump(FILE* sfd, SplineFont* sf, EncMap* map, EncMap* normal,
 		else
 		{
 			realcnt = 0;
-			for (i = 0; i < sf->glyphcnt; ++i) if (!SFDOmit(sf->glyphs[i]))
-				++realcnt;
+			for (i = 0; i < sf->glyphcnt; ++i)
+			{
+				if (!SFDOmit(sf->glyphs[i]))
+				{
+					++realcnt;
+				}
+			}
+
 			if (realcnt != sf->glyphcnt)
 			{
 				newgids = malloc(sf->glyphcnt * sizeof(int));
 				realcnt = 0;
 				for (i = 0; i < sf->glyphcnt; ++i)
+				{
 					if (SFDOmit(sf->glyphs[i]))
+					{
 						newgids[i] = -1;
+					}
 					else
+					{
 						newgids[i] = realcnt++;
+					}
+				}
 			}
 		}
+
 		if (!todir)
+		{
 			fprintf(sfd, "BeginChars: %d %d\n",
 				enccount < map->enc->char_cnt ? map->enc->char_cnt : enccount,
 				realcnt);
-		for (i = 0; i < sf->glyphcnt; ++i)
+		}
+
+		//todo monotty sort glyphs
+		int total = sf->glyphcnt;
+		int count = 0;
+		pair* glyphs = calloc(total, sizeof(pair));
+		for (i = 0; i < total; ++i)
 		{
 			if (!SFDOmit(sf->glyphs[i]))
 			{
-				if (!todir)
-					SFDDumpChar(sfd, sf->glyphs[i], map, newgids, todir, 1);
+				glyphs[i].glyphs = i;
+				glyphs[i].id = map->backmap[i];
+				count++;
+			}
+			else
+			{
+				glyphs[i].glyphs = i;
+				glyphs[i].id = INT_MAX;
+			}
+		}
+		qsort(glyphs, total, sizeof(pair), compare);
+
+		int j = 0;
+		while (j < count)
+		{
+			i = glyphs[j++].glyphs;
+			if (!todir)
+			{
+				SFDDumpChar(sfd, sf->glyphs[i], map, newgids, todir, 1);
+			}
+			else
+			{
+				char* glyphfile = malloc(strlen(dirname) + 2 * strlen(sf->glyphs[i]->name) + 20);
+				FILE* gsfd;
+				appendnames(glyphfile, dirname, "/", sf->glyphs[i]->name, GLYPH_EXT);
+				gsfd = fopen(glyphfile, "w");
+				if (gsfd != NULL)
+				{
+					SFDDumpChar(gsfd, sf->glyphs[i], map, newgids, todir, 1);
+					if (ferror(gsfd)) err = true;
+					if (fclose(gsfd)) err = true;
+				}
 				else
 				{
-					char* glyphfile = malloc(strlen(dirname) + 2 * strlen(sf->glyphs[i]->name) + 20);
-					FILE* gsfd;
-					appendnames(glyphfile, dirname, "/", sf->glyphs[i]->name, GLYPH_EXT);
-					gsfd = fopen(glyphfile, "w");
-					if (gsfd != NULL)
-					{
-						SFDDumpChar(gsfd, sf->glyphs[i], map, newgids, todir, 1);
-						if (ferror(gsfd)) err = true;
-						if (fclose(gsfd)) err = true;
-					}
-					else
-						err = true;
-					free(glyphfile);
+					err = true;
 				}
+
+				free(glyphfile);
 			}
+
 			ff_progress_next();
 		}
+
+		free(glyphs);
+
+		//for (i = 0; i < sf->glyphcnt; ++i)
+		//{
+		//	if (!SFDOmit(sf->glyphs[i]))
+		//	{
+		//		if (!todir)
+		//		{
+		//			SFDDumpChar(sfd, sf->glyphs[i], map, newgids, todir, 1);
+		//		}
+		//		else
+		//		{
+		//			char* glyphfile = malloc(strlen(dirname) + 2 * strlen(sf->glyphs[i]->name) + 20);
+		//			FILE* gsfd;
+		//			appendnames(glyphfile, dirname, "/", sf->glyphs[i]->name, GLYPH_EXT);
+		//			gsfd = fopen(glyphfile, "w");
+		//			if (gsfd != NULL)
+		//			{
+		//				SFDDumpChar(gsfd, sf->glyphs[i], map, newgids, todir, 1);
+		//				if (ferror(gsfd)) err = true;
+		//				if (fclose(gsfd)) err = true;
+		//			}
+		//			else
+		//			{
+		//				err = true;
+		//			}
+		//
+		//			free(glyphfile);
+		//		}
+		//	}
+		//	ff_progress_next();
+		//}
+
 		if (!todir)
+		{
 			fprintf(sfd, "EndChars\n");
+		}
 	}
 
 	if (sf->bitmaps != NULL)
+	{
 		ff_progress_change_line2(_("Saving Bitmaps"));
+	}
+
 	for (bdf = sf->bitmaps; bdf != NULL; bdf = bdf->next)
 	{
 		if (todir)
@@ -3057,12 +3164,17 @@ static int SFD_Dump(FILE* sfd, SplineFont* sf, EncMap* map, EncMap* normal,
 				if (fclose(ssfd)) err = true;
 			}
 			else
+			{
 				err = true;
+			}
+
 			free(strikeprops);
 			free(strike);
 		}
 		else
+		{
 			SFDDumpBitmapFont(sfd, bdf, map, newgids, todir, dirname);
+		}
 	}
 	fprintf(sfd, sf->cidmaster == NULL ? "EndSplineFont\n" : "EndSubSplineFont\n");
 	free(newgids);
