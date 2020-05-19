@@ -1,4 +1,45 @@
-# Installing FontForge from source
+# Installing FontForge Monotty Edition from source
+
+### Windows 10
+
+The project can be built and run/debug in Visual Studio 2019 on Windows 10.
+
+Use Windows 10 + WSL2 + Xming:
+1. turn on WSL feature in your Windows 10
+2. install Xming on your Windows 10, run it
+3. add two environment variables in your Windows 10:
+  - `DISPLAY=localhost:0.0`
+  - `WSLENV=DISPLAY/u`
+4. run WSL CLI
+  
+- install all needed fontforge's dependencies
+
+```sh
+sudo apt-get install libjpeg-dev libtiff5-dev libpng-dev libfreetype6-dev libgif-dev libgtk-3-dev libxml2-dev libpango1.0-dev libcairo2-dev libspiro-dev libuninameslist-dev python3-dev ninja-build cmake build-essential;
+```
+
+- run the build and installation scripts
+```sh
+cd fontforge
+mkdir build
+cd build
+cmake -GNinja ..
+ninja
+ninja install
+```
+
+5. run Visual Studio 2019 and clone the project (https://github.com/monotty/fontforge.git) to local folder
+  - manage configurations
+    - Remove selected
+      - `x64-Debug`
+    - Add two new configurations
+      - `WSL-GCC-Debug`
+      - `WSL-GCC-Release`
+  - Save all files (via menu) (CMAKE process should automatically activate)
+  - In the CMAKE targets view, select 'fontforgeexe' as Startup Project (for Debug/Release)
+  - Run Debug/Release
+  
+### Linux
 
 Install all your typical build tools, build dependencies and runtime dependencies - all the packages that allow you to build of software from source code.
 The exact method to do this depends on your OS distribution.
