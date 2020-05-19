@@ -1431,7 +1431,7 @@ static void DoSave(struct gfc_data* d, unichar_t* path)
 		//GTextInfo* show_layer_menu_data = GGadgetGetListItemSelected(show_layer_menu_ctrl);
 		//layer = (intpt)show_layer_menu_data->userdata;
 		
-		//todo unify
+		//todo monotty unify
 		layer = ly_back;
 	}
 
@@ -1514,8 +1514,9 @@ static void DoSave(struct gfc_data* d, unichar_t* path)
 				break;
 		if (bit == 0 && !ttfscalewarned)
 		{
-			if (gwwv_ask(_("Non-standard Em-Size"), (const char**)buts, 0, 1, _("The convention is that TrueType fonts should have an Em-Size which is a power of 2. But this font has a size of %d. This is not an error, but you might consider altering the Em-Size with the Element->Font Info->General dialog.\nDo you wish to continue to generate your font in spite of this?"), val) == 1)
-				return;
+			//todo monotty unify
+			//if (gwwv_ask(_("Non-standard Em-Size"), (const char**)buts, 0, 1, _("The convention is that TrueType fonts should have an Em-Size which is a power of 2. But this font has a size of %d. This is not an error, but you might consider altering the Em-Size with the Element->Font Info->General dialog.\nDo you wish to continue to generate your font in spite of this?"), val) == 1)
+			//	return;
 			ttfscalewarned = true;
 		}
 	}

@@ -276,14 +276,16 @@ static void FVDrawGlyph(GWindow pixmap, FontView* fv, int index, int forcebg)
 		GDrawFillRect(pixmap, &box, decor_color);
 	}
 	else
-		if (sc)
-		{
-			Color clr = sc->width == 1000  ?
-			//Color clr = (strncmp("NameMe", sc->name, 6) != 0) ?
-				(fv->b.selected[index] ? fvselcol : view_bgcol)
-				: 0xFF00FF;
-			GDrawFillRect(pixmap, &box, clr);
-		}else
+		//todo monotty unify
+		// mark cells with color if condition
+		//if (sc)
+		//{
+		//	Color clr = sc->width == 1000  ?
+		//	//Color clr = (strncmp("NameMe", sc->name, 6) != 0) ?
+		//		(fv->b.selected[index] ? fvselcol : view_bgcol)
+		//		: 0xFF00FF;
+		//	GDrawFillRect(pixmap, &box, clr);
+		//}else
 	if (index < fv->b.map->enccount && (fv->b.selected[index] || forcebg))
 	{
 		//box.x = j * fv->cbw + 1; box.width = fv->cbw - 1;
@@ -362,7 +364,7 @@ static void FVDrawGlyph(GWindow pixmap, FontView* fv, int index, int forcebg)
 				}
 				else if (decor)
 				{
-					//todo optimize
+					//todo monotty optimize
 					uint8 clr = brightness > 160 ? 0 : 0xff;
 
 					int bgr = ~clr;

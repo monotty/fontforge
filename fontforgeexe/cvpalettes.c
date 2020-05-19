@@ -1636,17 +1636,18 @@ static void CVLayers2Set(CharView *cv) {
     CVLayers2Reflow(cv, true);
 }
 
-static void Layers2Expose(CharView *cv,GWindow pixmap,GEvent *event) {
+static void Layers2Expose(CharView* cv, GWindow pixmap, GEvent* event)
+{
     int i, ll;
-    const char *str;
+    const char* str;
     GRect r, oldclip;
     struct _GImage base;
     GImage gi;
-    int as = (24*cv->b.sc->parent->ascent)/(cv->b.sc->parent->ascent+cv->b.sc->parent->descent);
+    int as = (24 * cv->b.sc->parent->ascent) / (cv->b.sc->parent->ascent + cv->b.sc->parent->descent);
     int leftOffset, layerCount;
 
-    if ( event->u.expose.rect.y+event->u.expose.rect.height<layer2.header_height )
-return;
+    if (event->u.expose.rect.y + event->u.expose.rect.height < layer2.header_height)
+        return;
 
     // Calculate the left offset (from the checkboxes)
     GGadgetGetSize(GWidgetGetControl(cvlayers2, CID_VGrid), &r);
@@ -1658,68 +1659,82 @@ return;
     r.y = layer2.header_height;
     r.height = r.height - layer2.header_height;
     GDrawPushClip(pixmap, &r, &oldclip);
-    GDrawFillRect(pixmap,&r,GDrawGetDefaultBackground(NULL));
+    GDrawFillRect(pixmap, &r, GDrawGetDefaultBackground(NULL));
 
     GDrawSetDither(NULL, false);	/* on 8 bit displays we don't want any dithering */
 
-    memset(&gi,0,sizeof(gi));
-    memset(&base,0,sizeof(base));
+    memset(&gi, 0, sizeof(gi));
+    memset(&base, 0, sizeof(base));
     gi.u.image = &base;
     base.image_type = it_index;
     base.clut = layer2.clut;
     base.trans = -1;
-    GDrawSetFont(pixmap,layer2.font);
+    GDrawSetFont(pixmap, layer2.font);
 
     // +2 for the defaults, +1 to show one extra (could be partially visible)
     layerCount = layer2.visible_layers + 2 + 1;
-    if (layerCount > layer2.current_layers) {
+    if (layerCount > layer2.current_layers)
+    {
         layerCount = layer2.current_layers;
     }
-    for (i = 0; i < layerCount; ++i) {
-	ll = i<2 ? i : i+layer2.offtop;
-	if ( ll==layer2.active ) {
+    for (i = 0; i < layerCount; ++i)
+    {
+        ll = i < 2 ? i : i + layer2.offtop;
+        if (ll == layer2.active)
+        {
             r.x = leftOffset;
             r.width = layer2.sb_start - r.x;
             r.y = layer2.header_height + i * CV_LAYERS2_LINE_HEIGHT;
-	    r.height = CV_LAYERS2_LINE_HEIGHT;
-	    GDrawFillRect(pixmap,&r,GDrawGetDefaultForeground(NULL));
-	}
+            r.height = CV_LAYERS2_LINE_HEIGHT;
+            GDrawFillRect(pixmap, &r, GDrawGetDefaultForeground(NULL));
+        }
         GDrawDrawLine(pixmap, r.x, layer2.header_height + i * CV_LAYERS2_LINE_HEIGHT,
-                      r.x + r.width, layer2.header_height + i * CV_LAYERS2_LINE_HEIGHT,
-		0x808080);
-	if ( i==0 || i==1 ) {
-	    str = i==0?_("Guide") : _("Back");
+            r.x + r.width, layer2.header_height + i * CV_LAYERS2_LINE_HEIGHT,
+            0x808080);
+
+        //todo monotty unify: allow background layer name
+        if (i == 0 || i == 1)
+        {
+            //str = i == 0 ? _("Guide") : _("Back");
+            str = i == 0 ? _("Guide") : _("Outline");
             GDrawDrawText8(pixmap, r.x + 2, layer2.header_height + i * CV_LAYERS2_LINE_HEIGHT + (CV_LAYERS2_LINE_HEIGHT - 12) / 2 + 12,
-		    (char *) str,-1,ll==layer2.active?0xffffff:GDrawGetDefaultForeground(NULL));
-	} else if ( layer2.offtop+i>=layer2.current_layers ) {
-    break;
-	} else if ( layer2.layers[layer2.offtop+i]!=NULL ) {
+                (char*)str, -1, ll == layer2.active ? 0xffffff : GDrawGetDefaultForeground(NULL));
+        }
+        else if (layer2.offtop + i >= layer2.current_layers)
+        {
+            break;
+        }
+        else if (layer2.layers[layer2.offtop + i] != NULL)
+        {
 #if 0
-	    // This is currently broken, and we do not have time to fix it.
-	    BDFChar *bdfc = layer2.layers[layer2.offtop+i];
-	    base.data = bdfc->bitmap;
-	    base.bytes_per_line = bdfc->bytes_per_line;
-	    base.width = bdfc->xmax-bdfc->xmin+1;
-	    base.height = bdfc->ymax-bdfc->ymin+1;
-	    GDrawDrawImage(pixmap,&gi,NULL,
-		    r.x+2+bdfc->xmin,
-                           layer2.header_height + i * CV_LAYERS2_LINE_HEIGHT + as - bdfc->ymax);
+            // This is currently broken, and we do not have time to fix it.
+            BDFChar* bdfc = layer2.layers[layer2.offtop + i];
+            base.data = bdfc->bitmap;
+            base.bytes_per_line = bdfc->bytes_per_line;
+            base.width = bdfc->xmax - bdfc->xmin + 1;
+            base.height = bdfc->ymax - bdfc->ymin + 1;
+            GDrawDrawImage(pixmap, &gi, NULL,
+                r.x + 2 + bdfc->xmin,
+                layer2.header_height + i * CV_LAYERS2_LINE_HEIGHT + as - bdfc->ymax);
 #else
-	    // This logic comes from CVInfoDrawText.
-	    const int layernamesz = 100;
-	    char layername[layernamesz+1];
-	    strncpy(layername,_("Guide"),layernamesz);
-	    int idx = layer2.offtop+i-1;
-	    if(idx >= 0 && idx < cv->b.sc->parent->layer_cnt) {
-	      strncpy(layername,cv->b.sc->parent->layers[idx].name,layernamesz);
-	    } else {
-	      fprintf(stderr, "Invalid layer!\n");
-	    }
-	    // And this comes from above.
+            // This logic comes from CVInfoDrawText.
+            const int layernamesz = 100;
+            char layername[layernamesz + 1];
+            strncpy(layername, _("Guide"), layernamesz);
+            int idx = layer2.offtop + i - 1;
+            if (idx >= 0 && idx < cv->b.sc->parent->layer_cnt)
+            {
+                strncpy(layername, cv->b.sc->parent->layers[idx].name, layernamesz);
+            }
+            else
+            {
+                fprintf(stderr, "Invalid layer!\n");
+            }
+            // And this comes from above.
             GDrawDrawText8(pixmap, r.x + 2, layer2.header_height + i * CV_LAYERS2_LINE_HEIGHT + (CV_LAYERS2_LINE_HEIGHT - 12) / 2 + 12,
-		    (char *) layername,-1,ll==layer2.active?0xffffff:GDrawGetDefaultForeground(NULL));
+                (char*)layername, -1, ll == layer2.active ? 0xffffff : GDrawGetDefaultForeground(NULL));
 #endif // 0
-	}
+        }
     }
     GDrawPopClip(pixmap, &oldclip);
 }
