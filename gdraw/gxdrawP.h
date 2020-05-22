@@ -92,7 +92,6 @@ typedef struct gcstate {
     Color fore_col;		/* desired */
     Color back_col;		/* desired */
     GRect clip;
-    unsigned int copy_through_sub_windows: 1;
     unsigned int bitmap_col: 1;			/* fore_col is mapped for bitmap */
     int16 dash_len, skip_len;
     int16 line_width;
@@ -253,17 +252,13 @@ struct xkb {
 
 typedef struct gxdisplay /* : GDisplay */ {
     struct displayfuncs *funcs;
-    void *semaphore;				/* To lock the display against multiple threads */
     struct font_state *fontstate;
     int16 res;
-    int16 scale_screen_by;			/* When converting screen pixels to printer pixels: multiply by this then divide by 16 */
     GXWindow groot;
     Color def_background, def_foreground;
     uint16 mykey_state;
     uint16 mykey_keysym;
     uint16 mykey_mask;
-    fd_callback_t fd_callbacks[ gdisplay_fd_callbacks_size ];
-    int fd_callbacks_last;
     unsigned int mykeybuild: 1;
     unsigned int default_visual: 1;
     unsigned int do_dithering: 1;
